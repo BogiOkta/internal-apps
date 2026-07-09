@@ -47,6 +47,8 @@ Use this mode when PostgreSQL is already hosted on an approved internal server. 
 | `DB_NAME` | Platform database; `internal_apps` |
 | `DB_OWNER_USER` | Ownership and future approved migration role; `internal_apps_owner` |
 | `DB_OWNER_PASSWORD` | Owner password from the approved secret source |
+| `DB_SSL_MODE` | Npgsql SSL mode required by the internal server |
+| `DB_TRUST_SERVER_CERTIFICATE` | Whether Npgsql should trust the presented server certificate |
 | `APP_DB_USER` | Future API runtime role; `internal_apps_app` |
 | `APP_DB_PASSWORD` | Future runtime password from the approved secret source |
 
@@ -97,6 +99,69 @@ Stop local PostgreSQL without deleting its persistent volume:
 docker compose stop postgres
 ```
 
+## Run migrations
+
+The .NET 8 DbUp runner in `tools/migrator` reads ordered `.sql` files from `database/migrations`. Run it from the repository root.
+
+Before the first migration, a PostgreSQL administrator must create the runtime login. `internal_apps_owner` intentionally does not have `CREATEROLE`.
+
+The administrator must create `internal_apps_app` with the private `APP_DB_PASSWORD` value from the approved secret source and without elevated privileges:
+
+```sql
+CREATE ROLE internal_apps_app
+WITH LOGIN
+PASSWORD '<private-runtime-password>'
+NOSUPERUSER
+NOCREATEDB
+NOCREATEROLE
+NOINHERIT
+NOREPLICATION
+NOBYPASSRLS;
+```
+
+This is a manual administrator prerequisite. Do not run it as `internal_apps_owner`, place the real password in source control, or grant the runtime role ownership/administrative privileges.
+
+Copy the environment template if `.env` does not exist, then edit `.env` with the approved host and private passwords:
+
+```powershell
+Copy-Item .env.example .env
+dotnet run --project tools/migrator/InternalApps.Migrator.csproj
+```
+
+The runner loads `.env` from the repository root and constructs the owner connection string with `NpgsqlConnectionStringBuilder`. It validates all required database variables, the port, SSL mode, trust-certificate flag, and both passwords before connecting. Existing process environment variables take precedence over `.env`.
+
+Do not paste real values into source files, documentation, shell history shared with others, or issue trackers. `.env` is ignored by Git. In managed environments, populate process variables from the approved secret mechanism instead.
+
+Migration `001_create_platform_schemas_and_runtime_user.sql`:
+
+- fails clearly when the administrator-created `internal_apps_app` role is missing;
+- creates the `identity`, `core`, `audit`, and `vacation` schemas;
+- grants only database `CONNECT` and schema `USAGE`;
+- creates no application tables and grants no owner or administrative rights.
+
+The migrator never reads, injects, changes, or logs `APP_DB_PASSWORD`. The owner role requires ownership of `internal_apps`, but it does not require `CREATEROLE` or PostgreSQL superuser access. DbUp creates and maintains its own migration journal table; no business or module tables are created in this task.
+
+Build the runner without applying migrations:
+
+```powershell
+dotnet build tools/migrator/InternalApps.Migrator.csproj
+```
+
+After running the migrator, verify the schemas and runtime role with `psql`:
+
+```powershell
+$env:PGPASSWORD = "<owner-password>"
+psql --host "<approved-host>" --port 5432 --username internal_apps_owner --dbname internal_apps -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN ('identity', 'core', 'audit', 'vacation') ORDER BY schema_name;"
+psql --host "<approved-host>" --port 5432 --username internal_apps_owner --dbname internal_apps -c "SELECT rolname, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname = 'internal_apps_app';"
+Remove-Item Env:PGPASSWORD
+```
+
+Expected schemas are `audit`, `core`, `identity`, and `vacation`. The role query must return `internal_apps_app` with all listed privilege flags set to `false`.
+
+### Future API database configuration
+
+The API remains disconnected from PostgreSQL. Its current `/health` endpoint does not probe the database. A later documented task will configure runtime access and a database readiness/health check using `internal_apps_app`. The API must never receive `DB_OWNER_USER` or `DB_OWNER_PASSWORD`.
+
 ## Install Portal packages
 
 From the repository root:
@@ -144,6 +209,7 @@ From the repository root:
 
 ```powershell
 dotnet build apps/api/src/Api/InternalApps.Api.csproj
+dotnet build tools/migrator/InternalApps.Migrator.csproj
 Set-Location apps/portal
 npm run build
 ```
