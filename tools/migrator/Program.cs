@@ -3,6 +3,8 @@ using DbUp.Engine;
 using DotNetEnv;
 using Npgsql;
 
+const string AdminPasswordHashToken = "__ADMIN_PASSWORD_HASH_SQL_EXPRESSION__";
+
 try
 {
     var repositoryRoot = Directory.GetCurrentDirectory();
@@ -17,6 +19,12 @@ try
     Env.NoClobber().Load(envPath);
 
     var connectionString = BuildOwnerConnectionString();
+    var adminInitialPassword = GetRequiredEnvironmentVariable("ADMIN_INITIAL_PASSWORD");
+    RejectPlaceholderPassword(
+        "ADMIN_INITIAL_PASSWORD",
+        adminInitialPassword,
+        "change_me_before_migration");
+    var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword(adminInitialPassword, workFactor: 12);
 
     var migrationsPath = Path.GetFullPath(
         Path.Combine(repositoryRoot, "database", "migrations"));
@@ -27,7 +35,7 @@ try
             $"Migration directory was not found: {migrationsPath}. Run the migrator from the repository root.");
     }
 
-    var scripts = LoadScripts(migrationsPath);
+    var scripts = LoadScripts(migrationsPath, adminPasswordHash);
 
     if (scripts.Count == 0)
     {
@@ -135,17 +143,33 @@ static void RejectPlaceholderPassword(string name, string value, string placehol
     }
 }
 
-static IReadOnlyList<SqlScript> LoadScripts(string migrationsPath)
+static IReadOnlyList<SqlScript> LoadScripts(string migrationsPath, string adminPasswordHash)
 {
     var scripts = new List<SqlScript>();
+    var adminPasswordHashExpression = ToPostgreSqlTextExpression(adminPasswordHash);
 
     foreach (var path in Directory
         .EnumerateFiles(migrationsPath, "*.sql", SearchOption.TopDirectoryOnly)
         .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal))
     {
         var contents = File.ReadAllText(path);
+
+        if (contents.Contains(AdminPasswordHashToken, StringComparison.Ordinal))
+        {
+            contents = contents.Replace(
+                AdminPasswordHashToken,
+                adminPasswordHashExpression,
+                StringComparison.Ordinal);
+        }
+
         scripts.Add(new SqlScript(Path.GetFileName(path), contents));
     }
 
     return scripts;
+}
+
+static string ToPostgreSqlTextExpression(string value)
+{
+    var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(value));
+    return $"convert_from(decode('{base64Value}', 'base64'), 'UTF8')";
 }

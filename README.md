@@ -10,9 +10,10 @@ The foundation contains:
 
 - optional local PostgreSQL in Docker Compose;
 - an ASP.NET Core .NET 8 API;
-- a Next.js TypeScript Portal with Tailwind CSS.
+- a Next.js TypeScript Portal with Tailwind CSS;
+- an authentication MVP with JWT access tokens and refresh-token rotation.
 
-Authentication, database migrations, database tables, and business modules are intentionally not implemented yet.
+Vacation Management and other business modules are not implemented yet.
 
 ## Prerequisites
 
@@ -121,7 +122,7 @@ NOBYPASSRLS;
 
 This is a manual administrator prerequisite. Do not run it as `internal_apps_owner`, place the real password in source control, or grant the runtime role ownership/administrative privileges.
 
-Copy the environment template if `.env` does not exist, then edit `.env` with the approved host and private passwords:
+Copy the environment template if `.env` does not exist, then edit `.env` with the approved host, private database passwords, a private admin initial password, and a random JWT signing key of at least 32 bytes:
 
 ```powershell
 Copy-Item .env.example .env
@@ -140,6 +141,15 @@ Migration `001_create_platform_schemas_and_runtime_user.sql`:
 - creates no application tables and grants no owner or administrative rights.
 
 The migrator never reads, injects, changes, or logs `APP_DB_PASSWORD`. The owner role requires ownership of `internal_apps`, but it does not require `CREATEROLE` or PostgreSQL superuser access. DbUp creates and maintains its own migration journal table; no business or module tables are created in this task.
+
+Migration `002_identity_v1.sql` creates six Authentication MVP tables and seeds:
+
+- username `admin`;
+- display name and role `Administrator`;
+- permission `System.Admin`;
+- a BCrypt hash produced from `ADMIN_INITIAL_PASSWORD`.
+
+The plaintext admin password is read from `.env`, hashed in migrator memory, and never written to SQL, logs, or the database. Change `ADMIN_INITIAL_PASSWORD` from its placeholder before running migrations.
 
 Build the runner without applying migrations:
 
@@ -160,7 +170,7 @@ Expected schemas are `audit`, `core`, `identity`, and `vacation`. The role query
 
 ### Future API database configuration
 
-The API remains disconnected from PostgreSQL. Its current `/health` endpoint does not probe the database. A later documented task will configure runtime access and a database readiness/health check using `internal_apps_app`. The API must never receive `DB_OWNER_USER` or `DB_OWNER_PASSWORD`.
+The API connects with `internal_apps_app`. It must never receive `DB_OWNER_USER` or `DB_OWNER_PASSWORD`. Refresh tokens are stored only as hashes in `identity.refresh_tokens`, allowing independent sessions for multiple browsers or devices. Refresh rotates the current token atomically; logout revokes only the current session.
 
 ## Install Portal packages
 
@@ -181,7 +191,7 @@ $env:PORTAL_URL = "http://localhost:3000"
 dotnet run --project apps/api/src/Api/InternalApps.Api.csproj --launch-profile http
 ```
 
-The API does not connect to PostgreSQL yet.
+The API loads database and JWT settings from the repository-root `.env`.
 
 ## Run the Portal
 
@@ -189,7 +199,7 @@ In a second PowerShell terminal from the repository root:
 
 ```powershell
 Set-Location apps/portal
-$env:API_BASE_URL = "http://localhost:5000"
+$env:NEXT_PUBLIC_API_BASE_URL = "http://localhost:5000"
 npm run dev
 ```
 
@@ -201,7 +211,44 @@ npm run dev
 | API information | <http://localhost:5000/api/v1/system/info> |
 | Portal | <http://localhost:3000> |
 
-The Portal calls the API information endpoint and displays whether it is reachable.
+The Portal opens at the login page and redirects authenticated users to the dashboard.
+
+## Validate Authentication MVP
+
+Apply migrations, then start the API and Portal using the commands above. Open <http://localhost:3000>, sign in with username `admin` and the private `ADMIN_INITIAL_PASSWORD` used during migration, and confirm the dashboard displays the Administrator user and role.
+
+API validation from PowerShell:
+
+```powershell
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$loginBody = @{ username = "admin"; password = "<admin-password>" } | ConvertTo-Json
+
+$login = Invoke-RestMethod `
+  -Uri "http://localhost:5000/api/v1/auth/login" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $loginBody `
+  -WebSession $session
+
+$headers = @{ Authorization = "Bearer $($login.accessToken)" }
+Invoke-RestMethod `
+  -Uri "http://localhost:5000/api/v1/auth/me" `
+  -Headers $headers `
+  -WebSession $session
+
+Invoke-RestMethod `
+  -Uri "http://localhost:5000/api/v1/auth/refresh" `
+  -Method Post `
+  -WebSession $session
+
+Invoke-RestMethod `
+  -Uri "http://localhost:5000/api/v1/auth/logout" `
+  -Method Post `
+  -Headers $headers `
+  -WebSession $session
+```
+
+The login response contains a short-lived JWT access token. The refresh token is received as an HttpOnly cookie and is not exposed to Portal JavaScript or browser storage.
 
 ## Validate builds
 

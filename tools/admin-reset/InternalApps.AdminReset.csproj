@@ -5,13 +5,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>InternalApps.Migrator</RootNamespace>
+    <RootNamespace>InternalApps.AdminReset</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
-    <PackageReference Include="dbup-postgresql" Version="7.0.1" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
   </ItemGroup>
 
 </Project>
