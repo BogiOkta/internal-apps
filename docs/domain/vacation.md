@@ -48,12 +48,27 @@ automatic timestamp trigger is used.
 
 ## Current implementation
 
-The Portal exposes a localized Vacation workspace with Overview and Employees
-sections. Employees is currently a read-only directory backed by Organization
-endpoints, with search, department filtering, sorting, refresh, and row
-selection.
+The Portal exposes a localized Vacation workspace with Overview, Employees,
+and Leave Types sections. Employees is currently a read-only directory backed
+by Organization endpoints, with search, department filtering, sorting,
+refresh, and row selection.
 
-The database contains the initial Vacation-owned leave-type reference data.
-There is no leave-type API or Portal management UI yet. Create, edit, export,
-leave requests, leave balances, holidays, approval workflows, and configuration
-remain unavailable.
+The Leave Types workspace page provides a read-only table and detail panel
+backed by:
+
+- `GET /api/v1/vacation/leave-types`;
+- `GET /api/v1/vacation/leave-types/{publicId}`.
+
+Both routes require an authenticated user. No dedicated Vacation read
+permission exists yet, so the module follows the same authentication-only rule
+as the current Organization directory rather than inventing a permission.
+
+The list supports case-insensitive search, `active`/`inactive`/`all` status
+filtering, and allowlisted sorting by display order, code, localized name, or
+status in ascending or descending direction. `Accept-Language` selects Serbian
+or English names and descriptions; missing or unsupported languages fall back
+to Serbian, while a missing localized description remains null.
+
+There are no Leave Type create, edit, delete, activation, or deactivation
+operations. Leave requests, leave balances, holidays, approval workflows, and
+other configuration remain unavailable.

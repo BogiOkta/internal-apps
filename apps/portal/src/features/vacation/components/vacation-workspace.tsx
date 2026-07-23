@@ -39,8 +39,7 @@ export function VacationWorkspace({
     },
     {
       label: t("vacation.workspace.leaveTypes"),
-      disabled: true,
-      badge: t("common.comingSoon"),
+      href: "/vacation/leave-types",
     },
     {
       label: t("vacation.workspace.requests"),

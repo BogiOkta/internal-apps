@@ -301,10 +301,28 @@ Authorization: Bearer <access-token>
 
 Vacation consumes these Organization endpoints for its current read-only employee directory. Vacation does not expose duplicate employee or department endpoints.
 
-Planned contract naming:
+Current read-only Vacation reference-data endpoints:
+
+| Endpoint | Query parameters | Behavior |
+|---|---|---|
+| `GET /api/v1/vacation/leave-types` | `search`, `status`, `sortBy`, `sortDirection` | Returns localized Leave Types as a direct array. |
+| `GET /api/v1/vacation/leave-types/{publicId}` | None | Returns one localized Leave Type or `404` when it does not exist. |
+
+For the item route, a malformed UUID does not match the `{publicId:guid}` route
+constraint and receives the framework route-level `404` response. A
+syntactically valid but unknown UUID reaches the endpoint and returns the
+defined `404` Problem Details response. These cases do not promise the same
+response body.
+
+Both routes require authentication. `Accept-Language` selects Serbian (`sr`
+variants) or English (`en` variants), with Serbian as the fallback. The list
+defaults to all statuses, display-order sorting, and ascending direction.
+Supported sort fields are `displayOrder`, `code`, `name`, and `status`; the
+repository maps them to fixed SQL expressions.
+
+Other planned contract naming:
 
 ```text
-GET    /api/v1/vacation/leave-types
 GET    /api/v1/vacation/public-holidays
 GET    /api/v1/vacation/balances
 
