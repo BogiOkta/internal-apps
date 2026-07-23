@@ -63,6 +63,55 @@ Current locale rules:
 
 The Portal maps `sr-Latn` to `sr-Latn-RS` and `en` to `en-GB` when a browser locale is required for future `Intl` formatting. Formatting helpers are added only when a screen needs them.
 
+### 1.3 Platform-wide control consistency
+
+The control rule for the entire Internal Apps platform is:
+
+> One purpose uses one standard control across the platform.
+
+This applies to every current and future application, module, administrative
+area, and shared platform page—not only Vacation. Controls serving the same
+purpose must have consistent behavior and presentation.
+
+Implementation rules:
+
+- a first unique use case may remain local;
+- on the second real use case, evaluate extraction into a small shared
+  control;
+- once a shared standard exists, new screens must use it;
+- shared controls own presentation, interaction, and accessibility behavior,
+  while domain rules and business state remain with the consuming feature;
+- a local alternative requires a concrete business or accessibility reason
+  the shared control cannot satisfy;
+- speculative controls, configuration-driven UI frameworks, and placeholder
+  variants for unimplemented workflows are prohibited.
+
+Improving a shared control improves every consumer through the shared
+implementation. Screens must not copy a shared control and evolve a private
+variant.
+
+Approved controls provide semantic HTML, visible focus, expected keyboard
+operation, accessible names, and correct label/description/error
+relationships. Visible text and accessible labels use typed Serbian Latin and
+English translation keys.
+
+Disabled controls communicate temporary unavailability and do not accept
+input. Read-only fields remain focusable and selectable when useful, are
+visually distinct from editable fields, and are not presented as errors.
+Control height, padding, label spacing, hint/error spacing, focus rings, and
+disabled treatment remain consistent; a page may adjust layout width but must
+not invent styling for an ordinary business control.
+
+Field errors appear adjacent to the field, set `aria-invalid`, and are
+connected through `aria-describedby`. Safe summary errors are added only when
+they materially help recovery. Server validation remains authoritative; raw
+API, exception, and database messages are never shown.
+
+An exception requires a documented concrete reason, review by the owning
+frontend reviewer, and an update to this standard when it establishes a new
+platform pattern. Convenience, preference, or module-specific visual identity
+is not sufficient.
+
 ## 2. Application Layout
 
 Authenticated pages use this consistent structure:
@@ -224,6 +273,40 @@ Logos or illustrations that require separate variants must switch with the theme
 
 Use React Hook Form for form state and Zod for client-side schemas. Server validation remains authoritative.
 
+Approved form-control categories:
+
+- **Text input:** uses the shared field wrapper for label, optional required
+  indicator, hint, error, stable IDs, and description wiring. Normal business
+  text fields use the shared height, padding, focus, invalid, disabled, and
+  read-only treatment.
+- **Text area:** follows the same wrapper, focus, hint, and error behavior.
+  Business text areas resize vertically, not horizontally.
+- **Select:** is for small bounded option sets. It provides a localized label,
+  an explicit empty/all option when allowed, and consistent disabled/focus
+  behavior.
+- **Searchable combobox:** is for large or dynamically loaded sets such as
+  employees or organizational units. Do not render hundreds of options in a
+  native select. Introduce one approved implementation only when the first
+  concrete use case requires it.
+- **Date field:** uses one wrapper/control contract platform-wide. A native
+  date input may be the initial implementation; a later date-picker library
+  must remain behind the shared contract. API values use the documented ISO
+  date contract and visible localization is consistent.
+- **Checkbox/toggle:** checkboxes represent independent Boolean form values.
+  Switch-style controls are reserved for clear immediate state changes. Do not
+  alternate visual patterns for the same Boolean purpose.
+
+Button hierarchy:
+
+- **Primary:** the main constructive or submit action;
+- **Secondary:** supporting commands such as cancel, refresh, or edit;
+- **Quiet/text:** low-emphasis contextual actions;
+- **Destructive:** irreversible or materially destructive actions.
+
+The same action type has the same visual weight across screens. Deactivation
+is not destructive styling unless the platform explicitly classifies that
+workflow as destructive.
+
 ### 6.1 Form structure
 
 - Give every control a visible label.
@@ -270,6 +353,22 @@ Warn before leaving a form with meaningful unsaved changes. Do not warn when onl
 
 Use TanStack Table for complex business tables. Simple static key/value content does not require it.
 
+`AdminDataGrid` is the approved default interaction model for administrative
+list screens across all modules. The current shared implementation is the
+small `admin-data-grid` component set; the standard name describes the
+platform pattern rather than requiring one configuration-heavy component.
+
+It provides a semantic HTML table, sortable header buttons, one active sort
+column, an optional hidden filter row, global search where applicable, shared
+loading and empty states, result and selection counts, a semantic row-selection
+control, CSV/XLSX export where appropriate, and permission-aware actions
+outside the grid. Each domain continues to own its columns, cell rendering,
+filters, row identity, selection behavior, export values, and all business or
+CRUD operations.
+
+New modules must not introduce another administrative-grid interaction model
+unless this shared standard cannot satisfy a documented concrete requirement.
+
 Each table defines:
 
 - stable column IDs;
@@ -300,7 +399,35 @@ Do not fetch all records to sort or filter in the browser.
 - Keep the row accessible by keyboard.
 - Do not make both the whole row and nested controls conflicting click targets.
 
-The Vacation employee directory is the reference read-only list pattern: command bar first, search and department filter on the right, compact sortable columns, visible loading/empty/error states, and selection by pointer or keyboard. It consumes shared Organization data; the Vacation UI does not imply ownership of employees or departments. Selection highlights a row but does not imply an edit action. Disabled create and export commands communicate the established placement without exposing an incomplete workflow.
+Administrative lists use one compact grid interaction standard:
+
+- global search remains in the command bar and performs the endpoint's broad
+  identifying-field search;
+- sortable columns use semantic buttons in table headers and cycle through no
+  sort, ascending, descending, and no sort;
+- one sort column is active at a time and the active header exposes
+  `aria-sort`;
+- optional per-column controls appear in a filter row directly below the
+  headers and are shown or hidden from the command bar;
+- the filter command reports the active column-filter count and provides a
+  clear-all action;
+- CSV and Excel exports contain the currently displayed logical result in its
+  current locale and omit internal/public identifiers unless the business
+  contract explicitly requires them;
+- selection highlighting is paired with a semantic button in the identifying
+  cell; table rows are not assigned button roles.
+
+Filtering and sorting ownership is explicit per list. Employee search,
+department filtering, and sorting remain server-side because the employee
+directory may grow. Small bounded reference lists, such as Vacation Leave
+Types, may apply documented column filters and additional presentation sorts
+client-side after the server has applied global search. Client-side filtering
+must never be described as server-side behavior.
+
+The Vacation employee directory remains the reference read-only list pattern.
+It consumes shared Organization data; the Vacation UI does not imply ownership
+of employees or departments. Selection does not imply an edit action, and no
+employee write controls are enabled.
 
 ### 7.3 Narrow screens
 

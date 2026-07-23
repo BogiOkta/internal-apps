@@ -20,5 +20,7 @@ export type LoginCredentials = {
 export type ProblemDetails = {
   title?: string;
   detail?: string;
+  code?: string;
+  traceId?: string;
   errors?: Record<string, string[]>;
 };

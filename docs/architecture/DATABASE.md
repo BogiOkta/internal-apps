@@ -431,6 +431,12 @@ The event is designed for chronological investigation, target history, actor his
 
 `audit_details` contains structured details associated with one audit event. Details may represent changed field names, safe before/after values, or a redacted change summary.
 
+Migration 007 introduces the initial physical `audit_events` and
+`audit_details` tables for Vacation Leave Type administration. The API runtime
+role has append-only column-level insert access and sequence use; it receives
+no update, delete, truncate, or general audit-read privileges. The Leave Type
+business mutation and its audit event use one PostgreSQL transaction.
+
 Sensitive values are excluded or represented as changed/redacted. Passwords, tokens, secrets, raw authentication headers, attachment contents, and unrestricted request payloads are never audit details.
 
 Separating event headers from details supports:

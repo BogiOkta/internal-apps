@@ -103,6 +103,17 @@ The authorization model combines roles, permissions, and resource-level rules:
 
 Roles are administration conveniences. Backend code checks permissions and resource scope, not hard-coded role names.
 
+Current module permission:
+
+| Permission | Read access | Initial role assignment |
+|---|---|---|
+| `vacation.leave-types.manage` | Leave Type reads remain available to authenticated users | Seeded only to the existing `Administrator` role by migration 007 |
+
+The permission's `vacation` namespace associates it with the Vacation
+application under the current RBAC model. Application assignment and
+permissions remain separate controls; assignment to Vacation does not imply
+Leave Type administration.
+
 ### 3.1 Endpoint enforcement
 
 Every protected endpoint must:

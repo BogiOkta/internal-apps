@@ -7,6 +7,11 @@ import { z } from "zod";
 import { useAuth } from "@/components/auth-provider";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
+import {
+  fieldDescriptionIds,
+  FormField,
+  formControlClassName,
+} from "@/components/form-field";
 
 type LoginForm = {
   username: string;
@@ -84,50 +89,28 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-slate-800"
-            >
-              {t("login.username")}
-            </label>
+          <FormField id="username" label={t("login.username")} error={errors.username?.message}>
             <input
               id="username"
               autoComplete="username"
               aria-invalid={Boolean(errors.username)}
-              aria-describedby={errors.username ? "username-error" : undefined}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-950 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              aria-describedby={fieldDescriptionIds("username", Boolean(errors.username))}
+              className={formControlClassName({ invalid: Boolean(errors.username) })}
               {...register("username")}
             />
-            {errors.username && (
-              <p id="username-error" className="mt-1 text-sm text-red-700">
-                {errors.username.message}
-              </p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-800"
-            >
-              {t("login.password")}
-            </label>
+          <FormField id="password" label={t("login.password")} error={errors.password?.message}>
             <input
               id="password"
               type="password"
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
-              aria-describedby={errors.password ? "password-error" : undefined}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-950 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              aria-describedby={fieldDescriptionIds("password", Boolean(errors.password))}
+              className={formControlClassName({ invalid: Boolean(errors.password) })}
               {...register("password")}
             />
-            {errors.password && (
-              <p id="password-error" className="mt-1 text-sm text-red-700">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+          </FormField>
 
           <button
             type="submit"

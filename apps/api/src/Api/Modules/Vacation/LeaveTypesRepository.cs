@@ -5,24 +5,28 @@ namespace InternalApps.Api.Modules.Vacation;
 
 internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
 {
+    private const string Projection = """
+        leave_types.public_id AS PublicId,
+        leave_types.code AS Code,
+        leave_types.name_sr AS NameSr,
+        leave_types.name_en AS NameEn,
+        leave_types.description_sr AS DescriptionSr,
+        leave_types.description_en AS DescriptionEn,
+        leave_types.calendar_color AS CalendarColor,
+        leave_types.counts_against_vacation_balance AS CountsAgainstVacationBalance,
+        leave_types.requires_approval AS RequiresApproval,
+        leave_types.is_active AS IsActive,
+        leave_types.display_order AS DisplayOrder
+        """;
+
     public async Task<IReadOnlyList<LeaveTypeRecord>> ListAsync(
         LeaveTypeListQuery query,
         LeaveTypeLocale locale,
         CancellationToken cancellationToken)
     {
-        const string select = """
+        var select = $"""
             SELECT
-                leave_types.public_id AS PublicId,
-                leave_types.code AS Code,
-                leave_types.name_sr AS NameSr,
-                leave_types.name_en AS NameEn,
-                leave_types.description_sr AS DescriptionSr,
-                leave_types.description_en AS DescriptionEn,
-                leave_types.calendar_color AS CalendarColor,
-                leave_types.counts_against_vacation_balance AS CountsAgainstVacationBalance,
-                leave_types.requires_approval AS RequiresApproval,
-                leave_types.is_active AS IsActive,
-                leave_types.display_order AS DisplayOrder
+                {Projection}
             FROM vacation.leave_types AS leave_types
             WHERE (
                     @IsActive IS NULL
@@ -59,19 +63,9 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         Guid publicId,
         CancellationToken cancellationToken)
     {
-        const string sql = """
+        var sql = $"""
             SELECT
-                leave_types.public_id AS PublicId,
-                leave_types.code AS Code,
-                leave_types.name_sr AS NameSr,
-                leave_types.name_en AS NameEn,
-                leave_types.description_sr AS DescriptionSr,
-                leave_types.description_en AS DescriptionEn,
-                leave_types.calendar_color AS CalendarColor,
-                leave_types.counts_against_vacation_balance AS CountsAgainstVacationBalance,
-                leave_types.requires_approval AS RequiresApproval,
-                leave_types.is_active AS IsActive,
-                leave_types.display_order AS DisplayOrder
+                {Projection}
             FROM vacation.leave_types AS leave_types
             WHERE leave_types.public_id = @PublicId
             """;
@@ -84,6 +78,154 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                 cancellationToken: cancellationToken));
 
         return row is null ? null : ToRecord(row);
+    }
+
+    public async Task<LeaveTypeCreatePersistenceResult> CreateAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CreateLeaveTypeCommand command,
+        CancellationToken cancellationToken)
+    {
+        var sql = $"""
+            INSERT INTO vacation.leave_types AS leave_types (
+                code,
+                name_sr,
+                name_en,
+                description_sr,
+                description_en,
+                calendar_color,
+                counts_against_vacation_balance,
+                requires_approval,
+                is_active,
+                display_order
+            )
+            VALUES (
+                @Code,
+                @NameSr,
+                @NameEn,
+                @DescriptionSr,
+                @DescriptionEn,
+                @CalendarColor,
+                @CountsAgainstVacationBalance,
+                @RequiresApproval,
+                @IsActive,
+                @DisplayOrder
+            )
+            RETURNING
+                {Projection}
+            """;
+
+        try
+        {
+            var row = await connection.QuerySingleAsync<LeaveTypeRow>(
+                new CommandDefinition(
+                    sql,
+                    command,
+                    transaction,
+                    cancellationToken: cancellationToken));
+
+            return new LeaveTypeCreatePersistenceResult(ToRecord(row), false);
+        }
+        catch (PostgresException exception)
+            when (exception.SqlState == PostgresErrorCodes.UniqueViolation &&
+                  exception.ConstraintName == "uq_vacation_leave_types_code_ci")
+        {
+            return new LeaveTypeCreatePersistenceResult(null, true);
+        }
+    }
+
+    public async Task<LeaveTypeRecord?> GetByPublicIdForUpdateAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        var sql = $"""
+            SELECT
+                {Projection}
+            FROM vacation.leave_types AS leave_types
+            WHERE leave_types.public_id = @PublicId
+            FOR UPDATE
+            """;
+
+        var row = await connection.QuerySingleOrDefaultAsync<LeaveTypeRow>(
+            new CommandDefinition(
+                sql,
+                new { PublicId = publicId },
+                transaction,
+                cancellationToken: cancellationToken));
+
+        return row is null ? null : ToRecord(row);
+    }
+
+    public async Task<LeaveTypeRecord> UpdateAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        UpdateLeaveTypeCommand command,
+        CancellationToken cancellationToken)
+    {
+        var sql = $"""
+            UPDATE vacation.leave_types AS leave_types
+            SET name_sr = @NameSr,
+                name_en = @NameEn,
+                description_sr = @DescriptionSr,
+                description_en = @DescriptionEn,
+                calendar_color = @CalendarColor,
+                counts_against_vacation_balance = @CountsAgainstVacationBalance,
+                requires_approval = @RequiresApproval,
+                display_order = @DisplayOrder,
+                updated_at = now()
+            WHERE leave_types.public_id = @PublicId
+            RETURNING
+                {Projection}
+            """;
+
+        var row = await connection.QuerySingleAsync<LeaveTypeRow>(
+            new CommandDefinition(
+                sql,
+                new
+                {
+                    PublicId = publicId,
+                    command.NameSr,
+                    command.NameEn,
+                    command.DescriptionSr,
+                    command.DescriptionEn,
+                    command.CalendarColor,
+                    command.CountsAgainstVacationBalance,
+                    command.RequiresApproval,
+                    command.DisplayOrder
+                },
+                transaction,
+                cancellationToken: cancellationToken));
+
+        return ToRecord(row);
+    }
+
+    public async Task<LeaveTypeRecord> SetActiveAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        bool isActive,
+        CancellationToken cancellationToken)
+    {
+        var sql = $"""
+            UPDATE vacation.leave_types AS leave_types
+            SET is_active = @IsActive,
+                updated_at = now()
+            WHERE leave_types.public_id = @PublicId
+            RETURNING
+                {Projection}
+            """;
+
+        var row = await connection.QuerySingleAsync<LeaveTypeRow>(
+            new CommandDefinition(
+                sql,
+                new { PublicId = publicId, IsActive = isActive },
+                transaction,
+                cancellationToken: cancellationToken));
+
+        return ToRecord(row);
     }
 
     private static bool? ToIsActive(LeaveTypeStatusFilter status) =>

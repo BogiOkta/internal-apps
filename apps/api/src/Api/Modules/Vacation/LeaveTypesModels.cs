@@ -56,3 +56,79 @@ internal sealed record LeaveTypeResponse(
     bool RequiresApproval,
     bool IsActive,
     int DisplayOrder);
+
+internal sealed record LeaveTypeDetailsResponse(
+    Guid PublicId,
+    string Code,
+    string Name,
+    string? Description,
+    string NameSr,
+    string NameEn,
+    string? DescriptionSr,
+    string? DescriptionEn,
+    string? CalendarColor,
+    bool CountsAgainstVacationBalance,
+    bool RequiresApproval,
+    bool IsActive,
+    int DisplayOrder);
+
+internal sealed record CreateLeaveTypeRequest(
+    string? Code,
+    string? NameSr,
+    string? NameEn,
+    string? DescriptionSr,
+    string? DescriptionEn,
+    string? CalendarColor,
+    bool? CountsAgainstVacationBalance,
+    bool? RequiresApproval,
+    bool? IsActive,
+    int? DisplayOrder);
+
+internal sealed record UpdateLeaveTypeRequest(
+    string? NameSr,
+    string? NameEn,
+    string? DescriptionSr,
+    string? DescriptionEn,
+    string? CalendarColor,
+    bool? CountsAgainstVacationBalance,
+    bool? RequiresApproval,
+    int? DisplayOrder);
+
+internal sealed record CreateLeaveTypeCommand(
+    string Code,
+    string NameSr,
+    string NameEn,
+    string? DescriptionSr,
+    string? DescriptionEn,
+    string? CalendarColor,
+    bool CountsAgainstVacationBalance,
+    bool RequiresApproval,
+    bool IsActive,
+    int DisplayOrder);
+
+internal sealed record UpdateLeaveTypeCommand(
+    string NameSr,
+    string NameEn,
+    string? DescriptionSr,
+    string? DescriptionEn,
+    string? CalendarColor,
+    bool CountsAgainstVacationBalance,
+    bool RequiresApproval,
+    int DisplayOrder);
+
+internal enum LeaveTypeWriteStatus
+{
+    Success,
+    ValidationFailed,
+    NotFound,
+    DuplicateCode
+}
+
+internal sealed record LeaveTypeWriteResult(
+    LeaveTypeWriteStatus Status,
+    LeaveTypeDetailsResponse? LeaveType = null,
+    Dictionary<string, string[]>? Errors = null);
+
+internal sealed record LeaveTypeCreatePersistenceResult(
+    LeaveTypeRecord? LeaveType,
+    bool DuplicateCode);

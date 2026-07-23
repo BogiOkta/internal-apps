@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  GridFilterCell,
+  GridFilterRow,
+  GridFooter,
+  GridStateRows,
+  GridToolbarActions,
+  nextGridSort,
+  SortableGridHeader,
+  type GridSort,
+} from "@/components/admin-data-grid";
 import { useAuth } from "@/components/auth-provider";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
@@ -10,6 +20,11 @@ import type {
   Employee,
   EmployeeSort,
 } from "@/types/organization";
+import {
+  exportGridCsv,
+  exportGridXlsx,
+  type ExportColumn,
+} from "@/utils/admin-grid-export";
 
 type EmployeeSortField =
   | "employeeNumber"
@@ -26,7 +41,9 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [departmentPublicId, setDepartmentPublicId] = useState("");
-  const [sort, setSort] = useState<EmployeeSort>("name");
+  const [sort, setSort] = useState<GridSort<EmployeeSortField>>(null);
+  const [areFiltersVisible, setAreFiltersVisible] = useState(false);
+  const [exportError, setExportError] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -77,7 +94,9 @@ export default function EmployeesPage() {
       {
         search: debouncedSearch || undefined,
         departmentPublicId: departmentPublicId || undefined,
-        sort,
+        sort: sort
+          ? ((sort.direction === "desc" ? `-${sort.field}` : sort.field) as EmployeeSort)
+          : undefined,
       },
       controller.signal,
     )
@@ -120,34 +139,60 @@ export default function EmployeesPage() {
     [employees, selectedEmployeePublicId],
   );
 
-  function toggleSort(field: EmployeeSortField) {
-    setSort((currentSort) =>
-      currentSort === field ? (`-${field}` as EmployeeSort) : field,
-    );
+  function selectEmployee(employee: Employee) {
+    setSelectedEmployeePublicId(employee.publicId);
   }
 
-  function selectEmployee(
-    employee: Employee,
-    event?: KeyboardEvent<HTMLTableRowElement>,
-  ) {
-    if (event && event.key !== "Enter" && event.key !== " ") {
+  const exportColumns: ExportColumn<Employee>[] = [
+    { heading: t("vacation.employees.employeeNumber"), value: (row) => row.employeeNumber, width: 18 },
+    { heading: t("vacation.employees.name"), value: (row) => `${row.firstName} ${row.lastName}`, width: 28 },
+    { heading: t("vacation.employees.department"), value: (row) => row.departmentName, width: 24 },
+    { heading: t("vacation.employees.email"), value: (row) => row.email, width: 32 },
+    {
+      heading: t("vacation.employees.status"),
+      value: (row) =>
+        row.employmentStatus === "Active"
+          ? t("vacation.employees.active")
+          : t("vacation.employees.inactive"),
+      width: 14,
+    },
+  ];
+
+  async function exportEmployees(format: "csv" | "xlsx") {
+    setExportError(false);
+    if (employees.length === 0) {
+      setExportError(true);
       return;
     }
-
-    event?.preventDefault();
-    setSelectedEmployeePublicId(employee.publicId);
+    try {
+      if (format === "csv") {
+        exportGridCsv(employees, exportColumns, "employees.csv");
+      } else {
+        await exportGridXlsx(
+          employees,
+          exportColumns,
+          "employees.xlsx",
+          t("vacation.employees.exportSheet"),
+        );
+      }
+    } catch {
+      setExportError(true);
+    }
   }
 
   const commandBar = (
     <EmployeeCommandBar
-      departments={departments}
-      departmentPublicId={departmentPublicId}
-      hasDepartmentError={hasDepartmentError}
       isRefreshing={isLoading}
       search={search}
-      onDepartmentChange={setDepartmentPublicId}
+      activeFilterCount={departmentPublicId ? 1 : 0}
+      areFiltersVisible={areFiltersVisible}
+      exportDisabled={employees.length === 0}
+      onClearFilters={() => setDepartmentPublicId("")}
+      onExportCsv={() => void exportEmployees("csv")}
+      onExportExcel={() => void exportEmployees("xlsx")}
       onRefresh={() => setRefreshVersion((version) => version + 1)}
       onSearchChange={setSearch}
+      onToggleFilters={() => setAreFiltersVisible((visible) => !visible)}
     />
   );
 
@@ -175,6 +220,13 @@ export default function EmployeesPage() {
             {t("vacation.employees.error")}
           </div>
         )}
+        {exportError && (
+          <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {employees.length === 0
+              ? t("grid.noExportRows")
+              : t("grid.exportFailure")}
+          </div>
+        )}
 
         <section
           aria-label={t("vacation.employees.tableLabel")}
@@ -187,62 +239,77 @@ export default function EmployeesPage() {
             >
               <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600">
                 <tr>
-                  <SortableHeader
+                  <SortableGridHeader
                     field="employeeNumber"
                     label={t("vacation.employees.employeeNumber")}
                     sort={sort}
-                    onSort={toggleSort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.employeeNumber") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.employeeNumber") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.employeeNumber") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
-                  <SortableHeader
+                  <SortableGridHeader
                     field="name"
                     label={t("vacation.employees.name")}
                     sort={sort}
-                    onSort={toggleSort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.name") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.name") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.name") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
-                  <SortableHeader
+                  <SortableGridHeader
                     field="department"
                     label={t("vacation.employees.department")}
                     sort={sort}
-                    onSort={toggleSort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.department") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.department") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.department") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
-                  <SortableHeader
+                  <SortableGridHeader
                     field="email"
                     label={t("vacation.employees.email")}
                     sort={sort}
-                    onSort={toggleSort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.email") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.email") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.email") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
-                  <SortableHeader
+                  <SortableGridHeader
                     field="status"
                     label={t("vacation.employees.status")}
                     sort={sort}
-                    onSort={toggleSort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.status") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.status") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.status") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
                 </tr>
+                <GridFilterRow visible={areFiltersVisible}>
+                  <GridFilterCell />
+                  <GridFilterCell />
+                  <GridFilterCell>
+                    <label>
+                      <span className="sr-only">{t("vacation.employees.departmentFilter")}</span>
+                      <select
+                        value={departmentPublicId}
+                        disabled={hasDepartmentError}
+                        onChange={(event) => setDepartmentPublicId(event.target.value)}
+                        className="min-h-9 w-full min-w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">{t("vacation.employees.allDepartments")}</option>
+                        {departments.map((department) => (
+                          <option key={department.publicId} value={department.publicId}>{department.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </GridFilterCell>
+                  <GridFilterCell />
+                  <GridFilterCell />
+                </GridFilterRow>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {isLoading && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-10 text-center text-slate-500"
-                    >
-                      {t("vacation.employees.loading")}
-                    </td>
-                  </tr>
-                )}
-
-                {!isLoading && !hasError && employees.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center">
-                      <p className="font-medium text-slate-900">
-                        {t("vacation.employees.emptyTitle")}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {t("vacation.employees.emptyDescription")}
-                      </p>
-                    </td>
-                  </tr>
-                )}
+                <GridStateRows columnCount={5} isLoading={isLoading} hasError={hasError} isEmpty={employees.length === 0} loadingLabel={t("vacation.employees.loading")} emptyTitle={t("vacation.employees.emptyTitle")} emptyDescription={t("vacation.employees.emptyDescription")} />
 
                 {!isLoading &&
                   !hasError &&
@@ -254,11 +321,9 @@ export default function EmployeesPage() {
                     return (
                       <tr
                         key={employee.publicId}
-                        tabIndex={0}
                         aria-selected={isSelected}
                         onClick={() => selectEmployee(employee)}
-                        onKeyDown={(event) => selectEmployee(employee, event)}
-                        className={`cursor-pointer outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${
+                        className={`cursor-pointer hover:bg-slate-50 ${
                           isSelected
                             ? "bg-blue-50 shadow-[inset_3px_0_0_#1d4ed8]"
                             : "bg-white"
@@ -267,8 +332,10 @@ export default function EmployeesPage() {
                         <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
                           {employee.employeeNumber}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-950">
-                          {fullName}
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <button type="button" aria-pressed={isSelected} onClick={(event) => { event.stopPropagation(); selectEmployee(employee); }} className="rounded-sm text-left font-semibold text-slate-950 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+                            {fullName}
+                          </button>
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                           {employee.departmentName}
@@ -286,18 +353,7 @@ export default function EmployeesPage() {
             </table>
           </div>
 
-          <div className="flex min-h-11 flex-col justify-between gap-1 border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600 sm:flex-row sm:items-center">
-            <span>
-              {t("vacation.employees.records", { count: employees.length })}
-            </span>
-            <span>
-              {selectedEmployee
-                ? t("vacation.employees.selected", {
-                    name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
-                  })
-                : t("vacation.employees.selectionHint")}
-            </span>
-          </div>
+          <GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}` }) : t("vacation.employees.selectionHint")} />
         </section>
       </div>
     </VacationWorkspace>
@@ -305,23 +361,29 @@ export default function EmployeesPage() {
 }
 
 function EmployeeCommandBar({
-  departments,
-  departmentPublicId,
-  hasDepartmentError,
   isRefreshing,
   search,
-  onDepartmentChange,
+  activeFilterCount,
+  areFiltersVisible,
+  exportDisabled,
+  onClearFilters,
+  onExportCsv,
+  onExportExcel,
   onRefresh,
   onSearchChange,
+  onToggleFilters,
 }: {
-  departments: Department[];
-  departmentPublicId: string;
-  hasDepartmentError: boolean;
   isRefreshing: boolean;
   search: string;
-  onDepartmentChange: (value: string) => void;
+  activeFilterCount: number;
+  areFiltersVisible: boolean;
+  exportDisabled: boolean;
+  onClearFilters: () => void;
+  onExportCsv: () => void;
+  onExportExcel: () => void;
   onRefresh: () => void;
   onSearchChange: (value: string) => void;
+  onToggleFilters: () => void;
 }) {
   const { t } = useTranslations();
 
@@ -364,74 +426,9 @@ function EmployeeCommandBar({
           />
         </label>
 
-        <label>
-          <span className="sr-only">
-            {t("vacation.employees.departmentFilter")}
-          </span>
-          <select
-            value={departmentPublicId}
-            disabled={hasDepartmentError}
-            onChange={(event) => onDepartmentChange(event.target.value)}
-            className="min-h-9 max-w-[240px] rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100"
-          >
-            <option value="">
-              {t("vacation.employees.allDepartments")}
-            </option>
-            {departments.map((department) => (
-              <option key={department.publicId} value={department.publicId}>
-                {department.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <button
-          type="button"
-          disabled
-          title={t("common.comingSoon")}
-          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <ExportIcon />
-          {t("vacation.employees.export")}
-        </button>
+        <GridToolbarActions activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={exportDisabled} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={onToggleFilters} onClearFilters={onClearFilters} onExportCsv={onExportCsv} onExportExcel={onExportExcel} />
       </div>
     </div>
-  );
-}
-
-function SortableHeader({
-  field,
-  label,
-  sort,
-  onSort,
-}: {
-  field: EmployeeSortField;
-  label: string;
-  sort: EmployeeSort;
-  onSort: (field: EmployeeSortField) => void;
-}) {
-  const { t } = useTranslations();
-  const isAscending = sort === field;
-  const isDescending = sort === `-${field}`;
-  const ariaLabel = t(
-    isAscending
-      ? "vacation.employees.sortDescending"
-      : "vacation.employees.sortAscending",
-    { column: label },
-  );
-
-  return (
-    <th scope="col" className="px-2 py-1">
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        onClick={() => onSort(field)}
-        className="flex min-h-9 w-full items-center gap-1.5 rounded px-2 text-left hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600"
-      >
-        <span>{label}</span>
-        <SortIcon ascending={isAscending} descending={isDescending} />
-      </button>
-    </th>
   );
 }
 
@@ -486,48 +483,6 @@ function RefreshIcon() {
       className="h-4 w-4"
     >
       <path d="M15.5 6.5V3m0 0H12M15.5 3A7 7 0 1 0 17 11" />
-    </svg>
-  );
-}
-
-function ExportIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-4 w-4"
-    >
-      <path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5M4 11v5h12v-5" />
-    </svg>
-  );
-}
-
-function SortIcon({
-  ascending,
-  descending,
-}: {
-  ascending: boolean;
-  descending: boolean;
-}) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`h-3.5 w-3.5 ${
-        ascending || descending ? "text-blue-700" : "text-slate-400"
-      }`}
-    >
-      {descending ? <path d="m4 6 4 4 4-4" /> : <path d="m4 10 4-4 4 4" />}
     </svg>
   );
 }

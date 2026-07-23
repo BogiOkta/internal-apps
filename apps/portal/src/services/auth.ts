@@ -12,6 +12,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly problem?: ProblemDetails,
+    public readonly status?: number,
   ) {
     super(message);
   }
@@ -26,6 +27,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   throw new ApiError(
     problem?.detail ?? problem?.title ?? "The request could not be completed.",
     problem ?? undefined,
+    response.status,
   );
 }
 

@@ -301,12 +301,16 @@ Authorization: Bearer <access-token>
 
 Vacation consumes these Organization endpoints for its current read-only employee directory. Vacation does not expose duplicate employee or department endpoints.
 
-Current read-only Vacation reference-data endpoints:
+Current Vacation Leave Type endpoints:
 
-| Endpoint | Query parameters | Behavior |
+| Endpoint | Access | Behavior |
 |---|---|---|
-| `GET /api/v1/vacation/leave-types` | `search`, `status`, `sortBy`, `sortDirection` | Returns localized Leave Types as a direct array. |
-| `GET /api/v1/vacation/leave-types/{publicId}` | None | Returns one localized Leave Type or `404` when it does not exist. |
+| `GET /api/v1/vacation/leave-types` | Authenticated | Accepts `search`, `status`, `sortBy`, and `sortDirection`; returns a localized direct array. |
+| `GET /api/v1/vacation/leave-types/{publicId}` | Authenticated | Returns localized details, including the bilingual values required by the administration form, or `404`. |
+| `POST /api/v1/vacation/leave-types` | `vacation.leave-types.manage` | Creates a Leave Type and returns `201 Created`. |
+| `PUT /api/v1/vacation/leave-types/{publicId}` | `vacation.leave-types.manage` | Updates mutable bilingual labels, descriptions, behavior, color, and display order. It cannot change `code` or active state. |
+| `POST /api/v1/vacation/leave-types/{publicId}/activate` | `vacation.leave-types.manage` | Idempotently makes the type active and returns the resulting resource. |
+| `POST /api/v1/vacation/leave-types/{publicId}/deactivate` | `vacation.leave-types.manage` | Idempotently makes the type inactive without deleting it. |
 
 For the item route, a malformed UUID does not match the `{publicId:guid}` route
 constraint and receives the framework route-level `404` response. A
@@ -314,11 +318,20 @@ syntactically valid but unknown UUID reaches the endpoint and returns the
 defined `404` Problem Details response. These cases do not promise the same
 response body.
 
-Both routes require authentication. `Accept-Language` selects Serbian (`sr`
-variants) or English (`en` variants), with Serbian as the fallback. The list
-defaults to all statuses, display-order sorting, and ascending direction.
-Supported sort fields are `displayOrder`, `code`, `name`, and `status`; the
-repository maps them to fixed SQL expressions.
+All routes require authentication; every write additionally requires
+`vacation.leave-types.manage`. `Accept-Language` selects Serbian (`sr`
+variants) or English (`en` variants), with Serbian as the fallback, for reads
+and write responses. The list defaults to all statuses, display-order sorting,
+and ascending direction. Supported sort fields are `displayOrder`, `code`,
+`name`, and `status`; the repository maps them to fixed SQL expressions.
+
+Create accepts the stable code and all initial mutable values. Update does not
+accept `code`, active status, identifiers, or timestamps. Text is trimmed;
+blank optional descriptions and color become `null`; code must use the
+documented uppercase underscore format; calendar color, when supplied, is
+`#RRGGBB`; display order is nonnegative. Case-insensitive duplicate code
+returns `409` with code `leave_type_code_conflict`. A valid unknown public UUID
+returns the defined `404` Problem Details response. No `DELETE` route exists.
 
 Other planned contract naming:
 

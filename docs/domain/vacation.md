@@ -46,6 +46,16 @@ physical deletion is not part of the initial application behavior.
 Future repository updates must explicitly set `updated_at = now()`; no
 automatic timestamp trigger is used.
 
+Leave Type administration uses the explicit permission
+`vacation.leave-types.manage`. The permission is seeded by migration 007 and
+assigned initially only to the existing `Administrator` role. The stable code
+is accepted only during creation and is not part of the update contract or the
+runtime role's update privileges. Duplicate code comparison is
+case-insensitive and produces a conflict response.
+
+After migration 007 is applied, existing Administrator access tokens must be
+refreshed or reissued before they contain the new permission claim.
+
 ## Current implementation
 
 The Portal exposes a localized Vacation workspace with Overview, Employees,
@@ -53,15 +63,14 @@ and Leave Types sections. Employees is currently a read-only directory backed
 by Organization endpoints, with search, department filtering, sorting,
 refresh, and row selection.
 
-The Leave Types workspace page provides a read-only table and detail panel
-backed by:
+The Leave Types workspace retains its compact table and right-side panel. All
+authenticated users can read Leave Types through:
 
 - `GET /api/v1/vacation/leave-types`;
 - `GET /api/v1/vacation/leave-types/{publicId}`.
 
-Both routes require an authenticated user. No dedicated Vacation read
-permission exists yet, so the module follows the same authentication-only rule
-as the current Organization directory rather than inventing a permission.
+No dedicated Vacation read permission exists yet, so reads follow the same
+authentication-only rule as the current Organization directory.
 
 The list supports case-insensitive search, `active`/`inactive`/`all` status
 filtering, and allowlisted sorting by display order, code, localized name, or
@@ -69,6 +78,12 @@ status in ascending or descending direction. `Accept-Language` selects Serbian
 or English names and descriptions; missing or unsupported languages fall back
 to Serbian, while a missing localized description remains null.
 
-There are no Leave Type create, edit, delete, activation, or deactivation
-operations. Leave requests, leave balances, holidays, approval workflows, and
-other configuration remain unavailable.
+Users with `vacation.leave-types.manage` can create and edit Leave Types in the
+same side panel and can explicitly activate or deactivate a selected type.
+Activation commands are state-idempotent. The Portal hides these controls for
+other users, while the API policy remains authoritative. Every successful
+mutation updates `updated_at` and writes an append-only audit event in the same
+database transaction. No physical deletion operation exists.
+
+Leave requests, leave balances, holidays, approval workflows, and other
+configuration remain unavailable.

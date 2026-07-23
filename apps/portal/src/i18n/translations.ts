@@ -23,6 +23,18 @@ const englishTranslations = {
   "common.metaDescription": "Internal business applications portal",
   "common.loading": "Loading…",
   "common.comingSoon": "Coming soon",
+  "grid.filters": "active filters",
+  "grid.showFilters": "Show filters",
+  "grid.hideFilters": "Hide filters",
+  "grid.clearFilters": "Clear filters",
+  "grid.sortAscending": "Sort {column} ascending",
+  "grid.sortDescending": "Sort {column} descending",
+  "grid.clearSorting": "Clear sorting for {column}",
+  "grid.export": "Export",
+  "grid.exportExcel": "Export Excel",
+  "grid.exportCsv": "Export CSV",
+  "grid.noExportRows": "There are no displayed rows to export.",
+  "grid.exportFailure": "The export could not be created.",
   "language.label": "Language",
   "navigation.primary": "Primary navigation",
   "navigation.open": "Open navigation",
@@ -122,6 +134,7 @@ const englishTranslations = {
   "vacation.employees.status": "Status",
   "vacation.employees.active": "Active",
   "vacation.employees.inactive": "Inactive",
+  "vacation.employees.exportSheet": "Employees",
   "vacation.employees.loading": "Loading employees…",
   "vacation.employees.error":
     "Employees could not be loaded. Check the filters and try again.",
@@ -164,6 +177,13 @@ const englishTranslations = {
   "vacation.leaveTypes.balance": "Counts against balance",
   "vacation.leaveTypes.approval": "Approval required",
   "vacation.leaveTypes.status": "Status",
+  "vacation.leaveTypes.codeFilter": "Filter by code",
+  "vacation.leaveTypes.nameFilter": "Filter by localized name",
+  "vacation.leaveTypes.balanceFilter": "Filter by balance behavior",
+  "vacation.leaveTypes.approvalFilter": "Filter by approval requirement",
+  "vacation.leaveTypes.displayOrderFilter": "Filter by exact display order",
+  "vacation.leaveTypes.exportDescription": "Description",
+  "vacation.leaveTypes.exportSheet": "Leave types",
   "vacation.leaveTypes.yes": "Yes",
   "vacation.leaveTypes.no": "No",
   "vacation.leaveTypes.loading": "Loading leave types…",
@@ -184,6 +204,74 @@ const englishTranslations = {
   "vacation.leaveTypes.calendarColor": "Calendar color",
   "vacation.leaveTypes.notSet": "Not set",
   "vacation.leaveTypes.displayOrder": "Display order",
+  "vacation.leaveTypes.new": "New leave type",
+  "vacation.leaveTypes.edit": "Edit",
+  "vacation.leaveTypes.save": "Save",
+  "vacation.leaveTypes.saving": "Saving…",
+  "vacation.leaveTypes.cancel": "Cancel",
+  "vacation.leaveTypes.activate": "Activate",
+  "vacation.leaveTypes.deactivate": "Deactivate",
+  "vacation.leaveTypes.activating": "Activating…",
+  "vacation.leaveTypes.deactivating": "Deactivating…",
+  "vacation.leaveTypes.confirm": "Confirm",
+  "vacation.leaveTypes.createTitle": "New leave type",
+  "vacation.leaveTypes.editTitle": "Edit leave type",
+  "vacation.leaveTypes.loadingDetails": "Loading…",
+  "vacation.leaveTypes.loadDetailsFailed":
+    "The complete leave type details could not be loaded.",
+  "vacation.leaveTypes.duplicateCode":
+    "A leave type with this code already exists.",
+  "vacation.leaveTypes.forbidden":
+    "You do not have permission to administer leave types.",
+  "vacation.leaveTypes.saveFailed":
+    "The leave type could not be saved. Review the values and try again.",
+  "vacation.leaveTypes.stateChangeFailed":
+    "The leave type status could not be changed.",
+  "vacation.leaveTypes.createSuccess": "Leave type created.",
+  "vacation.leaveTypes.updateSuccess": "Leave type updated.",
+  "vacation.leaveTypes.activateSuccess": "Leave type activated.",
+  "vacation.leaveTypes.deactivateSuccess": "Leave type deactivated.",
+  "vacation.leaveTypes.activateConfirmation":
+    "Activate this leave type for future use?",
+  "vacation.leaveTypes.deactivateConfirmation":
+    "Deactivate this leave type? Existing historical references are preserved.",
+  "vacation.leaveTypes.form.code": "Code",
+  "vacation.leaveTypes.form.codeGuidance":
+    "Use uppercase letters, digits, and single underscores.",
+  "vacation.leaveTypes.form.codeReadOnly":
+    "The stable technical code cannot be changed after creation.",
+  "vacation.leaveTypes.form.nameSr": "Serbian name",
+  "vacation.leaveTypes.form.nameEn": "English name",
+  "vacation.leaveTypes.form.descriptionSr":
+    "Serbian description (optional)",
+  "vacation.leaveTypes.form.descriptionEn":
+    "English description (optional)",
+  "vacation.leaveTypes.form.calendarColor": "Calendar color",
+  "vacation.leaveTypes.form.calendarColorGuidance":
+    "Optional hexadecimal color in #RRGGBB format.",
+  "vacation.leaveTypes.form.displayOrder": "Display order",
+  "vacation.leaveTypes.form.behavior": "Leave type behavior",
+  "vacation.leaveTypes.form.countsAgainstBalance":
+    "Counts against annual vacation balance",
+  "vacation.leaveTypes.form.requiresApproval": "Requires approval",
+  "vacation.leaveTypes.form.initiallyActive": "Initially active",
+  "vacation.leaveTypes.validation.codeRequired": "Code is required.",
+  "vacation.leaveTypes.validation.codeLength":
+    "Code must not exceed 50 characters.",
+  "vacation.leaveTypes.validation.codeFormat":
+    "Use uppercase letters, digits, and single underscores only.",
+  "vacation.leaveTypes.validation.nameSrRequired":
+    "Serbian name is required.",
+  "vacation.leaveTypes.validation.nameEnRequired":
+    "English name is required.",
+  "vacation.leaveTypes.validation.nameLength":
+    "Name must not exceed 150 characters.",
+  "vacation.leaveTypes.validation.descriptionLength":
+    "Description must not exceed 500 characters.",
+  "vacation.leaveTypes.validation.colorFormat":
+    "Use a hexadecimal color in #RRGGBB format.",
+  "vacation.leaveTypes.validation.displayOrder":
+    "Display order must be a nonnegative whole number.",
   "apiStatus.title": "API status",
   "apiStatus.status": "Status",
   "apiStatus.available": "Available",
@@ -208,6 +296,18 @@ const serbianLatinTranslations: TranslationDictionary = {
   "common.metaDescription": "Portal internih poslovnih aplikacija",
   "common.loading": "Učitavanje…",
   "common.comingSoon": "Uskoro",
+  "grid.filters": "aktivnih filtera",
+  "grid.showFilters": "Prikaži filtere",
+  "grid.hideFilters": "Sakrij filtere",
+  "grid.clearFilters": "Očisti filtere",
+  "grid.sortAscending": "Sortiraj {column} rastuće",
+  "grid.sortDescending": "Sortiraj {column} opadajuće",
+  "grid.clearSorting": "Ukloni sortiranje za {column}",
+  "grid.export": "Izvoz",
+  "grid.exportExcel": "Izvezi Excel",
+  "grid.exportCsv": "Izvezi CSV",
+  "grid.noExportRows": "Nema prikazanih redova za izvoz.",
+  "grid.exportFailure": "Izvoz nije moguće napraviti.",
   "language.label": "Jezik",
   "navigation.primary": "Glavna navigacija",
   "navigation.open": "Otvori navigaciju",
@@ -316,6 +416,7 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.employees.status": "Status",
   "vacation.employees.active": "Aktivan",
   "vacation.employees.inactive": "Neaktivan",
+  "vacation.employees.exportSheet": "Zaposleni",
   "vacation.employees.loading": "Učitavanje zaposlenih…",
   "vacation.employees.error":
     "Zaposlene nije moguće učitati. Proverite filtere i pokušajte ponovo.",
@@ -358,6 +459,13 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.leaveTypes.balance": "Umanjuje saldo odmora",
   "vacation.leaveTypes.approval": "Potrebno odobrenje",
   "vacation.leaveTypes.status": "Status",
+  "vacation.leaveTypes.codeFilter": "Filtriraj prema šifri",
+  "vacation.leaveTypes.nameFilter": "Filtriraj prema lokalizovanom nazivu",
+  "vacation.leaveTypes.balanceFilter": "Filtriraj prema umanjenju salda",
+  "vacation.leaveTypes.approvalFilter": "Filtriraj prema obaveznom odobrenju",
+  "vacation.leaveTypes.displayOrderFilter": "Filtriraj prema tačnom redosledu prikaza",
+  "vacation.leaveTypes.exportDescription": "Opis",
+  "vacation.leaveTypes.exportSheet": "Vrste odsustava",
   "vacation.leaveTypes.yes": "Da",
   "vacation.leaveTypes.no": "Ne",
   "vacation.leaveTypes.loading": "Učitavanje vrsta odsustava…",
@@ -379,6 +487,72 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.leaveTypes.calendarColor": "Boja u kalendaru",
   "vacation.leaveTypes.notSet": "Nije podešeno",
   "vacation.leaveTypes.displayOrder": "Redosled prikaza",
+  "vacation.leaveTypes.new": "Nova vrsta",
+  "vacation.leaveTypes.edit": "Izmeni",
+  "vacation.leaveTypes.save": "Sačuvaj",
+  "vacation.leaveTypes.saving": "Čuvanje…",
+  "vacation.leaveTypes.cancel": "Otkaži",
+  "vacation.leaveTypes.activate": "Aktiviraj",
+  "vacation.leaveTypes.deactivate": "Deaktiviraj",
+  "vacation.leaveTypes.activating": "Aktiviranje…",
+  "vacation.leaveTypes.deactivating": "Deaktiviranje…",
+  "vacation.leaveTypes.confirm": "Potvrdi",
+  "vacation.leaveTypes.createTitle": "Nova vrsta odsustva",
+  "vacation.leaveTypes.editTitle": "Izmena vrste odsustva",
+  "vacation.leaveTypes.loadingDetails": "Učitavanje…",
+  "vacation.leaveTypes.loadDetailsFailed":
+    "Nije moguće učitati potpune podatke o vrsti odsustva.",
+  "vacation.leaveTypes.duplicateCode":
+    "Vrsta odsustva sa ovom šifrom već postoji.",
+  "vacation.leaveTypes.forbidden":
+    "Nemate dozvolu za upravljanje vrstama odsustava.",
+  "vacation.leaveTypes.saveFailed":
+    "Vrstu odsustva nije moguće sačuvati. Proverite podatke i pokušajte ponovo.",
+  "vacation.leaveTypes.stateChangeFailed":
+    "Status vrste odsustva nije moguće promeniti.",
+  "vacation.leaveTypes.createSuccess": "Vrsta odsustva je kreirana.",
+  "vacation.leaveTypes.updateSuccess": "Vrsta odsustva je izmenjena.",
+  "vacation.leaveTypes.activateSuccess": "Vrsta odsustva je aktivirana.",
+  "vacation.leaveTypes.deactivateSuccess": "Vrsta odsustva je deaktivirana.",
+  "vacation.leaveTypes.activateConfirmation":
+    "Aktivirati ovu vrstu odsustva za buduću upotrebu?",
+  "vacation.leaveTypes.deactivateConfirmation":
+    "Deaktivirati ovu vrstu odsustva? Postojeće istorijske reference ostaju sačuvane.",
+  "vacation.leaveTypes.form.code": "Šifra",
+  "vacation.leaveTypes.form.codeGuidance":
+    "Koristite velika slova, cifre i pojedinačne donje crte.",
+  "vacation.leaveTypes.form.codeReadOnly":
+    "Stabilna tehnička šifra se ne može menjati nakon kreiranja.",
+  "vacation.leaveTypes.form.nameSr": "Naziv na srpskom",
+  "vacation.leaveTypes.form.nameEn": "Naziv na engleskom",
+  "vacation.leaveTypes.form.descriptionSr": "Opis na srpskom (opciono)",
+  "vacation.leaveTypes.form.descriptionEn": "Opis na engleskom (opciono)",
+  "vacation.leaveTypes.form.calendarColor": "Boja u kalendaru",
+  "vacation.leaveTypes.form.calendarColorGuidance":
+    "Opciona heksadecimalna boja u formatu #RRGGBB.",
+  "vacation.leaveTypes.form.displayOrder": "Redosled prikaza",
+  "vacation.leaveTypes.form.behavior": "Ponašanje vrste odsustva",
+  "vacation.leaveTypes.form.countsAgainstBalance":
+    "Umanjuje saldo godišnjeg odmora",
+  "vacation.leaveTypes.form.requiresApproval": "Potrebno odobrenje",
+  "vacation.leaveTypes.form.initiallyActive": "Odmah aktivna",
+  "vacation.leaveTypes.validation.codeRequired": "Šifra je obavezna.",
+  "vacation.leaveTypes.validation.codeLength":
+    "Šifra može imati najviše 50 znakova.",
+  "vacation.leaveTypes.validation.codeFormat":
+    "Koristite samo velika slova, cifre i pojedinačne donje crte.",
+  "vacation.leaveTypes.validation.nameSrRequired":
+    "Naziv na srpskom je obavezan.",
+  "vacation.leaveTypes.validation.nameEnRequired":
+    "Naziv na engleskom je obavezan.",
+  "vacation.leaveTypes.validation.nameLength":
+    "Naziv može imati najviše 150 znakova.",
+  "vacation.leaveTypes.validation.descriptionLength":
+    "Opis može imati najviše 500 znakova.",
+  "vacation.leaveTypes.validation.colorFormat":
+    "Koristite heksadecimalnu boju u formatu #RRGGBB.",
+  "vacation.leaveTypes.validation.displayOrder":
+    "Redosled prikaza mora biti ceo broj koji nije negativan.",
   "apiStatus.title": "Status API-ja",
   "apiStatus.status": "Status",
   "apiStatus.available": "Dostupan",

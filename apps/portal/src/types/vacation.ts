@@ -10,6 +10,31 @@ export type LeaveType = {
   displayOrder: number;
 };
 
+export type LeaveTypeDetails = LeaveType & {
+  nameSr: string;
+  nameEn: string;
+  descriptionSr: string | null;
+  descriptionEn: string | null;
+};
+
+export type CreateLeaveTypeRequest = {
+  code: string;
+  nameSr: string;
+  nameEn: string;
+  descriptionSr: string | null;
+  descriptionEn: string | null;
+  calendarColor: string | null;
+  countsAgainstVacationBalance: boolean;
+  requiresApproval: boolean;
+  isActive: boolean;
+  displayOrder: number;
+};
+
+export type UpdateLeaveTypeRequest = Omit<
+  CreateLeaveTypeRequest,
+  "code" | "isActive"
+>;
+
 export type LeaveTypeStatusFilter = "active" | "inactive" | "all";
 
 export type LeaveTypeSortField =
@@ -26,3 +51,5 @@ export type LeaveTypeQuery = {
   sortBy?: LeaveTypeSortField;
   sortDirection?: LeaveTypeSortDirection;
 };
+
+export const leaveTypesManagePermission = "vacation.leave-types.manage";

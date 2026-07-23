@@ -4,6 +4,7 @@ using DotNetEnv;
 using InternalApps.Api.Applications;
 using InternalApps.Api.Authentication;
 using InternalApps.Api.Infrastructure;
+using InternalApps.Api.Infrastructure.Auditing;
 using InternalApps.Api.Modules.Organization;
 using InternalApps.Api.Modules.Vacation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,6 +29,7 @@ builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<OrganizationRepository>();
 builder.Services.AddScoped<LeaveTypesRepository>();
 builder.Services.AddScoped<LeaveTypesService>();
+builder.Services.AddScoped<AuditWriter>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -47,7 +49,14 @@ builder.Services
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        VacationPermissions.ManageLeaveTypes,
+        policy => policy.RequireClaim(
+            "permission",
+            VacationPermissions.ManageLeaveTypes));
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(LocalPortalCorsPolicy, policy =>

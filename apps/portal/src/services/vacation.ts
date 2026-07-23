@@ -1,6 +1,12 @@
 import { ApiError } from "@/services/auth";
 import type { ProblemDetails } from "@/types/auth";
-import type { LeaveType, LeaveTypeQuery } from "@/types/vacation";
+import type {
+  CreateLeaveTypeRequest,
+  LeaveType,
+  LeaveTypeDetails,
+  LeaveTypeQuery,
+  UpdateLeaveTypeRequest,
+} from "@/types/vacation";
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
@@ -33,12 +39,71 @@ export async function getLeaveType(
   locale: string,
   publicId: string,
   signal?: AbortSignal,
-): Promise<LeaveType> {
-  return requestLeaveType(
+): Promise<LeaveTypeDetails> {
+  return requestLeaveTypeDetails(
     `/api/v1/vacation/leave-types/${encodeURIComponent(publicId)}`,
     accessToken,
     locale,
     signal,
+  );
+}
+
+export async function createLeaveType(
+  accessToken: string,
+  locale: string,
+  request: CreateLeaveTypeRequest,
+): Promise<LeaveTypeDetails> {
+  return requestLeaveTypeDetails(
+    "/api/v1/vacation/leave-types",
+    accessToken,
+    locale,
+    undefined,
+    "POST",
+    request,
+  );
+}
+
+export async function updateLeaveType(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  request: UpdateLeaveTypeRequest,
+): Promise<LeaveTypeDetails> {
+  return requestLeaveTypeDetails(
+    `/api/v1/vacation/leave-types/${encodeURIComponent(publicId)}`,
+    accessToken,
+    locale,
+    undefined,
+    "PUT",
+    request,
+  );
+}
+
+export async function activateLeaveType(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+): Promise<LeaveTypeDetails> {
+  return requestLeaveTypeDetails(
+    `/api/v1/vacation/leave-types/${encodeURIComponent(publicId)}/activate`,
+    accessToken,
+    locale,
+    undefined,
+    "POST",
+  );
+}
+
+export async function deactivateLeaveType(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+): Promise<LeaveTypeDetails> {
+  return requestLeaveTypeDetails(
+    `/api/v1/vacation/leave-types/${encodeURIComponent(publicId)}/deactivate`,
+    accessToken,
+    locale,
+    undefined,
+    "POST",
   );
 }
 
@@ -52,14 +117,23 @@ async function requestLeaveTypes(
   return (await response.json()) as LeaveType[];
 }
 
-async function requestLeaveType(
+async function requestLeaveTypeDetails(
   path: string,
   accessToken: string,
   locale: string,
   signal?: AbortSignal,
-): Promise<LeaveType> {
-  const response = await request(path, accessToken, locale, signal);
-  return (await response.json()) as LeaveType;
+  method = "GET",
+  body?: CreateLeaveTypeRequest | UpdateLeaveTypeRequest,
+): Promise<LeaveTypeDetails> {
+  const response = await request(
+    path,
+    accessToken,
+    locale,
+    signal,
+    method,
+    body,
+  );
+  return (await response.json()) as LeaveTypeDetails;
 }
 
 async function request(
@@ -67,14 +141,19 @@ async function request(
   accessToken: string,
   locale: string,
   signal?: AbortSignal,
+  method = "GET",
+  body?: CreateLeaveTypeRequest | UpdateLeaveTypeRequest,
 ): Promise<Response> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
+    method,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Accept-Language": locale,
+      ...(body ? { "Content-Type": "application/json" } : {}),
     },
     credentials: "include",
     signal,
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   if (response.ok) {
@@ -85,5 +164,6 @@ async function request(
   throw new ApiError(
     problem?.title ?? "The Vacation data could not be loaded.",
     problem ?? undefined,
+    response.status,
   );
 }
