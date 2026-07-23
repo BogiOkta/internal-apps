@@ -195,6 +195,8 @@ erDiagram
     roles ||--o{ role_permissions : grants
     permissions ||--o{ role_permissions : included
     users ||--o{ refresh_tokens : owns
+    users ||--o{ user_applications : receives
+    applications ||--o{ user_applications : grants
     users ||--o{ login_history : generates
 ```
 
@@ -210,6 +212,7 @@ The diagram shows logical cardinality. Exact optionality and physical columns ar
 | `permissions` | Stable namespaced platform capabilities. | Included in roles through `role_permissions`. | Permission key is a durable contract; removal or rename is versioned. |
 | `role_permissions` | Association between roles and permissions. | References one role and one permission. | Duplicate assignments are not meaningful; changes are security-sensitive and audited. |
 | `user_roles` | Association between users and roles. | References one user and one role. | May carry assignment context or validity when documented; changes are audited. |
+| `user_applications` | Assignment of Portal applications to users. | References one user and one `core.applications` entry; optionally records the assigning user. | The current runtime API reads assignments but cannot create or change them. |
 | `refresh_tokens` | Server-side session record for refresh-token rotation and revocation. | Belongs to one user and session lineage. | Raw token value is never stored; expired/revoked records follow security retention policy. |
 | `login_history` | Records authentication attempts and outcomes for security review. | References a user when one can be safely resolved; may represent an unidentified attempt. | Append-oriented security record with bounded retention and sensitive metadata controls. |
 
@@ -257,7 +260,7 @@ flowchart TB
     Modules["Business modules"]
 
     subgraph CoreSchema["core schema"]
-        Registry["settings<br/>application_modules<br/>features"]
+        Registry["settings<br/>applications<br/>features"]
         Collaboration["attachments<br/>comments"]
         Processing["background_jobs<br/>scheduled_jobs"]
         Messaging["notifications<br/>notification_templates"]
@@ -278,7 +281,7 @@ flowchart TB
 | Entity | Core owner | Purpose |
 |---|---|---|
 | `settings` | Configuration | Typed platform and module configuration values and scope metadata |
-| `application_modules` | Module Registry | Registered modules, identity, status, and platform metadata |
+| `applications` | Application Access | Portal application identity, route, active status, and display order |
 | `features` | Feature Control | Registered feature definitions and controlled availability |
 | `attachments` | Attachments | File metadata, logical target, lifecycle, and safe storage reference |
 | `comments` | Comments | Shared comments attached to authorized logical targets |
@@ -299,9 +302,9 @@ Settings are not an untyped escape hatch. Data requiring relationships, workflow
 
 Logical access patterns include retrieval by key and scope, listing settings manageable by an authorized administrator, and tracking changes through audit events.
 
-### 5.3 Application modules and features
+### 5.3 Applications and features
 
-`application_modules` is the registry of modules recognized by the platform. It records stable module identity and operational metadata such as whether the module is available. It does not contain module-specific configuration or business state.
+`applications` is the Portal launcher catalog. It records a stable application code, public identifier, display metadata, Portal route, active status, and ordering. Access is determined through `identity.user_applications`; only active applications assigned to the authenticated user are returned. The table does not contain module-specific configuration or business state.
 
 `features` identifies controlled capabilities within Core or a module. A feature belongs logically to an application module or to the platform. Feature availability is not authorization: permission checks remain mandatory even when a feature is enabled.
 

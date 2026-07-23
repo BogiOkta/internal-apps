@@ -11,9 +11,10 @@ The foundation contains:
 - optional local PostgreSQL in Docker Compose;
 - an ASP.NET Core .NET 8 API;
 - a Next.js TypeScript Portal with Tailwind CSS;
-- an authentication MVP with JWT access tokens and refresh-token rotation.
+- an authentication MVP with JWT access tokens and refresh-token rotation;
+- an assigned-application launcher with the Vacation placeholder.
 
-Vacation Management and other business modules are not implemented yet.
+Vacation requests, balances, and other business modules are not implemented yet.
 
 ## Prerequisites
 
@@ -151,6 +152,8 @@ Migration `002_identity_v1.sql` creates six Authentication MVP tables and seeds:
 
 The plaintext admin password is read from `.env`, hashed in migrator memory, and never written to SQL, logs, or the database. Change `ADMIN_INITIAL_PASSWORD` from its placeholder before running migrations.
 
+Migration `003_application_access.sql` creates `core.applications` and `identity.user_applications`, seeds the active Vacation application, and assigns it to the existing administrator. The runtime role receives read-only access to the application catalog and assignments; assignment writes remain owner-controlled.
+
 Build the runner without applying migrations:
 
 ```powershell
@@ -211,7 +214,11 @@ npm run dev
 | API information | <http://localhost:5000/api/v1/system/info> |
 | Portal | <http://localhost:3000> |
 
-The Portal opens at the login page and redirects authenticated users to the dashboard.
+The current Portal flow is:
+
+`Login → assigned applications → Vacation`
+
+The Portal opens at the login page, redirects authenticated users to the dashboard, and displays only active applications assigned by the API. The Vacation card opens the protected `/vacation` placeholder.
 
 ## Validate Authentication MVP
 
@@ -237,6 +244,11 @@ Invoke-RestMethod `
   -WebSession $session
 
 Invoke-RestMethod `
+  -Uri "http://localhost:5000/api/v1/me/applications" `
+  -Headers $headers `
+  -WebSession $session
+
+Invoke-RestMethod `
   -Uri "http://localhost:5000/api/v1/auth/refresh" `
   -Method Post `
   -WebSession $session
@@ -249,6 +261,7 @@ Invoke-RestMethod `
 ```
 
 The login response contains a short-lived JWT access token. The refresh token is received as an HttpOnly cookie and is not exposed to Portal JavaScript or browser storage.
+The applications response for the seeded administrator contains exactly one active item: `vacation`, routed to `/vacation`.
 
 ## Validate builds
 

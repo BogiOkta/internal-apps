@@ -75,6 +75,12 @@ Each endpoint has:
 - documented success and error responses;
 - tests for HTTP, authorization, and contract behavior.
 
+Current platform-access endpoint:
+
+| Endpoint | Authentication | Contract |
+|---|---|---|
+| `GET /api/v1/me/applications` | Required | Returns the active applications assigned to the current JWT subject, ordered by display order and name. It accepts no user identifier and exposes only application public IDs. |
+
 ## 4. DTO Conventions
 
 Transport DTOs are distinct from database records and domain entities.

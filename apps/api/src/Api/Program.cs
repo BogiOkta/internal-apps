@@ -1,6 +1,7 @@
 using System.Text;
 using System.Reflection;
 using DotNetEnv;
+using InternalApps.Api.Applications;
 using InternalApps.Api.Authentication;
 using InternalApps.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -20,6 +21,7 @@ var dataSource = RuntimeConfiguration.CreateDataSource();
 builder.Services.AddProblemDetails();
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(dataSource);
+builder.Services.AddScoped<ApplicationRepository>();
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services
@@ -76,6 +78,7 @@ app.MapGet("/api/v1/system/info", (IHostEnvironment environment) =>
 });
 
 app.MapAuthenticationEndpoints();
+app.MapApplicationEndpoints();
 
 app.Run();
 
