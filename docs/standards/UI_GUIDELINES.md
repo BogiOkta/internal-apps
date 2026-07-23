@@ -32,6 +32,21 @@ They may not:
 - use frontend permissions as security;
 - create module-specific design systems.
 
+### 1.1 Internal Apps UI identity
+
+The Portal uses familiar patterns from Microsoft productivity software without copying Microsoft branding, proprietary icons, or exact product layouts. Business utility takes priority over decoration.
+
+Permanent direction:
+
+- use one consistent authenticated shell and predictable navigation;
+- keep typography compact, readable, and suitable for dense business data;
+- treat tables, forms, calendars, and lists as primary working surfaces;
+- use cards selectively for launchers and concise summaries, not as the default CRUD layout;
+- place commands consistently and keep their labels explicit;
+- derive application navigation from the assigned-applications API;
+- preserve keyboard operation, visible focus, semantic structure, and sufficient contrast;
+- use neutral working surfaces, restrained blue accents, subtle borders, and minimal shadow.
+
 ## 2. Application Layout
 
 Authenticated pages use this consistent structure:
@@ -59,7 +74,34 @@ Authenticated pages use this consistent structure:
 
 The root authenticated layout owns the shell. Module pages provide page content and optional breadcrumb/navigation metadata; they do not render another sidebar or topbar.
 
-### 2.1 Sidebar
+### 2.1 Current authenticated shell
+
+`src/components/app-shell.tsx` is the shared authenticated shell used by Dashboard and Vacation. It:
+
+- resolves the existing authentication session and redirects unauthenticated users to `/login`;
+- loads assigned applications once from `GET /api/v1/me/applications`;
+- renders desktop sidebar navigation and a mobile navigation drawer from the same data;
+- provides page title, optional description, current-user summary, and logout;
+- exposes application loading, failure, empty, and loaded states to page content without a global store.
+
+Dashboard is always a platform navigation item. Application links and routes come from the assigned-applications response and are never inferred from username or role. Desktop and mobile navigation use the same active-route rules and close the mobile drawer after navigation.
+
+Business pages follow this hierarchy:
+
+1. Page title and context.
+2. Command bar, when commands exist.
+3. Filters or secondary navigation, when needed.
+4. Main working surface.
+
+The shell provides optional command-bar and secondary-navigation regions so pages align these areas consistently without rendering empty placeholders. Within a command bar:
+
+- create/new is placed on the left;
+- edit and related actions follow the primary action;
+- search, filter, and export are placed on the right when applicable;
+- unavailable commands use an explicit disabled state;
+- actions that do not exist are not shown as interactive previews.
+
+### 2.2 Sidebar
 
 - Group items by platform area or module.
 - Use one Lucide icon per primary item.
@@ -69,7 +111,7 @@ The root authenticated layout owns the shell. Module pages provide page content 
 - Collapse to an off-canvas navigation on narrow screens.
 - Keep administration in the same sidebar, shown only with relevant permissions.
 
-### 2.2 Page headers
+### 2.3 Page headers
 
 Each page has one visible `h1`. Put the primary action at the end of the page header on desktop and in an accessible, usable location on smaller screens.
 
