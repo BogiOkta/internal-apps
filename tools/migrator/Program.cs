@@ -50,6 +50,7 @@ try
     var upgrader = DeployChanges.To
         .PostgresqlDatabase(connectionString)
         .WithScripts(scripts)
+        .WithTransactionPerScript()
         .LogToConsole()
         .Build();
 

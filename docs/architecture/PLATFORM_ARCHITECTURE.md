@@ -158,7 +158,7 @@ Keep this structure lightweight. CQRS frameworks, MediatR, event buses, generic 
 - Schema or reference-data changes use the next sequential migration.
 - Migration scripts must be deterministic, reviewable, and safe for the supported upgrade path.
 - Data-moving migrations must state and verify preservation assumptions.
-- Multi-statement PostgreSQL migrations require an explicitly defined and validated DbUp transaction strategy.
+- DbUp executes each migration script and its journal entry in one transaction. Multi-statement scripts must remain transaction-compatible; commands that cannot run in a transaction require a separately reviewed migration strategy before they are introduced.
 - Runtime roles receive only the schema and table privileges required by implemented use cases.
 - Read-only domain data remains read-only for the runtime role until an approved write use case exists.
 - Owner/migration credentials are never used by the running API.

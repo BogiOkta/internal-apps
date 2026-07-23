@@ -489,7 +489,6 @@ The `vacation` schema is owned exclusively by the Vacation Management module. Em
 
 ```mermaid
 erDiagram
-    companies ||--o{ leave_types : configures
     companies ||--o{ public_holidays : observes
     users ||--o{ leave_requests : requests
     leave_types ||--o{ leave_requests : classifies
@@ -509,9 +508,27 @@ erDiagram
 
 #### 7.2.1 Leave types
 
-`leave_types` defines module-owned leave categories such as annual or other approved types. Logical attributes include stable identity, company scope, display name/code, active status, and policy-related classification required by the Vacation specification.
+`leave_types` defines Vacation-owned leave categories. Its logical attributes
+are an internal identity, public identifier, stable case-insensitive technical
+code, explicit Serbian and English names and optional descriptions, optional
+calendar color, balance and approval behavior flags, active status, display
+order, and creation and modification timestamps.
 
-Historical requests retain their meaning when a leave type is retired. Retirement prevents new use but does not erase old relationships. Policy changes that alter historical interpretation require versioning or a snapshot strategy documented by the module.
+The technical code is stable. Localized values use explicit language columns
+rather than translation tables or generic lookup metadata. Historical records
+will retain their leave type reference if a type is later deactivated;
+deactivation prevents new selection, and physical deletion is not part of the
+initial behavior.
+
+The runtime role may set the code when creating a leave type but cannot update
+it afterward. Code corrections require a reviewed migration or an approved
+owner-level administrative operation. Application updates explicitly set
+`updated_at = now()`; the database supplies initial timestamp defaults and does
+not use an automatic update trigger.
+
+Migration `006_vacation_leave_types.sql` introduces only this reference table
+and its initial values. It does not introduce leave requests, balances, or
+workflow configuration.
 
 #### 7.2.2 Leave requests
 
@@ -884,7 +901,11 @@ Migration review verifies:
 
 Applied migrations are never edited. A correction is a new migration.
 
-Technical follow-up: explicitly define and validate the DbUp transaction strategy for multi-statement PostgreSQL migrations.
+The DbUp runner uses transaction-per-script semantics. All statements in one
+migration and its journal entry succeed or roll back together. Migration
+scripts must therefore remain compatible with PostgreSQL transactions.
+Commands that cannot execute inside a transaction require a separately
+reviewed migration strategy before they are introduced.
 
 ---
 
