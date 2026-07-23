@@ -5,6 +5,7 @@
 | Status | Canonical architecture reference |
 | Scope | Portal, API, Core Platform, business modules, PostgreSQL, and supporting processes |
 | Governing document | [`../PROJECT_INSTRUCTIONS.md`](../PROJECT_INSTRUCTIONS.md) |
+| Canonical structural guide | [`PLATFORM_ARCHITECTURE.md`](PLATFORM_ARCHITECTURE.md) |
 | Architecture style | Modular monolith |
 | Deployment units | One Next.js Portal, one ASP.NET Core API, one PostgreSQL database |
 | Initial business module | Vacation Management |
