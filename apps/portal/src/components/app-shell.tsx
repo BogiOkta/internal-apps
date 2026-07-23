@@ -9,6 +9,13 @@ import {
   type SVGProps,
 } from "react";
 import { useAuth } from "@/components/auth-provider";
+import {
+  localeDisplayNames,
+  localizeApplication,
+  supportedLocales,
+  type SupportedLocale,
+} from "@/i18n/translations";
+import { useTranslations } from "@/i18n/use-translations";
 import { getAssignedApplications } from "@/services/applications";
 import type { AssignedApplication } from "@/types/application";
 import type { CurrentUser } from "@/types/auth";
@@ -49,6 +56,7 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const { accessToken, user, isLoading, logout } = useAuth();
+  const { t } = useTranslations();
   const [applications, setApplications] = useState<AssignedApplication[]>([]);
   const [applicationsError, setApplicationsError] = useState(false);
   const [areApplicationsLoading, setAreApplicationsLoading] = useState(true);
@@ -156,13 +164,15 @@ export function AppShell({
             >
               IA
             </span>
-            Internal Apps
+            {t("common.shortProductName")}
           </Link>
           <button
             type="button"
             aria-controls="mobile-navigation"
             aria-expanded={isMobileMenuOpen}
-            aria-label={isMobileMenuOpen ? "Close navigation" : "Open navigation"}
+            aria-label={
+              isMobileMenuOpen ? t("navigation.close") : t("navigation.open")
+            }
             onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
           >
@@ -174,7 +184,7 @@ export function AppShell({
           <div className="fixed inset-0 z-40 lg:hidden">
             <button
               type="button"
-              aria-label="Close navigation"
+              aria-label={t("navigation.close")}
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute inset-0 bg-slate-950/30"
             />
@@ -218,7 +228,7 @@ export function AppShell({
 
         {commandBar && (
           <section
-            aria-label="Page commands"
+            aria-label={t("navigation.pageCommands")}
             className="border-b border-slate-200 bg-white"
           >
             <div className="mx-auto flex min-h-12 max-w-[1600px] items-center px-4 py-2 sm:px-6 lg:px-7">
@@ -229,7 +239,7 @@ export function AppShell({
 
         {secondaryNavigation && (
           <section
-            aria-label="Page navigation"
+            aria-label={t("navigation.pageNavigation")}
             className="border-b border-slate-200 bg-white"
           >
             <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-7">
@@ -256,7 +266,8 @@ function Navigation({
   onLogout,
   user,
 }: NavigationProps) {
-  const primaryRole = user.roles[0] ?? "No role assigned";
+  const { locale, setLocale, t } = useTranslations();
+  const primaryRole = user.roles[0] ?? t("shell.noRole");
 
   return (
     <>
@@ -274,35 +285,40 @@ function Navigation({
           </span>
           <span>
             <span className="block text-[15px] font-semibold tracking-tight text-slate-950">
-              Internal Apps
+              {t("common.shortProductName")}
             </span>
-            <span className="block text-[11px] text-slate-500">Company Portal</span>
+            <span className="block text-[11px] text-slate-500">
+              {t("common.companyPortal")}
+            </span>
           </span>
         </Link>
       </div>
 
-      <nav aria-label="Primary navigation" className="flex-1 overflow-y-auto px-3 py-4">
+      <nav
+        aria-label={t("navigation.primary")}
+        className="flex-1 overflow-y-auto px-3 py-4"
+      >
         <NavLink
           href="/dashboard"
           isActive={currentPath === "/dashboard"}
-          label="Dashboard"
+          label={t("navigation.dashboard")}
           icon={<DashboardIcon />}
           onNavigate={onNavigate}
         />
 
         <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-          Applications
+          {t("navigation.applications")}
         </p>
 
         {areApplicationsLoading && (
           <p role="status" className="px-3 py-2 text-xs text-slate-500">
-            Loading applications…
+            {t("shell.loadingApplications")}
           </p>
         )}
 
         {!areApplicationsLoading && applicationsError && (
           <p className="px-3 py-2 text-xs leading-5 text-red-700">
-            Applications are temporarily unavailable.
+            {t("shell.applicationsUnavailable")}
           </p>
         )}
 
@@ -310,25 +326,48 @@ function Navigation({
           !applicationsError &&
           applications.length === 0 && (
             <p className="px-3 py-2 text-xs leading-5 text-slate-500">
-              No applications assigned.
+              {t("shell.noApplications")}
             </p>
           )}
 
         {!areApplicationsLoading &&
           !applicationsError &&
-          applications.map((application) => (
-            <NavLink
-              key={application.publicId}
-              href={application.route}
-              isActive={isRouteActive(currentPath, application.route)}
-              label={application.name}
-              icon={<ApplicationIcon code={application.code} />}
-              onNavigate={onNavigate}
-            />
-          ))}
+          applications.map((application) => {
+            const localizedApplication = localizeApplication(application, t);
+
+            return (
+              <NavLink
+                key={application.publicId}
+                href={application.route}
+                isActive={isRouteActive(currentPath, application.route)}
+                label={localizedApplication.name}
+                icon={<ApplicationIcon code={application.code} />}
+                onNavigate={onNavigate}
+              />
+            );
+          })}
       </nav>
 
       <div className="border-t border-slate-300 p-3">
+        <label className="mb-2 block">
+          <span className="mb-1 block text-[11px] font-medium text-slate-600">
+            {t("language.label")}
+          </span>
+          <select
+            aria-label={t("language.label")}
+            value={locale}
+            onChange={(event) =>
+              setLocale(event.target.value as SupportedLocale)
+            }
+            className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          >
+            {supportedLocales.map((supportedLocale) => (
+              <option key={supportedLocale} value={supportedLocale}>
+                {localeDisplayNames[supportedLocale]}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
           <p className="truncate text-sm font-medium text-slate-900">
             {user.displayName}
@@ -344,7 +383,7 @@ function Navigation({
           className="mt-2 flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <LogoutIcon />
-          {isLoggingOut ? "Logging out…" : "Logout"}
+          {isLoggingOut ? t("shell.loggingOut") : t("shell.logout")}
         </button>
       </div>
     </>
@@ -384,10 +423,12 @@ function NavLink({
 }
 
 function PortalLoadingState() {
+  const { t } = useTranslations();
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50">
       <p role="status" className="text-sm text-slate-600">
-        Loading portal…
+        {t("shell.loadingPortal")}
       </p>
     </main>
   );

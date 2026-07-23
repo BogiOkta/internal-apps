@@ -1,79 +1,100 @@
 "use client";
 
-import { AppShell } from "@/components/app-shell";
+import Link from "next/link";
+import { OpenIcon } from "@/components/app-shell";
+import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
+import { useTranslations } from "@/i18n/use-translations";
 
-export default function VacationPage() {
-  const plannedAreas = [
-    {
-      name: "Employees",
-      description: "Employee records and leave-related context.",
-    },
-    {
-      name: "Requests",
-      description: "Create, review, and approve absence requests.",
-    },
-    {
-      name: "Calendar",
-      description: "Team availability and approved absence overview.",
-    },
-    {
-      name: "Configuration",
-      description: "Vacation types and module settings.",
-    },
+export default function VacationOverviewPage() {
+  const { t } = useTranslations();
+
+  const statisticPlaceholders = [
+    t("vacation.overview.employeeStatistics"),
+    t("vacation.overview.requestStatistics"),
+    t("vacation.overview.availabilityStatistics"),
   ];
 
   return (
-    <AppShell
-      title="Vacation"
-      description="Upravljanje godišnjim odmorima i odsustvima"
+    <VacationWorkspace
+      title={t("vacation.title")}
+      description={t("vacation.description")}
     >
-      <section className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">
-                Module foundation
-              </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">
-                Planned Vacation workspace
-              </h2>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                Employee and leave-management functions will be introduced in
-                upcoming sprints using this shared business-page structure.
-              </p>
-            </div>
-            <span className="w-fit rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">
-              No actions available yet
-            </span>
-          </div>
-        </div>
+      <div className="space-y-6">
+        <section>
+          <h2 className="text-lg font-semibold text-slate-950">
+            {t("vacation.overview.heading")}
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            {t("vacation.overview.description")}
+          </p>
+        </section>
 
-        <div>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:px-6">
-            <span>Area</span>
-            <span className="hidden sm:block">Purpose</span>
-            <span>Status</span>
-          </div>
-          <ul aria-label="Planned Vacation areas" className="divide-y divide-slate-200">
-            {plannedAreas.map((area) => (
-              <li
-                key={area.name}
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-5 py-3.5 sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:items-center sm:px-6"
+        <section aria-labelledby="quick-statistics-heading">
+          <h2
+            id="quick-statistics-heading"
+            className="text-sm font-semibold text-slate-900"
+          >
+            {t("vacation.overview.quickStatistics")}
+          </h2>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {statisticPlaceholders.map((label) => (
+              <div
+                key={label}
+                className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm"
               >
-                <span className="text-sm font-medium text-slate-900">
-                  {area.name}
-                </span>
-                <span className="col-span-2 text-sm leading-5 text-slate-600 sm:col-span-1">
-                  {area.description}
-                </span>
-                <span className="row-start-1 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 sm:row-auto">
-                  Upcoming
-                </span>
-              </li>
+                <p className="text-sm font-medium text-slate-900">{label}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  {t("vacation.overview.statisticsPlaceholder")}
+                </p>
+              </div>
             ))}
-          </ul>
+          </div>
+        </section>
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+          <section
+            aria-labelledby="recent-activity-heading"
+            className="rounded-lg border border-slate-300 bg-white shadow-sm"
+          >
+            <div className="border-b border-slate-200 px-5 py-3.5">
+              <h2
+                id="recent-activity-heading"
+                className="text-sm font-semibold text-slate-900"
+              >
+                {t("vacation.overview.recentActivity")}
+              </h2>
+            </div>
+            <p className="px-5 py-8 text-sm leading-6 text-slate-500">
+              {t("vacation.overview.activityPlaceholder")}
+            </p>
+          </section>
+
+          <section
+            aria-labelledby="shortcuts-heading"
+            className="rounded-lg border border-slate-300 bg-white p-5 shadow-sm"
+          >
+            <h2
+              id="shortcuts-heading"
+              className="text-sm font-semibold text-slate-900"
+            >
+              {t("vacation.overview.shortcuts")}
+            </h2>
+            <h3 className="mt-4 text-base font-semibold text-slate-950">
+              {t("vacation.overview.employeeShortcut")}
+            </h3>
+            <p className="mt-1 text-sm leading-5 text-slate-600">
+              {t("vacation.overview.employeeShortcutDescription")}
+            </p>
+            <Link
+              href="/vacation/employees"
+              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+            >
+              {t("vacation.overview.openEmployees")}
+              <OpenIcon className="h-4 w-4" />
+            </Link>
+          </section>
         </div>
-      </section>
-    </AppShell>
+      </div>
+    </VacationWorkspace>
   );
 }

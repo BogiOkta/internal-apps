@@ -281,9 +281,27 @@ Every create, update, delete, restore, approval, rejection, cancellation, assign
 
 Required audit and business writes use the same transaction. Endpoint handlers do not write audit tables directly.
 
-## 11. Vacation Endpoint Examples
+## 11. Organization and Vacation Endpoint Examples
 
-Recommended initial contract surface:
+Current read-only employee-directory endpoints:
+
+| Endpoint | Query parameters | Behavior |
+|---|---|---|
+| `GET /api/v1/organization/departments` | `search`, `sort` | Returns active departments ordered by name by default. |
+| `GET /api/v1/organization/employees` | `search`, `departmentPublicId`, `sort` | Returns employees with department display data; filtering uses the department public UUID. |
+
+Both endpoints require authentication, return arrays without a response envelope, and expose public UUIDs only. Search is case-insensitive and limited to 100 characters. Sort values are endpoint allowlists; prefix a supported field with `-` for descending order.
+
+Example:
+
+```http
+GET /api/v1/organization/employees?search=ana&departmentPublicId=1e9af112-5130-4545-bfd4-8cc33b0ae083&sort=name
+Authorization: Bearer <access-token>
+```
+
+Vacation consumes these Organization endpoints for its current read-only employee directory. Vacation does not expose duplicate employee or department endpoints.
+
+Planned contract naming:
 
 ```text
 GET    /api/v1/vacation/leave-types
@@ -302,7 +320,7 @@ POST   /api/v1/vacation/requests/{publicId}/cancel
 GET    /api/v1/vacation/approvals
 ```
 
-These examples establish naming, not undocumented functionality. The canonical Vacation module specification determines which operations exist and their exact contracts.
+The planned examples establish naming, not implemented functionality. The canonical Vacation module specification determines which operations exist and their exact contracts.
 
 Example creation:
 

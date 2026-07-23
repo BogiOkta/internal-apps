@@ -20,6 +20,7 @@ The Internal Apps Platform uses one PostgreSQL database as its transactional sys
 - `identity` for authentication and authorization;
 - `core` for shared platform services;
 - `audit` for append-only audit records;
+- `organization` for shared employee and department master data;
 - one schema for each business module, beginning with `vacation`.
 
 The API is the only application data-access boundary. Portal users, browsers, business modules in the frontend, and other human users do not connect directly to PostgreSQL.
@@ -33,7 +34,8 @@ flowchart TB
         Identity["identity<br/>users · roles · permissions · sessions"]
         Core["core<br/>shared platform services"]
         Audit["audit<br/>append-only events"]
-        Vacation["vacation<br/>initial business module"]
+        Organization["organization<br/>employees · departments"]
+        Vacation["vacation<br/>leave-management data"]
         Future["future module schemas<br/>assets · fleet · helpdesk · expenses · travel · documents · visitors"]
     end
 
@@ -41,6 +43,7 @@ flowchart TB
     API --> Identity
     API --> Core
     API --> Audit
+    API --> Organization
     API --> Vacation
     API --> Future
 ```
@@ -107,6 +110,7 @@ Ownership is not shared. Multiple modules may consume a Core service, but they d
 | `identity` | Core Identity and Access capability | Core | Identity/authorization repositories only |
 | `core` | Named Core Platform capability per table | Core | Owning Core repository only |
 | `audit` | Core Audit capability | Core, append-only | Audit writer only |
+| `organization` | Organization domain | Shared business domain | Organization repositories only |
 | `vacation` | Vacation Management module | Business module | Vacation repositories only |
 | `assets` | Future Assets module | Business module | Assets repositories only |
 | `fleet` | Future Fleet module | Business module | Fleet repositories only |
@@ -139,6 +143,20 @@ Examples:
 - Travel schedules a reminder through Background Jobs; it does not manipulate job attempts.
 
 Core services expose stable, purpose-specific contracts. They protect schema details from becoming dependencies in every module.
+
+### 2.4 Domain map
+
+```mermaid
+flowchart LR
+    Identity["Identity"] --> Organization["Organization"]
+    Organization --> Vacation["Vacation"]
+    Organization --> Assets["Assets"]
+    Organization --> Fleet["Fleet"]
+    Organization --> HelpDesk["Help Desk"]
+    Organization --> Other["Other applications"]
+```
+
+Identity establishes platform users and access. Organization owns shared employee and department master data. Business applications consume Organization read models without taking ownership of those records.
 
 ---
 
@@ -443,9 +461,31 @@ An audit event retains meaningful actor attribution even when the user later bec
 
 ---
 
-## 7. Vacation Schema
+## 7. Organization and Vacation Domains
 
-The `vacation` schema is owned exclusively by the Vacation Management module. It establishes the module pattern for business data without moving vacation rules into Core.
+### 7.1 Organization schema
+
+The `organization` schema owns shared organizational master data consumed by Vacation and future business applications.
+
+```mermaid
+erDiagram
+    departments ||--o{ employees : contains
+```
+
+| Entity | Purpose | Principal relationships | Ownership notes |
+|---|---|---|---|
+| `departments` | Defines the current organizational units used to classify employees. | Has many employees. | Organization owns its meaning and lifecycle. |
+| `employees` | Provides the minimal shared employee directory. | Belongs to one department. | Organization owns the record; internal bigint keys are never exposed. |
+
+`departments` uses a stable code, display name, active flag, public UUID, and timestamps. `employees` uses an employee number, name, email, department reference, employment status, public UUID, and timestamps. The employee-to-department foreign key stays inside the Organization boundary.
+
+The current API is read-only and the runtime database role receives only schema usage and table read access. Payroll, recruitment, performance management, employee documents, positions, offices, cost centers, and manager hierarchy are outside the current model.
+
+Migration `004_vacation_employees.sql` originally introduced both tables in the `vacation` schema. Because applied migrations are immutable historical records, migration `005_organization_domain.sql` moves the same table objects into `organization`. The final schema state is authoritative; migration 004 is not rewritten or removed.
+
+### 7.2 Vacation schema
+
+The `vacation` schema is owned exclusively by the Vacation Management module. Employees and departments are Organization references and are not Vacation-owned data.
 
 ```mermaid
 erDiagram
@@ -459,29 +499,27 @@ erDiagram
     users ||--o{ leave_approvals : decides
 ```
 
-### 7.1 Entity catalog
+| Entity | Purpose | Ownership notes |
+|---|---|---|
+| `leave_types` | Defines available categories of leave. | Vacation owns meaning and lifecycle. |
+| `leave_requests` | Represents an employee request and its workflow state. | Vacation workflow root. |
+| `leave_balances` | Represents leave entitlement and usage for a period. | Vacation owns calculations and concurrency. |
+| `leave_approvals` | Records Vacation approval steps and decisions. | Vacation owns workflow history. |
+| `public_holidays` | Defines holidays used in leave calculations. | Vacation-owned reference data unless generalized by ADR. |
 
-| Entity | Purpose | Principal relationships | Ownership notes |
-|---|---|---|---|
-| `leave_types` | Defines available categories of leave and their configurable characteristics. | Company-scoped; referenced by requests and balances. | Vacation owns meaning and lifecycle. |
-| `leave_requests` | Represents an employee request and its workflow state. | Requester, leave type, company context; has approvals. | Aggregate/workflow root for request processing. |
-| `leave_balances` | Represents leave entitlement, consumption, and remaining balance for a user, type, and period. | User, leave type, balance period. | Vacation owns calculations and concurrency. |
-| `leave_approvals` | Records approval steps, assignees, decisions, and sequence. | Belongs to one leave request; references an approver. | Preserves workflow decision history. |
-| `public_holidays` | Defines company/jurisdiction holidays used in leave calculations. | Company and calendar context. | Reference data owned by Vacation unless later generalized by ADR. |
-
-### 7.2 Leave types
+#### 7.2.1 Leave types
 
 `leave_types` defines module-owned leave categories such as annual or other approved types. Logical attributes include stable identity, company scope, display name/code, active status, and policy-related classification required by the Vacation specification.
 
 Historical requests retain their meaning when a leave type is retired. Retirement prevents new use but does not erase old relationships. Policy changes that alter historical interpretation require versioning or a snapshot strategy documented by the module.
 
-### 7.3 Leave requests
+#### 7.2.2 Leave requests
 
 `leave_requests` is the central Vacation workflow record. It relates a requesting user to a leave type, requested date/partial-day interval, workflow status, and version for concurrency.
 
 The record stores authoritative requested facts and current state. State changes occur through application use cases, not arbitrary repository updates. Comments, attachments, notifications, and audit events remain in Core schemas and refer to the request by public identifier.
 
-### 7.4 Leave balances
+#### 7.2.3 Leave balances
 
 `leave_balances` represents a user’s entitlement and usage for a leave type and defined balance period. The logical key must prevent duplicate active balances for the same user, leave type, and period.
 
@@ -489,13 +527,13 @@ Balance updates are concurrency-sensitive. The module defines whether values are
 
 Adjustments that require independent business history should not be hidden as unexplained overwrites. If adjustment records become a requirement, they must be introduced as a documented Vacation-owned entity rather than encoded in audit details alone.
 
-### 7.5 Leave approvals
+#### 7.2.4 Leave approvals
 
 `leave_approvals` models approval steps for one request. It preserves approver assignment, sequence or stage, decision, decision time, and required comment/reason according to workflow rules.
 
 Approval history is business data, not merely audit data. The current request state may summarize the workflow, while approval records explain which step produced it. Reassignment and delegation must remain reconstructable according to the module specification.
 
-### 7.6 Public holidays
+#### 7.2.5 Public holidays
 
 `public_holidays` represents dates excluded or specially treated in leave calculations for a company or applicable calendar. Logical uniqueness prevents duplicate definitions for the same calendar context and date.
 
@@ -845,6 +883,8 @@ Migration review verifies:
 - updated logical documentation.
 
 Applied migrations are never edited. A correction is a new migration.
+
+Technical follow-up: explicitly define and validate the DbUp transaction strategy for multi-statement PostgreSQL migrations.
 
 ---
 

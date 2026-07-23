@@ -47,6 +47,22 @@ Permanent direction:
 - preserve keyboard operation, visible focus, semantic structure, and sufficient contrast;
 - use neutral working surfaces, restrained blue accents, subtle borders, and minimal shadow.
 
+### 1.2 Frontend localization
+
+Source code, database objects, routes, identifiers, application codes, and API contracts remain in English. User-visible Portal text must use typed frontend translation keys.
+
+Current locale rules:
+
+- supported locales are Serbian Latin (`sr-Latn`) and English (`en`);
+- Serbian Latin is the default;
+- the selected locale is stored locally in the browser and requires no page reload;
+- language selectors use language names (`Srpski`, `English`), never country flags;
+- known application codes may override only API-provided display name and description;
+- unknown application codes retain their API-provided display values;
+- future pages must not hardcode visible labels, messages, empty states, or navigation text.
+
+The Portal maps `sr-Latn` to `sr-Latn-RS` and `en` to `en-GB` when a browser locale is required for future `Intl` formatting. Formatting helpers are added only when a screen needs them.
+
 ## 2. Application Layout
 
 Authenticated pages use this consistent structure:
@@ -101,7 +117,13 @@ The shell provides optional command-bar and secondary-navigation regions so page
 - unavailable commands use an explicit disabled state;
 - actions that do not exist are not shown as interactive previews.
 
-### 2.2 Sidebar
+### 2.2 Business workspaces
+
+An application may add compact secondary navigation inside the shared shell. The navigation is owned by that application, remains responsive and keyboard accessible, and marks the active section. It must not duplicate or replace global application navigation.
+
+Vacation establishes the first workspace pattern: Overview and Employees are functional sections; future sections are visibly disabled and labeled as coming soon. Read-only functionality is delivered before edit workflows when that provides usable business value.
+
+### 2.3 Sidebar
 
 - Group items by platform area or module.
 - Use one Lucide icon per primary item.
@@ -111,7 +133,7 @@ The shell provides optional command-bar and secondary-navigation regions so page
 - Collapse to an off-canvas navigation on narrow screens.
 - Keep administration in the same sidebar, shown only with relevant permissions.
 
-### 2.3 Page headers
+### 2.4 Page headers
 
 Each page has one visible `h1`. Put the primary action at the end of the page header on desktop and in an accessible, usable location on smaller screens.
 
@@ -277,6 +299,8 @@ Do not fetch all records to sort or filter in the browser.
 - Confirm destructive or irreversible actions.
 - Keep the row accessible by keyboard.
 - Do not make both the whole row and nested controls conflicting click targets.
+
+The Vacation employee directory is the reference read-only list pattern: command bar first, search and department filter on the right, compact sortable columns, visible loading/empty/error states, and selection by pointer or keyboard. It consumes shared Organization data; the Vacation UI does not imply ownership of employees or departments. Selection highlights a row but does not imply an edit action. Disabled create and export commands communicate the established placement without exposing an incomplete workflow.
 
 ### 7.3 Narrow screens
 

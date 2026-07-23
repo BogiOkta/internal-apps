@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/auth-provider";
+import { LocaleProvider } from "@/i18n/locale-provider";
+import { defaultLocale, translations } from "@/i18n/translations";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Internal Apps Platform",
-  description: "Internal business applications portal",
+  title: translations[defaultLocale]["common.productName"],
+  description: translations[defaultLocale]["common.metaDescription"],
 };
 
 export default function RootLayout({
@@ -13,9 +15,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="sr-Latn">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <LocaleProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

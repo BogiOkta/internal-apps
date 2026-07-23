@@ -5,19 +5,23 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "@/components/auth-provider";
+import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
 
-const loginSchema = z.object({
-  username: z.string().trim().min(1, "Username is required."),
-  password: z.string().min(1, "Password is required."),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginForm = {
+  username: string;
+  password: string;
+};
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, isLoading, login } = useAuth();
+  const { t } = useTranslations();
   const [formError, setFormError] = useState<string | null>(null);
+  const loginSchema = z.object({
+    username: z.string().trim().min(1, t("login.usernameRequired")),
+    password: z.string().min(1, t("login.passwordRequired")),
+  });
   const {
     register,
     handleSubmit,
@@ -53,8 +57,8 @@ export default function LoginPage() {
     } catch (error) {
       setFormError(
         error instanceof ApiError
-          ? error.message
-          : "Login failed. Please try again.",
+          ? t("login.authenticationError")
+          : t("login.genericError"),
       );
     }
   });
@@ -63,12 +67,12 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
-          Company Portal
+          {t("common.companyPortal")}
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-          Internal Apps Platform
+          {t("common.productName")}
         </h1>
-        <p className="mt-2 text-slate-600">Sign in to continue.</p>
+        <p className="mt-2 text-slate-600">{t("login.instruction")}</p>
 
         <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
           {formError && (
@@ -85,7 +89,7 @@ export default function LoginPage() {
               htmlFor="username"
               className="block text-sm font-medium text-slate-800"
             >
-              Username
+              {t("login.username")}
             </label>
             <input
               id="username"
@@ -107,7 +111,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="block text-sm font-medium text-slate-800"
             >
-              Password
+              {t("login.password")}
             </label>
             <input
               id="password"
@@ -130,7 +134,7 @@ export default function LoginPage() {
             disabled={isSubmitting || isLoading}
             className="w-full rounded-lg bg-blue-700 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Signing in…" : "Login"}
+            {isSubmitting ? t("login.submitting") : t("login.submit")}
           </button>
         </form>
       </section>

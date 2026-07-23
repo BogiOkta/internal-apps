@@ -4,6 +4,7 @@ using DotNetEnv;
 using InternalApps.Api.Applications;
 using InternalApps.Api.Authentication;
 using InternalApps.Api.Infrastructure;
+using InternalApps.Api.Modules.Organization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,6 +24,7 @@ builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(dataSource);
 builder.Services.AddScoped<ApplicationRepository>();
 builder.Services.AddScoped<AuthRepository>();
+builder.Services.AddScoped<OrganizationRepository>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -79,6 +81,7 @@ app.MapGet("/api/v1/system/info", (IHostEnvironment environment) =>
 
 app.MapAuthenticationEndpoints();
 app.MapApplicationEndpoints();
+app.MapOrganizationEndpoints();
 
 app.Run();
 
