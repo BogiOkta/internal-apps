@@ -153,6 +153,20 @@ internal sealed class LeaveRequestService(
         Guid publicId, CancellationToken cancellationToken) =>
         repository.ListHistoryAsync(publicId, cancellationToken);
 
+    public async Task<(LeaveRequestOperationStatus Status,
+        IReadOnlyList<LeaveRequestHistoryResponse>? History)> ListOwnHistoryAsync(
+        HttpContext context, Guid publicId, CancellationToken cancellationToken)
+    {
+        var current = await ResolveActiveEmployeeAsync(context, cancellationToken);
+        if (current.Error is not null) return (current.Error.Value, null);
+        var request = await repository.GetAsync(
+            publicId, current.Employee!.PublicId, false, cancellationToken);
+        if (request is null)
+            return (LeaveRequestOperationStatus.RequestNotFound, null);
+        return (LeaveRequestOperationStatus.Success,
+            await repository.ListHistoryAsync(publicId, cancellationToken));
+    }
+
     public Task<LeaveRequestOperationResult> ApproveAsync(
         HttpContext context, Guid publicId, LeaveRequestComment command,
         string? acceptLanguage, CancellationToken cancellationToken) =>

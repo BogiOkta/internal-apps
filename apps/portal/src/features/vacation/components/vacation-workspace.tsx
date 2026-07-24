@@ -58,13 +58,11 @@ export function VacationWorkspace({
       : []),
     {
       label: t("vacation.workspace.requests"),
-      disabled: true,
-      badge: t("common.comingSoon"),
+      href: "/vacation/requests",
     },
     {
       label: t("vacation.workspace.calendar"),
-      disabled: true,
-      badge: t("common.comingSoon"),
+      href: "/vacation#calendar",
     },
   ];
 

@@ -142,6 +142,25 @@ request, optional balance mutation, append-only history, and platform audit on
 one connection and transaction. Failed validation, lookup, conflict, or
 transition attempts write no successful history or audit record.
 
-No Leave Request Portal workflow, public-holiday calendar, notification,
+No Administrator approval Portal, public-holiday calendar, notification,
 background job, manager hierarchy, configurable workflow, or physical delete
 is implemented.
+
+### Employee Portal
+
+The employee Portal uses `/vacation` as the operational dashboard,
+`/vacation/requests` for the complete own-request list,
+`/vacation/requests/new` for creation, and
+`/vacation/requests/{requestId}` for details, history, and eligible
+cancellation. Sprint 05D adds no Administrator approval screens.
+
+The form mirrors date-order, same-year, note-length, and Monday-to-Friday rules
+for immediate feedback. Its working-day value is explicitly provisional and is
+never submitted; the API calculation remains authoritative. Balance guidance
+uses the matching persisted Leave Type/year balance and does not invent a
+balance for non-balance Leave Types.
+
+Calendar events are generic `AppCalendar` events. Because Vacation API ranges
+are inclusive and FullCalendar all-day ends are exclusive, the adapter adds
+one calendar day to `dateTo` without changing the API value. Unlinked accounts
+receive a dedicated state directing the user to an administrator.

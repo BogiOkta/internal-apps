@@ -21,8 +21,10 @@ The current implemented capabilities are:
   cancellation;
 - inclusive Monday-to-Friday calculation and transactional balance use and
   restoration.
+- employee Portal dashboard, request list, creation, details/history,
+  cancellation, and personal calendar.
 
-Leave Request Portal workflows, public holidays, notifications, and
+Administrator approval Portal workflows, public holidays, notifications, and
 configurable approval workflows are not implemented.
 
 See [`../domain/vacation.md`](../domain/vacation.md) for detailed ownership,

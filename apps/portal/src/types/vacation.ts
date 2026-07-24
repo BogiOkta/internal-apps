@@ -5,6 +5,7 @@ export type LeaveType = {
   description: string | null;
   calendarColor: string | null;
   countsAgainstVacationBalance: boolean;
+  requiresBalance: boolean;
   requiresApproval: boolean;
   isActive: boolean;
   displayOrder: number;
@@ -53,3 +54,78 @@ export type LeaveTypeQuery = {
 };
 
 export const leaveTypesManagePermission = "vacation.leave-types.manage";
+
+export type VacationRequestStatus =
+  | "SUBMITTED"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export type VacationLeaveTypeOption = {
+  publicId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  countsAgainstBalance: boolean;
+  requiresBalance: boolean;
+};
+
+export type VacationRequest = {
+  publicId: string;
+  employeePublicId: string;
+  employeeNumber: string;
+  employeeName: string;
+  departmentPublicId: string;
+  departmentName: string;
+  leaveTypePublicId: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  leaveTypeColor: string | null;
+  dateFrom: string;
+  dateTo: string;
+  workingDays: number;
+  status: VacationRequestStatus;
+  employeeNote: string | null;
+  decisionNote: string | null;
+  submittedAt: string;
+  decidedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VacationRequestHistory = {
+  publicId: string;
+  previousStatus: VacationRequestStatus | null;
+  newStatus: VacationRequestStatus;
+  changedByUserPublicId: string;
+  changedByDisplayName: string;
+  comment: string | null;
+  changedAt: string;
+};
+
+export type VacationBalance = {
+  publicId: string;
+  employeePublicId: string;
+  leaveTypePublicId: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  year: number;
+  entitlementDays: number;
+  carryOverDays: number;
+  adjustmentDays: number;
+  usedDays: number;
+  availableDays: number;
+};
+
+export type CreateVacationRequest = {
+  leaveTypeId: string;
+  dateFrom: string;
+  dateTo: string;
+  note: string | null;
+};
+
+export type CancelVacationRequest = {
+  comment: string | null;
+};

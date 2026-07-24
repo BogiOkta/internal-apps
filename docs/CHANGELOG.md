@@ -1,5 +1,23 @@
 # Internal Apps Platform change history
 
+## 2026-07-24 — Sprint 05D employee Vacation Portal
+
+- Added employee Vacation dashboard, balance and request summaries, request
+  list/detail routes, transition history, controlled request creation, and
+  eligible-request cancellation. No Administrator approval UI was added.
+- Reused the shared `AppCalendar` and `DateRangePicker`; inclusive API end
+  dates are converted to FullCalendar's exclusive all-day event end.
+- Added a provisional Monday-to-Friday estimate and balance-aware guidance
+  while preserving server authority for working days, overlap, and balance.
+- Added localized status, stable Problem Details, retry, empty, loading, and
+  dedicated unlinked-employee states in Serbian Latin and English.
+- Added the ownership-scoped employee history route required by the detail UI;
+  it does not expose another employee's request or alter backend mutations.
+- Validated the employee journey in the browser across desktop and mobile
+  layouts, light and dark appearance, request creation, authoritative working
+  days, detail/history, calendar navigation, and cancellation. The uniquely
+  tagged smoke request remains safely terminal as `CANCELLED`.
+
 ## 2026-07-24 — Sprint 05C Vacation application layer
 
 - Added Dapper repositories and services for employee Leave Request

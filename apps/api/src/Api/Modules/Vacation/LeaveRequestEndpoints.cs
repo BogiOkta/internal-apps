@@ -14,6 +14,7 @@ internal static class LeaveRequestEndpoints
         group.MapGet("/me/leave-types", ListLeaveTypesAsync);
         group.MapGet("/me/requests", ListOwnAsync);
         group.MapGet("/me/requests/{requestId:guid}", GetOwnAsync);
+        group.MapGet("/me/requests/{requestId:guid}/history", ListOwnHistoryAsync);
         group.MapPost("/me/requests", CreateAsync);
         group.MapPost("/me/requests/{requestId:guid}/cancel", CancelOwnAsync);
         group.MapGet("/me/balances", ListBalancesAsync);
@@ -56,6 +57,17 @@ internal static class LeaveRequestEndpoints
         CancellationToken cancellationToken) =>
         ToResult(context, await service.GetOwnAsync(context, requestId,
             context.Request.Headers.AcceptLanguage, cancellationToken));
+
+    private static async Task<IResult> ListOwnHistoryAsync(
+        Guid requestId, HttpContext context, LeaveRequestService service,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.ListOwnHistoryAsync(
+            context, requestId, cancellationToken);
+        return result.Status == LeaveRequestOperationStatus.Success
+            ? Results.Ok(result.History)
+            : Problem(context, result.Status);
+    }
 
     private static async Task<IResult> CreateAsync(
         CreateLeaveRequest request, HttpContext context, LeaveRequestService service,

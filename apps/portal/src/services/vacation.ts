@@ -6,6 +6,12 @@ import type {
   LeaveTypeDetails,
   LeaveTypeQuery,
   UpdateLeaveTypeRequest,
+  CancelVacationRequest,
+  CreateVacationRequest,
+  VacationBalance,
+  VacationLeaveTypeOption,
+  VacationRequest,
+  VacationRequestHistory,
 } from "@/types/vacation";
 
 const apiBaseUrl =
@@ -104,6 +110,119 @@ export async function deactivateLeaveType(
     locale,
     undefined,
     "POST",
+  );
+}
+
+export function listMyVacationLeaveTypes(
+  accessToken: string,
+  locale: string,
+  signal?: AbortSignal,
+): Promise<VacationLeaveTypeOption[]> {
+  return vacationRequest("/api/v1/vacation/me/leave-types", accessToken, locale, {
+    signal,
+  });
+}
+
+export function listMyVacationRequests(
+  accessToken: string,
+  locale: string,
+  signal?: AbortSignal,
+): Promise<VacationRequest[]> {
+  return vacationRequest("/api/v1/vacation/me/requests", accessToken, locale, {
+    signal,
+  });
+}
+
+export function getMyVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  signal?: AbortSignal,
+): Promise<VacationRequest> {
+  return vacationRequest(
+    `/api/v1/vacation/me/requests/${encodeURIComponent(publicId)}`,
+    accessToken,
+    locale,
+    { signal },
+  );
+}
+
+export function getMyVacationRequestHistory(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  signal?: AbortSignal,
+): Promise<VacationRequestHistory[]> {
+  return vacationRequest(
+    `/api/v1/vacation/me/requests/${encodeURIComponent(publicId)}/history`,
+    accessToken,
+    locale,
+    { signal },
+  );
+}
+
+export function createMyVacationRequest(
+  accessToken: string,
+  locale: string,
+  body: CreateVacationRequest,
+): Promise<VacationRequest> {
+  return vacationRequest("/api/v1/vacation/me/requests", accessToken, locale, {
+    method: "POST",
+    body,
+  });
+}
+
+export function cancelMyVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  body: CancelVacationRequest,
+): Promise<VacationRequest> {
+  return vacationRequest(
+    `/api/v1/vacation/me/requests/${encodeURIComponent(publicId)}/cancel`,
+    accessToken,
+    locale,
+    { method: "POST", body },
+  );
+}
+
+export function listMyVacationBalances(
+  accessToken: string,
+  locale: string,
+  signal?: AbortSignal,
+): Promise<VacationBalance[]> {
+  return vacationRequest("/api/v1/vacation/me/balances", accessToken, locale, {
+    signal,
+  });
+}
+
+async function vacationRequest<T>(
+  path: string,
+  accessToken: string,
+  locale: string,
+  options: {
+    signal?: AbortSignal;
+    method?: string;
+    body?: object;
+  } = {},
+): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: options.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Accept-Language": locale,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+    },
+    credentials: "include",
+    signal: options.signal,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  if (response.ok) return (await response.json()) as T;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(
+    problem?.title ?? "The Vacation request could not be completed.",
+    problem ?? undefined,
+    response.status,
   );
 }
 

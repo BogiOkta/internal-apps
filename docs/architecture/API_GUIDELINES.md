@@ -357,6 +357,7 @@ Current Vacation Leave Request endpoints:
 | `GET /api/v1/vacation/me/leave-types` | Linked active employee | Lists active request options. |
 | `GET /api/v1/vacation/me/requests` | Linked active employee | Lists only the current employee's requests. |
 | `GET /api/v1/vacation/me/requests/{requestId}` | Linked active employee | Returns only an own request; other employees' records are not disclosed. |
+| `GET /api/v1/vacation/me/requests/{requestId}/history` | Linked active employee | Returns ordered transition history only after the same ownership check. |
 | `POST /api/v1/vacation/me/requests` | Linked active employee | Creates a submitted request and initial history. |
 | `POST /api/v1/vacation/me/requests/{requestId}/cancel` | Linked active employee | Cancels an own submitted or approved request. |
 | `GET /api/v1/vacation/me/balances` | Linked active employee | Lists only the current employee's persisted balances. |
