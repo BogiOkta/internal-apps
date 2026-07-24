@@ -2,6 +2,13 @@
 
 Minimal runnable foundation for the company’s internal business-process platform.
 
+## Project state and AI-assisted workflow
+
+Start repository work with the concise [current platform state](docs/PLATFORM_STATE.md)
+and follow the binding [AI-assisted development working agreement](docs/AI_WORKING_AGREEMENT.md).
+Detailed architecture and delivery rules remain in
+[project instructions](docs/PROJECT_INSTRUCTIONS.md).
+
 ## Status
 
 Phase 0 - Foundation

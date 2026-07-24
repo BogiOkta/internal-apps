@@ -1,5 +1,14 @@
 # Internal Apps Platform change history
 
+## 2026-07-24 — AI-assisted development workflow
+
+- Established a binding AI-assisted working agreement based on short,
+  functional sessions, frequent session resets, narrow delivery boundaries,
+  and validation before trust.
+- Established repository documentation as authoritative project memory and
+  added a concise platform-state snapshot as the starting point for new
+  sessions.
+
 ## 2026-07-24 — Sprint 05D employee Vacation Portal
 
 - Added employee Vacation dashboard, balance and request summaries, request
