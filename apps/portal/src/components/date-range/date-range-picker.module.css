@@ -1,0 +1,91 @@
+.root {
+  --fc-border-color: #cbd5e1;
+  --fc-page-bg-color: #fff;
+  --fc-neutral-bg-color: #f8fafc;
+  --fc-today-bg-color: #eff6ff;
+}
+
+.root[data-color-scheme="dark"] {
+  --fc-border-color: #334155;
+  --fc-page-bg-color: #0f172a;
+  --fc-neutral-bg-color: #1e293b;
+  --fc-today-bg-color: #172554;
+}
+
+.calendar :global(.fc-multimonth) {
+  border: 0;
+}
+
+.calendar :global(.fc-multimonth-month) {
+  border: 1px solid var(--fc-border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.calendar :global(.fc-multimonth-title) {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.calendar :global(.fc-daygrid-day-frame) {
+  min-height: 2.75rem;
+}
+
+.calendar :global(.date-range-day-button) {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 9999px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  margin: 0.25rem;
+  padding: 0;
+  width: 2rem;
+}
+
+.calendar :global(.date-range-day-button:focus-visible) {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.calendar :global(.fc-highlight) {
+  background: #dbeafe;
+  opacity: 0.9;
+}
+
+.root[data-color-scheme="dark"] .calendar :global(.fc-highlight) {
+  background: #1e3a8a;
+}
+
+.calendar :global(.date-range-disabled) {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.root[data-color-scheme="dark"] .calendar :global(.date-range-disabled) {
+  background: #111827;
+  color: #64748b;
+}
+
+.calendar :global(.date-range-disabled .fc-daygrid-day-number) {
+  text-decoration: line-through;
+}
+
+.calendar :global(.date-range-selected) {
+  background: #dbeafe;
+}
+
+.root[data-color-scheme="dark"] .calendar :global(.date-range-selected) {
+  background: #1e3a8a;
+}
+
+.calendar :global(.date-range-boundary .date-range-day-button) {
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+}

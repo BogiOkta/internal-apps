@@ -257,6 +257,10 @@ Module-specific components stay under `src/features/<module>/components`.
 ## 5. Light and Dark Modes
 
 Both light and dark modes are supported through semantic design tokens.
+The Portal shell owns the single Light/Dark/System appearance selector. The
+choice is persisted for the entire Portal and System follows the browser
+preference. Feature pages and shared components consume the resolved platform
+appearance; they do not introduce page-local theme state.
 
 Rules:
 
@@ -438,6 +442,23 @@ Prioritize essential columns, allow controlled horizontal scrolling, or provide 
 ## 8. Calendar
 
 Use FullCalendar for calendar workflows such as vacation and meeting-room views.
+`AppCalendar` in the shared Portal component layer is the approved default
+calendar surface. Modules supply generic events, resource metadata, callbacks,
+and any domain-specific status labels through props; the shared component does
+not own business rules or fetch data. It provides month, week, day, and agenda
+views, platform navigation, localization, responsive behavior, loading and
+empty states, and light/dark appearance support.
+
+New modules reuse `AppCalendar` unless a concrete requirement cannot be met by
+its public contract. Domain calendars must not fork FullCalendar setup or place
+shared calendar behavior inside a feature module.
+
+The implementation uses the MIT-licensed `@fullcalendar/react` standard
+package and its required MIT-licensed `temporal-polyfill` peer dependency.
+Day-grid, time-grid, list, interaction, locale, and Forma theme support come
+from that single standard package; premium scheduler packages and redundant
+date libraries are intentionally excluded. Dependency updates are owned with
+the shared Portal UI.
 
 Every calendar implementation specifies:
 
@@ -452,6 +473,15 @@ Every calendar implementation specifies:
 Provide a list or agenda view that exposes equivalent information when the visual grid is not sufficient. Event color is not the only status indicator. Clicking an event opens an authorized detail view; calendar data must already be filtered by the API.
 
 Date-only vacation records must not shift dates due to browser time-zone conversion.
+
+### 8.1 Date ranges
+
+`DateRangePicker` is the approved shared control for date-from/date-to input.
+It is a controlled, domain-neutral component with localized boundary values,
+disabled/minimum/maximum date support, clear behavior, keyboard operation, and
+responsive one- or two-month layouts. Consumers own validation, working-day
+calculations, holidays, summaries, and API mapping; those rules do not belong
+in the shared picker or `AppCalendar`.
 
 ## 9. Dialogs, Toasts, and Feedback
 

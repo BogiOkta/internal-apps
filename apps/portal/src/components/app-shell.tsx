@@ -8,6 +8,11 @@ import {
   type ReactNode,
   type SVGProps,
 } from "react";
+import {
+  appearances,
+  useAppearance,
+  type Appearance,
+} from "@/components/appearance-provider";
 import { useAuth } from "@/components/auth-provider";
 import {
   localeDisplayNames,
@@ -19,6 +24,7 @@ import { useTranslations } from "@/i18n/use-translations";
 import { getAssignedApplications } from "@/services/applications";
 import type { AssignedApplication } from "@/types/application";
 import type { CurrentUser } from "@/types/auth";
+import { usersManagePermission } from "@/types/auth";
 
 type AppShellContext = {
   applications: AssignedApplication[];
@@ -267,7 +273,11 @@ function Navigation({
   user,
 }: NavigationProps) {
   const { locale, setLocale, t } = useTranslations();
+  const { appearance, setAppearance } = useAppearance();
   const primaryRole = user.roles[0] ?? t("shell.noRole");
+  const showDevelopmentNavigation =
+    process.env.NODE_ENV !== "production" ||
+    user.permissions.includes(usersManagePermission);
 
   return (
     <>
@@ -346,9 +356,39 @@ function Navigation({
               />
             );
           })}
+
+        {showDevelopmentNavigation && (
+          <>
+            <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t("navigation.development")}
+            </p>
+            <NavLink href="/demo/calendar"
+              isActive={isRouteActive(currentPath, "/demo/calendar")}
+              label={t("navigation.calendarDemo")}
+              icon={<CalendarIcon />}
+              onNavigate={onNavigate} />
+          </>
+        )}
       </nav>
 
       <div className="border-t border-slate-300 p-3">
+        <label className="mb-2 block">
+          <span className="mb-1 block text-[11px] font-medium text-slate-600">
+            {t("appearance.label")}
+          </span>
+          <select aria-label={t("appearance.label")} value={appearance}
+            onChange={(event) => setAppearance(event.target.value as Appearance)}
+            className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+            {appearances.map((value) => (
+              <option key={value} value={value}>
+                {t(`appearance.${value}` as
+                  | "appearance.light"
+                  | "appearance.dark"
+                  | "appearance.system")}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="mb-2 block">
           <span className="mb-1 block text-[11px] font-medium text-slate-600">
             {t("language.label")}

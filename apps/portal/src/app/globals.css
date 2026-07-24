@@ -10,3 +10,62 @@ body {
   color: #0f172a;
   font-family: Arial, Helvetica, sans-serif;
 }
+
+html[data-theme="dark"] body {
+  background: #020617;
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .bg-white {
+  background-color: #0f172a;
+}
+
+html[data-theme="dark"] .bg-slate-50 {
+  background-color: #020617;
+}
+
+html[data-theme="dark"] .bg-slate-100,
+html[data-theme="dark"] .bg-slate-200 {
+  background-color: #1e293b;
+}
+
+html[data-theme="dark"] .text-slate-950,
+html[data-theme="dark"] .text-slate-900,
+html[data-theme="dark"] .text-slate-800,
+html[data-theme="dark"] .text-slate-700 {
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .text-slate-600,
+html[data-theme="dark"] .text-slate-500 {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .border-slate-200,
+html[data-theme="dark"] .border-slate-300 {
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .hover\:bg-slate-50:hover,
+html[data-theme="dark"] .hover\:bg-slate-100:hover {
+  background-color: #1e293b;
+}
+
+html[data-theme="dark"] .bg-blue-50 {
+  background-color: #172554;
+}
+
+html[data-theme="dark"] .text-blue-800,
+html[data-theme="dark"] .text-blue-900 {
+  color: #bfdbfe;
+}
+
+html[data-theme="dark"] .border-blue-200 {
+  border-color: #1d4ed8;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  color-scheme: dark;
+}
