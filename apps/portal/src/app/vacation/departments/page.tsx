@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default async function LegacyEmployeesPage({
+export default async function LegacyDepartmentsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -10,5 +10,5 @@ export default async function LegacyEmployeesPage({
     if (Array.isArray(value)) value.forEach((item) => params.append(key, item));
     else if (value) params.set(key, value);
   }
-  redirect(`/organization/employees${params.size ? `?${params}` : ""}`);
+  redirect(`/organization/departments${params.size ? `?${params}` : ""}`);
 }

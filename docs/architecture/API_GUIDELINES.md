@@ -283,7 +283,7 @@ Required audit and business writes use the same transaction. Endpoint handlers d
 
 ## 11. Organization and Vacation Endpoint Examples
 
-Current read-only employee-directory endpoints:
+Current Organization, current-employee, and Identity administration endpoints:
 
 | Endpoint | Query parameters | Behavior |
 |---|---|---|
@@ -293,8 +293,21 @@ Current read-only employee-directory endpoints:
 | `PUT /api/v1/organization/employees/{publicId}` | JSON body | Updates name, email, and department; employee number and status are excluded. |
 | `POST /api/v1/organization/employees/{publicId}/activate` | none | Activates an employee. |
 | `POST /api/v1/organization/employees/{publicId}/deactivate` | none | Deactivates an employee without deleting it. |
+| `GET /api/v1/organization/user-employee-links` | none | Lists explicit current links; requires `organization.user-employee-links.manage`. |
+| `GET /api/v1/organization/user-employee-links/options` | none | Returns user and employee selection options for link administration; requires the management permission. |
+| `POST /api/v1/organization/user-employee-links` | user and employee public UUIDs | Creates one explicit link. |
+| `PUT /api/v1/organization/user-employee-links/{publicId}` | user and employee public UUIDs | Changes an existing link. |
+| `POST /api/v1/organization/user-employee-links/{publicId}/unlink` | none | Explicitly removes the current relationship and audits the removal. |
+| `GET /api/v1/me/employee` | none | Returns the authenticated user's explicitly linked employee or `404 current_user_employee_not_linked`. |
+| `GET /api/v1/identity/users` | none | Lists safe user account summaries; requires `identity.users.manage`. |
+| `POST /api/v1/identity/users` | username, display name, initial password, active state | Creates an ordinary account with only the base `User` role. |
+| `POST /api/v1/identity/users/{publicId}/activate` | none | Activates an existing account; repeated activation is a no-op. |
+| `POST /api/v1/identity/users/{publicId}/deactivate` | none | Deactivates without deleting roles, links, or history; repeated deactivation is a no-op. |
 
-Both endpoints require authentication, return arrays without a response envelope, and expose public UUIDs only. Search is case-insensitive and limited to 100 characters. Sort values are endpoint allowlists; prefix a supported field with `-` for descending order.
+All listed endpoints require authentication. Management routes additionally
+require their documented permission. Responses expose public UUIDs only.
+Employee-directory search is case-insensitive and limited to 100 characters;
+sort values are endpoint allowlists, with `-` indicating descending order.
 
 Example:
 

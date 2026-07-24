@@ -7,6 +7,9 @@ import {
   type WorkspaceNavigationItem,
 } from "@/components/workspace-navigation";
 import { useTranslations } from "@/i18n/use-translations";
+import { useAuth } from "@/components/auth-provider";
+import { userEmployeeLinksManagePermission } from "@/types/organization";
+import { usersManagePermission } from "@/types/auth";
 
 type VacationWorkspaceProps = {
   title: string;
@@ -22,6 +25,7 @@ export function VacationWorkspace({
   children,
 }: VacationWorkspaceProps) {
   const { t } = useTranslations();
+  const { user } = useAuth();
 
   const items: WorkspaceNavigationItem[] = [
     {
@@ -30,17 +34,28 @@ export function VacationWorkspace({
     },
     {
       label: t("vacation.workspace.employees"),
-      href: "/vacation/employees",
+      href: "/organization/employees",
     },
     {
       label: t("vacation.workspace.departments"),
-      disabled: true,
-      badge: t("common.comingSoon"),
+      href: "/organization/departments",
     },
     {
       label: t("vacation.workspace.leaveTypes"),
       href: "/vacation/leave-types",
     },
+    ...(user?.permissions.includes(userEmployeeLinksManagePermission)
+      ? [{
+          label: t("organization.links.navigation"),
+          href: "/organization/user-employee-links",
+        }]
+      : []),
+    ...(user?.permissions.includes(usersManagePermission)
+      ? [{
+          label: t("identity.users.navigation"),
+          href: "/identity/users",
+        }]
+      : []),
     {
       label: t("vacation.workspace.requests"),
       disabled: true,

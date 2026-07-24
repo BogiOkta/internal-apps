@@ -50,8 +50,98 @@ internal static class OrganizationEndpoints
                     CancellationToken token) =>
                     SetActiveAsync(publicId, false, context, service, token))
             .RequireAuthorization(OrganizationPermissions.ManageEmployees);
+        organization.MapGet("/user-employee-links", ListUserEmployeeLinksAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageUserEmployeeLinks);
+        organization.MapGet("/user-employee-links/options", GetUserEmployeeLinkOptionsAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageUserEmployeeLinks);
+        organization.MapPost("/user-employee-links", CreateUserEmployeeLinkAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageUserEmployeeLinks);
+        organization.MapPut("/user-employee-links/{publicId:guid}", UpdateUserEmployeeLinkAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageUserEmployeeLinks);
+        organization.MapPost("/user-employee-links/{publicId:guid}/unlink", UnlinkUserEmployeeAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageUserEmployeeLinks);
 
         return endpoints;
+    }
+
+    private static async Task<IResult> ListUserEmployeeLinksAsync(
+        UserEmployeeLinksService service, CancellationToken cancellationToken) =>
+        Results.Ok(await service.ListAsync(cancellationToken));
+
+    private static async Task<IResult> GetUserEmployeeLinkOptionsAsync(
+        UserEmployeeLinksService service, CancellationToken cancellationToken) =>
+        Results.Ok(await service.GetOptionsAsync(cancellationToken));
+
+    private static async Task<IResult> CreateUserEmployeeLinkAsync(
+        CreateUserEmployeeLinkRequest request, HttpContext context,
+        UserEmployeeLinksService service, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.CreateAsync(
+            request, actor, context.TraceIdentifier, cancellationToken);
+        return result.Status == UserEmployeeLinkWriteStatus.Success
+            ? Results.Created(
+                $"/api/v1/organization/user-employee-links/{result.Link!.PublicId}",
+                result.Link)
+            : LinkProblem(context, result);
+    }
+
+    private static async Task<IResult> UpdateUserEmployeeLinkAsync(
+        Guid publicId, UpdateUserEmployeeLinkRequest request, HttpContext context,
+        UserEmployeeLinksService service, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.UpdateAsync(publicId, request, actor,
+            context.TraceIdentifier, cancellationToken);
+        return result.Status == UserEmployeeLinkWriteStatus.Success
+            ? Results.Ok(result.Link)
+            : LinkProblem(context, result);
+    }
+
+    private static async Task<IResult> UnlinkUserEmployeeAsync(
+        Guid publicId, HttpContext context, UserEmployeeLinksService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.UnlinkAsync(
+            publicId, actor, context.TraceIdentifier, cancellationToken);
+        return result.Status == UserEmployeeLinkWriteStatus.Success
+            ? Results.Ok(result.Link)
+            : LinkProblem(context, result);
+    }
+
+    private static IResult LinkProblem(
+        HttpContext context, UserEmployeeLinkWriteResult result)
+    {
+        if (result.Status == UserEmployeeLinkWriteStatus.ValidationFailed)
+            return ValidationProblem(context, result.Errors!);
+        var (status, title, code, detail) = result.Status switch
+        {
+            UserEmployeeLinkWriteStatus.NotFound =>
+                (404, "Link not found", "user_employee_link_not_found",
+                    "The requested user-employee link does not exist."),
+            UserEmployeeLinkWriteStatus.UnknownUser =>
+                (400, "Invalid user", "user_employee_link_user_not_found",
+                    "The requested user does not exist."),
+            UserEmployeeLinkWriteStatus.InactiveUser =>
+                (409, "Inactive user", "user_employee_link_user_inactive",
+                    "An inactive user cannot receive a new employee link."),
+            UserEmployeeLinkWriteStatus.UnknownEmployee =>
+                (400, "Invalid employee", "user_employee_link_employee_not_found",
+                    "The requested employee does not exist."),
+            UserEmployeeLinkWriteStatus.InactiveEmployee =>
+                (409, "Inactive employee", "user_employee_link_employee_inactive",
+                    "An inactive employee cannot receive a new user link."),
+            UserEmployeeLinkWriteStatus.UserAlreadyLinked =>
+                (409, "User already linked", "user_employee_link_user_conflict",
+                    "The requested user is already linked to an employee."),
+            UserEmployeeLinkWriteStatus.EmployeeAlreadyLinked =>
+                (409, "Employee already linked", "user_employee_link_employee_conflict",
+                    "The requested employee is already linked to a user."),
+            _ => (500, "Unexpected error", "unexpected_error",
+                "The request could not be completed.")
+        };
+        return Problem(context, status, title, code, detail);
     }
 
     private static async Task<IResult> ListDepartmentsAsync(

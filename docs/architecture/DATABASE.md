@@ -252,6 +252,16 @@ Roles provide assignment convenience. Permissions provide authorization capabili
 
 The many-to-many relationships are resolved by `role_permissions` and `user_roles`. The logical uniqueness of each pair prevents duplicate grants. Role and permission assignments are effective security state and must be represented in the audit schema through the shared Audit service.
 
+Migration `010_minimal_user_administration.sql` establishes the base `User`
+role and `identity.users.manage`. The runtime may insert only the supported user
+columns, update only active state and audit timestamps/actor, and insert only
+the fixed base-role assignment. Migration
+`011_harden_base_user_role_assignment.sql` removes direct runtime writes to
+`identity.user_roles`; a controlled `SECURITY DEFINER` function resolves and
+assigns only the natural-key `User` role. It receives identity-sequence usage
+but no user DELETE or general role-management privilege. Neither migration
+seeds a user.
+
 ### 4.5 Refresh tokens
 
 `refresh_tokens` represents refresh sessions, rotation lineage, expiry, use, and revocation. It stores only a secure one-way representation of token material. A rotated token remains traceable for reuse detection but cannot be used after rotation.
@@ -491,7 +501,18 @@ the runtime role only the employee INSERT columns, mutable UPDATE columns, and
 identity-sequence usage required by audited administration. It grants no
 employee DELETE capability. The employee table shape is unchanged.
 
-The current API is read-only and the runtime database role receives only schema usage and table read access. Payroll, recruitment, performance management, employee documents, positions, offices, cost centers, and manager hierarchy are outside the current model.
+Migration `009_user_employee_links.sql` adds
+`core.user_employee_links` as the neutral relationship between Identity users
+and Organization employees. Unique constraints on `user_id` and `employee_id`
+enforce optional one-to-one cardinality. Foreign keys use the default
+restrict/no-action behavior; no cascading deletion can erase business
+history. No links are seeded or inferred. Runtime access is limited to the
+columns and operations used by the audited management API.
+
+Organization reads are authenticated and its narrowly scoped administration
+APIs use migration-granted column privileges. Payroll, recruitment,
+performance management, employee documents, positions, offices, cost centers,
+and manager hierarchy remain outside the current model.
 
 Migration `004_vacation_employees.sql` originally introduced both tables in the `vacation` schema. Because applied migrations are immutable historical records, migration `005_organization_domain.sql` moves the same table objects into `organization`. The final schema state is authoritative; migration 004 is not rewritten or removed.
 

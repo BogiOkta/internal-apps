@@ -286,8 +286,10 @@ Approved form-control categories:
   behavior.
 - **Searchable combobox:** is for large or dynamically loaded sets such as
   employees or organizational units. Do not render hundreds of options in a
-  native select. Introduce one approved implementation only when the first
-  concrete use case requires it.
+  native select. The shared `SearchableCombobox` is the approved implementation
+  for this purpose. It provides text search, keyboard navigation, clear
+  selection, disabled/read-only states, and accessible combobox/listbox
+  semantics while remaining independent of any business domain.
 - **Date field:** uses one wrapper/control contract platform-wide. A native
   date input may be the initial implementation; a later date-picker library
   must remain behind the shared contract. API values use the documented ISO

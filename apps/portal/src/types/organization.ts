@@ -32,6 +32,8 @@ export type EmployeeSort =
   | "-status";
 
 export const employeesManagePermission = "organization.employees.manage";
+export const userEmployeeLinksManagePermission =
+  "organization.user-employee-links.manage";
 
 export type EmployeeStatusFilter = "all" | "active" | "inactive";
 
@@ -48,3 +50,26 @@ export type UpdateEmployeeRequest = Omit<
   CreateEmployeeRequest,
   "employeeNumber" | "isActive"
 >;
+
+export type UserEmployeeLink = {
+  publicId: string;
+  userPublicId: string;
+  username: string;
+  userDisplayName: string;
+  userIsActive: boolean;
+  employee: Employee;
+};
+
+export type UserLinkOption = {
+  publicId: string; username: string; displayName: string; isActive: boolean;
+};
+
+export type EmployeeLinkOption = {
+  publicId: string; employeeNumber: string; firstName: string; lastName: string;
+  departmentName: string; isActive: boolean;
+};
+
+export type UserEmployeeLinkOptions = {
+  users: UserLinkOption[];
+  employees: EmployeeLinkOption[];
+};

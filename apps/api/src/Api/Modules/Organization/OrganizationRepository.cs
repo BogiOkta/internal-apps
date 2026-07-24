@@ -129,7 +129,12 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
         CancellationToken cancellationToken) =>
         await connection.ExecuteScalarAsync<bool>(
             new CommandDefinition(
-                "SELECT EXISTS (SELECT 1 FROM organization.departments WHERE public_id = @PublicId)",
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM organization.departments
+                    WHERE public_id = @PublicId AND is_active = true
+                )
+                """,
                 new { PublicId = publicId },
                 transaction,
                 cancellationToken: cancellationToken));

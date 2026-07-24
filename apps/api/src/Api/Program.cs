@@ -6,6 +6,7 @@ using InternalApps.Api.Authentication;
 using InternalApps.Api.Infrastructure;
 using InternalApps.Api.Infrastructure.Auditing;
 using InternalApps.Api.Modules.Organization;
+using InternalApps.Api.Modules.Identity;
 using InternalApps.Api.Modules.Vacation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -28,9 +29,14 @@ builder.Services.AddScoped<ApplicationRepository>();
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<OrganizationRepository>();
 builder.Services.AddScoped<EmployeesService>();
+builder.Services.AddScoped<UserEmployeeLinksRepository>();
+builder.Services.AddScoped<UserEmployeeLinksService>();
+builder.Services.AddScoped<CurrentEmployeeResolver>();
 builder.Services.AddScoped<LeaveTypesRepository>();
 builder.Services.AddScoped<LeaveTypesService>();
 builder.Services.AddScoped<AuditWriter>();
+builder.Services.AddScoped<UsersRepository>();
+builder.Services.AddScoped<UsersService>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -62,6 +68,14 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireClaim(
             "permission",
             OrganizationPermissions.ManageEmployees));
+    options.AddPolicy(
+        OrganizationPermissions.ManageUserEmployeeLinks,
+        policy => policy.RequireClaim(
+            "permission",
+            OrganizationPermissions.ManageUserEmployeeLinks));
+    options.AddPolicy(
+        IdentityPermissions.ManageUsers,
+        policy => policy.RequireClaim("permission", IdentityPermissions.ManageUsers));
 });
 builder.Services.AddCors(options =>
 {
@@ -98,8 +112,10 @@ app.MapGet("/api/v1/system/info", (IHostEnvironment environment) =>
 });
 
 app.MapAuthenticationEndpoints();
+app.MapCurrentEmployeeEndpoints();
 app.MapApplicationEndpoints();
 app.MapOrganizationEndpoints();
+app.MapIdentityEndpoints();
 app.MapVacationEndpoints();
 
 app.Run();

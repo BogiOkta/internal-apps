@@ -3,6 +3,8 @@ import type {
   CurrentUser,
   LoginCredentials,
   ProblemDetails,
+  ManagedUser,
+  CreateManagedUserRequest,
 } from "@/types/auth";
 
 const apiBaseUrl =
@@ -16,6 +18,36 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+export async function listUsers(accessToken: string): Promise<ManagedUser[]> {
+  return identityRequest("/api/v1/identity/users", accessToken);
+}
+
+export async function createUser(accessToken: string,
+  request: CreateManagedUserRequest): Promise<ManagedUser> {
+  return identityRequest("/api/v1/identity/users", accessToken, "POST", request);
+}
+
+export async function activateUser(accessToken: string, publicId: string): Promise<ManagedUser> {
+  return identityRequest(`/api/v1/identity/users/${encodeURIComponent(publicId)}/activate`,
+    accessToken, "POST");
+}
+
+export async function deactivateUser(accessToken: string, publicId: string): Promise<ManagedUser> {
+  return identityRequest(`/api/v1/identity/users/${encodeURIComponent(publicId)}/deactivate`,
+    accessToken, "POST");
+}
+
+async function identityRequest<T>(path: string, accessToken: string,
+  method = "GET", body?: object): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method, credentials: "include",
+    headers: { Authorization: `Bearer ${accessToken}`,
+      ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return parseResponse<T>(response);
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

@@ -8,6 +8,11 @@ Vacation owns leave and absence workflows. It uses shared Organization employees
 
 Vacation consumes authenticated Organization read endpoints for employee and department information. Employee and Department are references in Vacation workflows; changes to organizational master data belong to Organization.
 
+Vacation navigation links to the canonical Organization employee and
+department routes. Future Vacation workflows resolve the authenticated user's
+employee through `GET /api/v1/me/employee`; they must never infer that
+relationship from email or username.
+
 ## Owned data
 
 Vacation owns data specific to leave management.

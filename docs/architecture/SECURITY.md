@@ -109,9 +109,21 @@ Current module permission:
 |---|---|---|
 | `vacation.leave-types.manage` | Leave Type reads remain available to authenticated users | Seeded only to the existing `Administrator` role by migration 007 |
 | `organization.employees.manage` | Employee directory reads remain available to authenticated users | Seeded only to the existing `Administrator` role by migration 008 |
+| `organization.user-employee-links.manage` | A user may read only their own employee relationship without this permission | Seeded only to the existing `Administrator` role by migration 009 |
+| `identity.users.manage` | Users cannot list or manage other accounts without this permission | Seeded only to the existing `Administrator` role by migration 010 |
 
 After migration 008, existing Administrator access tokens must be refreshed or
 reissued before the new employee-management permission claim is available.
+The same refresh or reissue requirement applies after migration 009 for
+user–employee link management.
+After migration 010, Administrator tokens likewise require refresh or reissue
+before the user-management permission is present.
+
+Minimal user administration creates an immutable username, display name,
+BCrypt password hash, active state, and exactly the base `User` role. Plaintext
+initial passwords exist only in the incoming request and short-lived server
+memory; they are never returned, logged, seeded, or audited. Administrators
+communicate initial credentials through an approved out-of-band channel.
 
 The permission's `vacation` namespace associates it with the Vacation
 application under the current RBAC model. Application assignment and

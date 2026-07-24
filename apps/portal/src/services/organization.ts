@@ -8,6 +8,8 @@ import type {
   EmployeeStatusFilter,
   CreateEmployeeRequest,
   UpdateEmployeeRequest,
+  UserEmployeeLink,
+  UserEmployeeLinkOptions,
 } from "@/types/organization";
 
 const apiBaseUrl =
@@ -39,6 +41,45 @@ export async function getDepartments(
     query,
     signal,
   );
+}
+
+export async function getUserEmployeeLinks(accessToken: string): Promise<UserEmployeeLink[]> {
+  return organizationRequest("/api/v1/organization/user-employee-links", accessToken);
+}
+
+export async function getUserEmployeeLinkOptions(accessToken: string): Promise<UserEmployeeLinkOptions> {
+  return organizationRequest("/api/v1/organization/user-employee-links/options", accessToken);
+}
+
+export async function createUserEmployeeLink(accessToken: string, userPublicId: string,
+  employeePublicId: string): Promise<UserEmployeeLink> {
+  return organizationRequest("/api/v1/organization/user-employee-links", accessToken,
+    "POST", { userPublicId, employeePublicId });
+}
+
+export async function updateUserEmployeeLink(accessToken: string, publicId: string,
+  userPublicId: string, employeePublicId: string): Promise<UserEmployeeLink> {
+  return organizationRequest(`/api/v1/organization/user-employee-links/${encodeURIComponent(publicId)}`,
+    accessToken, "PUT", { userPublicId, employeePublicId });
+}
+
+export async function unlinkUserEmployee(accessToken: string, publicId: string): Promise<UserEmployeeLink> {
+  return organizationRequest(`/api/v1/organization/user-employee-links/${encodeURIComponent(publicId)}/unlink`,
+    accessToken, "POST");
+}
+
+async function organizationRequest<T>(path: string, accessToken: string,
+  method = "GET", body?: object): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method, credentials: "include",
+    headers: { Authorization: `Bearer ${accessToken}`,
+      ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (response.ok) return (await response.json()) as T;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(problem?.detail ?? problem?.title ?? "The request failed.",
+    problem ?? undefined, response.status);
 }
 
 export async function createEmployee(
