@@ -350,44 +350,46 @@ documented uppercase underscore format; calendar color, when supplied, is
 returns `409` with code `leave_type_code_conflict`. A valid unknown public UUID
 returns the defined `404` Problem Details response. No `DELETE` route exists.
 
-Other planned contract naming:
+Current Vacation Leave Request endpoints:
 
-```text
-GET    /api/v1/vacation/public-holidays
-GET    /api/v1/vacation/balances
+| Endpoint | Access | Behavior |
+|---|---|---|
+| `GET /api/v1/vacation/me/leave-types` | Linked active employee | Lists active request options. |
+| `GET /api/v1/vacation/me/requests` | Linked active employee | Lists only the current employee's requests. |
+| `GET /api/v1/vacation/me/requests/{requestId}` | Linked active employee | Returns only an own request; other employees' records are not disclosed. |
+| `POST /api/v1/vacation/me/requests` | Linked active employee | Creates a submitted request and initial history. |
+| `POST /api/v1/vacation/me/requests/{requestId}/cancel` | Linked active employee | Cancels an own submitted or approved request. |
+| `GET /api/v1/vacation/me/balances` | Linked active employee | Lists only the current employee's persisted balances. |
+| `GET /api/v1/vacation/requests` | Administrator policy | Lists all requests with typed filters and pagination. |
+| `GET /api/v1/vacation/requests/{requestId}` | Administrator policy | Returns request details. |
+| `GET /api/v1/vacation/requests/{requestId}/history` | Administrator policy | Returns ordered transition history. |
+| `POST /api/v1/vacation/requests/{requestId}/approve` | Administrator policy | Approves a submitted request and consumes required balance. |
+| `POST /api/v1/vacation/requests/{requestId}/reject` | Administrator policy | Rejects a submitted request without changing balance. |
+| `POST /api/v1/vacation/requests/{requestId}/cancel` | Administrator policy | Cancels a submitted or approved request and restores approved balance use. |
 
-GET    /api/v1/vacation/requests
-POST   /api/v1/vacation/requests
-GET    /api/v1/vacation/requests/{publicId}
-PATCH  /api/v1/vacation/requests/{publicId}
-POST   /api/v1/vacation/requests/{publicId}/submit
-POST   /api/v1/vacation/requests/{publicId}/approve
-POST   /api/v1/vacation/requests/{publicId}/reject
-POST   /api/v1/vacation/requests/{publicId}/cancel
+The administrative list supports employee, department, Leave Type, status,
+inclusive date-intersection, and search filters plus `page` and `pageSize`
+(maximum 100). Filters are parameterized and identifiers are public UUIDs.
 
-GET    /api/v1/vacation/approvals
-```
-
-The planned examples establish naming, not implemented functionality. The canonical Vacation module specification determines which operations exist and their exact contracts.
-
-Example creation:
+Example employee request creation:
 
 ```http
-POST /api/v1/vacation/requests
+POST /api/v1/vacation/me/requests
 Content-Type: application/json
 Authorization: Bearer <access-token>
 ```
 
 ```json
 {
-  "leaveTypePublicId": "80e69ee5-c4a4-4ba1-b988-92ac0b68eea7",
-  "startDate": "2026-08-10",
-  "endDate": "2026-08-14",
-  "comment": "Annual leave"
+  "leaveTypeId": "80e69ee5-c4a4-4ba1-b988-92ac0b68eea7",
+  "dateFrom": "2026-08-10",
+  "dateTo": "2026-08-14",
+  "note": "Annual leave"
 }
 ```
 
-The server derives the requester, company, initial state, calculated duration, audit metadata, and applicable approval workflow.
+The server derives the employee from the explicit current-user link, calculates
+Monday-to-Friday working days, and supplies status and actor metadata.
 
 ## 12. OpenAPI
 

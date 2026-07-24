@@ -15,9 +15,15 @@ The current implemented capabilities are:
 - atomic append-only audit records for successful Leave Type mutations.
 - database foundations for employee leave requests, status-transition history,
   and yearly leave balances.
+- authenticated employee request creation, own list/detail, cancellation,
+  active Leave Type options, and balance reads;
+- Administrator request listing, detail/history, approval, rejection, and
+  cancellation;
+- inclusive Monday-to-Friday calculation and transactional balance use and
+  restoration.
 
-Leave request and balance services, API routes, Portal workflows, public
-holidays, and configurable approval workflows are not implemented.
+Leave Request Portal workflows, public holidays, notifications, and
+configurable approval workflows are not implemented.
 
 See [`../domain/vacation.md`](../domain/vacation.md) for detailed ownership,
 domain rules, persistence, authorization, and current implementation behavior.

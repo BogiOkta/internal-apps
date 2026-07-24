@@ -114,6 +114,34 @@ other users, while the API policy remains authoritative. Every successful
 mutation updates `updated_at` and writes an append-only audit event in the same
 database transaction. No physical deletion operation exists.
 
-The request and balance database foundation exists, but repositories, services,
-endpoints, approval operations, calculations, and Portal workflows remain
-unavailable.
+### Leave request application layer
+
+Authenticated employee self-service under `/api/v1/vacation/me` lists active
+Leave Types, own requests and balances, creates requests, and cancels eligible
+own requests. The current employee is resolved only through the explicit
+Identity User–Organization Employee link. An unlinked user receives
+`current_user_employee_not_linked`; an inactive employee cannot use
+self-service.
+
+The server calculates inclusive Monday-to-Friday working days and never accepts
+an employee, status, or working-day value in the create contract. Public
+holidays are not supported. Requests must remain within one calendar year and
+contain at least one working day. The database exclusion constraint remains the
+final race-safe overlap protection for submitted and approved requests.
+
+Administrator operations temporarily reuse the existing Administrator-only
+platform permission `identity.users.manage`, without username or role-name
+checks, until a dedicated Vacation request-management permission is approved.
+Approval locks the request and any required employee/Leave Type/year balance.
+It increments `used_days` only when sufficient balance exists. Cancelling an
+approved request reverses that use; cancelling a submitted request and
+rejecting a request do not affect balance.
+
+Creation writes `NULL -> SUBMITTED` history. Every transition writes the
+request, optional balance mutation, append-only history, and platform audit on
+one connection and transaction. Failed validation, lookup, conflict, or
+transition attempts write no successful history or audit record.
+
+No Leave Request Portal workflow, public-holiday calendar, notification,
+background job, manager hierarchy, configurable workflow, or physical delete
+is implemented.

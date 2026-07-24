@@ -1,5 +1,31 @@
 # Internal Apps Platform change history
 
+## 2026-07-24 — Sprint 05C Vacation application layer
+
+- Added Dapper repositories and services for employee Leave Request
+  self-service, Administrator review and transitions, balances, history, and
+  filtered paginated administration.
+- Added the `/api/v1/vacation/me/*` employee routes and
+  `/api/v1/vacation/requests/*` Administrator routes. Administration
+  temporarily reuses the platform-level `identity.users.manage` permission
+  until a dedicated Vacation request-management permission is approved.
+- Added the deterministic inclusive Monday-to-Friday calculator with seven
+  focused unit cases; public holidays remain out of scope.
+- Enforced linked active-employee ownership, server-calculated request fields,
+  race-safe overlap translation, balance row locking, and atomic request,
+  balance, transition-history, and platform-audit writes.
+- Validated the guarded controlled API smoke against an isolated balance
+  fixture. Core authorization, request, overlap, approval, balance,
+  history, cancellation, period-reuse, rejection, non-balance, and stable
+  error-contract scenarios passed. The unlinked-user and second-linked-
+  employee checks were skipped because no safe configured fixtures existed.
+- Retained smoke requests are intentionally terminal (`CANCELLED` or
+  `REJECTED`) because physical deletion is unavailable. The isolated balance
+  fixture was restored and removed after read-only post-smoke verification.
+- Corrected runtime Dapper handling with one global deterministic `DateOnly`
+  handler and explicit history persistence-row timestamp mapping without
+  changing public contracts. No Vacation Portal workflow was implemented.
+
 ## 2026-07-24 — Sprint 05B Vacation domain and database foundation validated
 
 - Added and applied migrations 012–017 for the missing Leave Type balance

@@ -275,6 +275,7 @@ internal sealed class LeaveTypesService(
             string.IsNullOrWhiteSpace(description) ? null : description,
             record.CalendarColor,
             record.CountsAgainstVacationBalance,
+            record.RequiresBalance,
             record.RequiresApproval,
             record.IsActive,
             record.DisplayOrder);
@@ -296,6 +297,7 @@ internal sealed class LeaveTypesService(
             record.DescriptionEn,
             localized.CalendarColor,
             localized.CountsAgainstVacationBalance,
+            localized.RequiresBalance,
             localized.RequiresApproval,
             localized.IsActive,
             localized.DisplayOrder);

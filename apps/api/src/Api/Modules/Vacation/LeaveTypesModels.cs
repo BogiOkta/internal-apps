@@ -42,6 +42,7 @@ internal sealed record LeaveTypeRecord(
     string? DescriptionEn,
     string? CalendarColor,
     bool CountsAgainstVacationBalance,
+    bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
     int DisplayOrder);
@@ -53,6 +54,7 @@ internal sealed record LeaveTypeResponse(
     string? Description,
     string? CalendarColor,
     bool CountsAgainstVacationBalance,
+    bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
     int DisplayOrder);
@@ -68,6 +70,7 @@ internal sealed record LeaveTypeDetailsResponse(
     string? DescriptionEn,
     string? CalendarColor,
     bool CountsAgainstVacationBalance,
+    bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
     int DisplayOrder);

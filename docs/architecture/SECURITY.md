@@ -119,6 +119,19 @@ user–employee link management.
 After migration 010, Administrator tokens likewise require refresh or reissue
 before the user-management permission is present.
 
+Vacation employee self-service requires an authenticated user explicitly
+linked to an active Organization employee. The employee is never accepted from
+the request body. Current Vacation request administration reuses the existing
+Administrator-only `identity.users.manage` policy; this is a temporary reuse
+of the platform-level Administrator permission until a dedicated Vacation
+request-management permission is approved. It remains a permission-claim check
+and does not hard-code a role name or username at runtime.
+
+Request creation and each status transition write the business record,
+required balance mutation, append-only transition history, and platform audit
+inside one transaction. Runtime grants do not permit physical deletion of
+Vacation requests, balances, or history, or updates to transition history.
+
 Minimal user administration creates an immutable username, display name,
 BCrypt password hash, active state, and exactly the base `User` role. Plaintext
 initial passwords exist only in the incoming request and short-lived server

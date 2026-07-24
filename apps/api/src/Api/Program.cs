@@ -1,5 +1,6 @@
 using System.Text;
 using System.Reflection;
+using Dapper;
 using DotNetEnv;
 using InternalApps.Api.Applications;
 using InternalApps.Api.Authentication;
@@ -17,6 +18,7 @@ var envPath = FindEnvironmentFile()
     ?? throw new InvalidOperationException(
         "Repository .env file was not found from the current or application directory.");
 Env.Load(envPath);
+SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
 
 var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = RuntimeConfiguration.GetJwtSettings();
@@ -34,6 +36,9 @@ builder.Services.AddScoped<UserEmployeeLinksService>();
 builder.Services.AddScoped<CurrentEmployeeResolver>();
 builder.Services.AddScoped<LeaveTypesRepository>();
 builder.Services.AddScoped<LeaveTypesService>();
+builder.Services.AddScoped<LeaveRequestsRepository>();
+builder.Services.AddScoped<LeaveRequestService>();
+builder.Services.AddSingleton<IWorkingDayCalculator, MondayToFridayWorkingDayCalculator>();
 builder.Services.AddScoped<AuditWriter>();
 builder.Services.AddScoped<UsersRepository>();
 builder.Services.AddScoped<UsersService>();
@@ -117,6 +122,7 @@ app.MapApplicationEndpoints();
 app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
 app.MapVacationEndpoints();
+app.MapLeaveRequestEndpoints();
 
 app.Run();
 

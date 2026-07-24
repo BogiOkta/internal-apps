@@ -14,6 +14,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         leave_types.description_en AS DescriptionEn,
         leave_types.calendar_color AS CalendarColor,
         leave_types.counts_against_vacation_balance AS CountsAgainstVacationBalance,
+        leave_types.requires_balance AS RequiresBalance,
         leave_types.requires_approval AS RequiresApproval,
         leave_types.is_active AS IsActive,
         leave_types.display_order AS DisplayOrder
@@ -275,6 +276,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
             row.DescriptionEn,
             row.CalendarColor,
             row.CountsAgainstVacationBalance,
+            row.RequiresBalance,
             row.RequiresApproval,
             row.IsActive,
             row.DisplayOrder);
@@ -296,6 +298,8 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         public string? CalendarColor { get; set; }
 
         public bool CountsAgainstVacationBalance { get; set; }
+
+        public bool RequiresBalance { get; set; }
 
         public bool RequiresApproval { get; set; }
 
