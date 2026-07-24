@@ -17,18 +17,15 @@ relationship from email or username.
 
 Vacation owns data specific to leave management.
 
-The current database foundation includes:
+The database foundation includes:
 
-- leave types.
-
-Future Vacation-owned entities may include:
-
+- leave types;
 - leave requests;
-- leave balances;
-- public holidays;
-- Vacation approval records.
+- leave request transition history;
+- persisted yearly leave balances.
 
-No request or balance tables are introduced with the leave-type foundation.
+Public holidays, approval-step configuration, attachments, and notifications
+are not part of the MVP database foundation.
 
 ### Leave types
 
@@ -43,7 +40,10 @@ User-visible names and optional descriptions are stored in explicit Serbian
 and English columns. This deliberately avoids a translation table or generic
 lookup framework for a small, bounded reference list. Each type also records
 whether it consumes annual vacation balance, whether approval is required, its
-calendar color when configured, active status, and display order.
+calendar color when configured, whether a balance record is required, active
+status, and display order. The established
+`counts_against_vacation_balance` column remains the canonical persisted name
+for the locked counts-against-balance concept.
 
 Inactive leave types remain valid references for historical records but cannot
 be selected for new requests. Initial lifecycle management uses `is_active`;
@@ -60,6 +60,29 @@ case-insensitive and produces a conflict response.
 
 After migration 007 is applied, existing Administrator access tokens must be
 refreshed or reissued before they contain the new permission claim.
+
+### Leave requests
+
+A request belongs to one Organization employee and exactly one leave type.
+Dates are inclusive, date-only, ordered, and must remain within one calendar
+year. Future application logic calculates and persists working days using
+Monday through Friday only; public holidays are intentionally excluded.
+
+The only statuses are `SUBMITTED`, `APPROVED`, `REJECTED`, and `CANCELLED`.
+There is no draft and no physical deletion. A single Administrator decision
+actor is stored for approval or rejection. Cancellation remains in history.
+Requests for the same employee cannot overlap while either request is submitted
+or approved; rejected and cancelled requests do not block later dates.
+
+Every status transition is appended to
+`vacation.leave_request_history`. Platform audit events remain additionally
+required when future services implement consequential writes.
+
+### Leave balances
+
+`vacation.leave_balances` persists entitlement, carry-over, adjustment, and
+used days for one employee, leave type, and year. That combination is unique.
+`used_days` changes only through future transactional Vacation business logic.
 
 ## Current implementation
 
@@ -91,5 +114,6 @@ other users, while the API policy remains authoritative. Every successful
 mutation updates `updated_at` and writes an append-only audit event in the same
 database transaction. No physical deletion operation exists.
 
-Leave requests, leave balances, holidays, approval workflows, and other
-configuration remain unavailable.
+The request and balance database foundation exists, but repositories, services,
+endpoints, approval operations, calculations, and Portal workflows remain
+unavailable.

@@ -522,22 +522,21 @@ The `vacation` schema is owned exclusively by the Vacation Management module. Em
 
 ```mermaid
 erDiagram
-    companies ||--o{ public_holidays : observes
-    users ||--o{ leave_requests : requests
+    employees ||--o{ leave_requests : submits
     leave_types ||--o{ leave_requests : classifies
-    users ||--o{ leave_balances : owns
+    leave_requests ||--o{ leave_request_history : records
+    employees ||--o{ leave_balances : owns
     leave_types ||--o{ leave_balances : categorizes
-    leave_requests ||--o{ leave_approvals : requires
-    users ||--o{ leave_approvals : decides
+    users ||--o{ leave_requests : acts_on
+    users ||--o{ leave_request_history : changes
 ```
 
 | Entity | Purpose | Ownership notes |
 |---|---|---|
 | `leave_types` | Defines available categories of leave. | Vacation owns meaning and lifecycle. |
 | `leave_requests` | Represents an employee request and its workflow state. | Vacation workflow root. |
+| `leave_request_history` | Records every request status transition. | Append-only Vacation business history. |
 | `leave_balances` | Represents leave entitlement and usage for a period. | Vacation owns calculations and concurrency. |
-| `leave_approvals` | Records Vacation approval steps and decisions. | Vacation owns workflow history. |
-| `public_holidays` | Defines holidays used in leave calculations. | Vacation-owned reference data unless generalized by ADR. |
 
 #### 7.2.1 Leave types
 
@@ -559,29 +558,53 @@ owner-level administrative operation. Application updates explicitly set
 `updated_at = now()`; the database supplies initial timestamp defaults and does
 not use an automatic update trigger.
 
-Migration `006_vacation_leave_types.sql` introduces only this reference table
-and its initial values. It does not introduce leave requests, balances, or
-workflow configuration.
+Migration `006_vacation_leave_types.sql` introduced this reference table and
+its initial values. Migration `012_vacation_leave_type_balance_requirement.sql`
+adds the explicit `requires_balance` behavior flag without duplicating or
+renaming the established localized columns. Migration
+`016_seed_vacation_leave_types.sql` idempotently reconciles the five MVP codes
+and their balance requirement without overwriting localized or
+administrator-managed values.
 
 #### 7.2.2 Leave requests
 
-`leave_requests` is the central Vacation workflow record. It relates a requesting user to a leave type, requested date/partial-day interval, workflow status, and version for concurrency.
+`leave_requests` is the central Vacation workflow record. It relates one
+Organization employee to one leave type and an inclusive date-only interval.
+The persisted `working_days` value is calculated by future business logic using
+Monday through Friday only. Requests cannot cross calendar years.
 
-The record stores authoritative requested facts and current state. State changes occur through application use cases, not arbitrary repository updates. Comments, attachments, notifications, and audit events remain in Core schemas and refer to the request by public identifier.
+The only MVP statuses are `SUBMITTED`, `APPROVED`, `REJECTED`, and
+`CANCELLED`. There is no draft or physical delete. A request has at most one
+decision actor and one cancellation actor, both referencing Identity users.
+The current Administrator-only approval decision will be enforced by future
+permissioned application logic; no manager hierarchy or configurable workflow
+is modeled.
+
+An exclusion constraint prevents overlapping date ranges for the same employee
+while either request is `SUBMITTED` or `APPROVED`. Rejected and cancelled
+requests remain historical records but do not block a later request. The
+constraint uses PostgreSQL `btree_gist` so the invariant remains safe under
+concurrent writes.
+
+`leave_request_history` stores every status transition, including actor,
+previous and new state, optional comment, and timestamp. It is business history
+in addition to the platform audit trail and has no runtime update or delete
+grant.
 
 #### 7.2.3 Leave balances
 
-`leave_balances` represents a user’s entitlement and usage for a leave type and defined balance period. The logical key must prevent duplicate active balances for the same user, leave type, and period.
+`leave_balances` represents an employee’s persisted entitlement, carry-over,
+adjustment, and used days for one leave type and calendar year. A unique
+constraint on employee, leave type, and year prevents duplicate balances.
+Checks prevent negative entitlement, carry-over, or usage and prevent usage
+from exceeding the effective available total. `used_days` is changed only by
+future transactional Vacation business logic.
 
-Balance updates are concurrency-sensitive. The module defines whether values are stored as totals, components, or derived projections; that physical decision must preserve an explainable relationship to approved, pending, used, adjusted, and remaining amounts.
-
-Adjustments that require independent business history should not be hidden as unexplained overwrites. If adjustment records become a requirement, they must be introduced as a documented Vacation-owned entity rather than encoded in audit details alone.
-
-#### 7.2.4 Leave approvals
-
-`leave_approvals` models approval steps for one request. It preserves approver assignment, sequence or stage, decision, decision time, and required comment/reason according to workflow rules.
-
-Approval history is business data, not merely audit data. The current request state may summarize the workflow, while approval records explain which step produced it. Reassignment and delegation must remain reconstructable according to the module specification.
+Migrations 013–015 create requests, transition history, and balances.
+Migration 017 grants the runtime role only the required SELECT, column-level
+INSERT/UPDATE, and identity-sequence USAGE privileges. It grants no DELETE
+privilege on Vacation business tables and no UPDATE privilege on transition
+history.
 
 #### 7.2.5 Public holidays
 

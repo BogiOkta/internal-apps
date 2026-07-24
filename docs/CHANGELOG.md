@@ -1,5 +1,22 @@
 # Internal Apps Platform change history
 
+## 2026-07-24 — Sprint 05B Vacation domain and database foundation validated
+
+- Added and applied migrations 012–017 for the missing Leave Type balance
+  requirement, employee leave requests, append-only status-transition history,
+  persisted yearly balances, idempotent MVP Leave Type reconciliation, and
+  least-privilege runtime grants.
+- Enforced the four-state request model, single-year date ranges, positive
+  working-day storage, single decision/cancellation actors, and race-safe
+  overlap prevention for submitted and approved requests.
+- Added no services, repositories, endpoints, Portal behavior, notifications,
+  holidays, or configurable workflow infrastructure.
+- Validated the resulting PostgreSQL schema and runtime privileges through
+  catalog checks and a transaction-rolled-back database smoke covering valid
+  writes, constraints, overlap rules, status metadata, restrictive foreign
+  keys, history immutability, and cleanup. No smoke scenario was skipped and
+  no smoke record remained.
+
 ## 2026-07-24 — Sprint 05A.1 platform appearance and date ranges
 
 - Moved Light/Dark/System appearance ownership into the Portal shell with
