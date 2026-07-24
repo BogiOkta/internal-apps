@@ -60,8 +60,9 @@ refreshed or reissued before they contain the new permission claim.
 
 The Portal exposes a localized Vacation workspace with Overview, Employees,
 and Leave Types sections. Employees is currently a read-only directory backed
-by Organization endpoints, with search, department filtering, sorting,
-refresh, and row selection.
+by Organization endpoints, with server-side search and column filtering,
+sorting, export, and row selection. Organization administrators may manage
+the same Organization records from this workspace; Vacation does not own them.
 
 The Leave Types workspace retains its compact table and right-side panel. All
 authenticated users can read Leave Types through:

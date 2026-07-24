@@ -485,6 +485,12 @@ erDiagram
 
 `departments` uses a stable code, display name, active flag, public UUID, and timestamps. `employees` uses an employee number, name, email, department reference, employment status, public UUID, and timestamps. The employee-to-department foreign key stays inside the Organization boundary.
 
+Migration `008_employee_administration.sql` seeds
+`organization.employees.manage` for the existing Administrator role and grants
+the runtime role only the employee INSERT columns, mutable UPDATE columns, and
+identity-sequence usage required by audited administration. It grants no
+employee DELETE capability. The employee table shape is unchanged.
+
 The current API is read-only and the runtime database role receives only schema usage and table read access. Payroll, recruitment, performance management, employee documents, positions, offices, cost centers, and manager hierarchy are outside the current model.
 
 Migration `004_vacation_employees.sql` originally introduced both tables in the `vacation` schema. Because applied migrations are immutable historical records, migration `005_organization_domain.sql` moves the same table objects into `organization`. The final schema state is authoritative; migration 004 is not rewritten or removed.

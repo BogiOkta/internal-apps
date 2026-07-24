@@ -25,3 +25,25 @@ Organization is shared business master data, not a full HR system. The following
 - manager hierarchy until a concrete workflow requires it.
 
 Migration 004 historically created the current tables in `vacation`. Migration 005 moves those same table objects and rows to `organization`; the final database location defines current ownership.
+
+## Employee administration
+
+Employee is an Organization business-person record and is distinct from an
+Identity user account. Creating an employee does not provision a user.
+
+Authenticated users retain read access to the directory. Creation, editing,
+activation, and deactivation require `organization.employees.manage`, seeded
+by migration 008 only to the existing `Administrator` role. Existing
+Administrator tokens must be refreshed or reissued after that migration.
+
+Employee number is supplied on creation and is immutable thereafter. Normal
+edits cover name, email, and department; status changes use explicit activate
+and deactivate commands. There is no physical delete contract or runtime
+delete privilege. Every successful mutation and its shared audit event commit
+in one transaction. Repeating a state command for the current state returns
+the current record without an update or a new audit event.
+
+The employee list combines global search with server-side employee-number,
+full-name, exact-department-public-ID, email, and active-status filters.
+Employee number, name, department, email, and status sorts are fixed,
+allowlisted contracts with deterministic tie-breakers.

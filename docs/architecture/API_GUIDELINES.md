@@ -288,7 +288,11 @@ Current read-only employee-directory endpoints:
 | Endpoint | Query parameters | Behavior |
 |---|---|---|
 | `GET /api/v1/organization/departments` | `search`, `sort` | Returns active departments ordered by name by default. |
-| `GET /api/v1/organization/employees` | `search`, `departmentPublicId`, `sort` | Returns employees with department display data; filtering uses the department public UUID. |
+| `GET /api/v1/organization/employees` | `search`, `employeeNumber`, `name`, `departmentPublicId`, `email`, `status`, `sort` | Returns employees with department display data; filters combine server-side and use allowlisted values. |
+| `POST /api/v1/organization/employees` | JSON body | Creates an employee; requires `organization.employees.manage`. |
+| `PUT /api/v1/organization/employees/{publicId}` | JSON body | Updates name, email, and department; employee number and status are excluded. |
+| `POST /api/v1/organization/employees/{publicId}/activate` | none | Activates an employee. |
+| `POST /api/v1/organization/employees/{publicId}/deactivate` | none | Deactivates an employee without deleting it. |
 
 Both endpoints require authentication, return arrays without a response envelope, and expose public UUIDs only. Search is case-insensitive and limited to 100 characters. Sort values are endpoint allowlists; prefix a supported field with `-` for descending order.
 

@@ -1,5 +1,7 @@
 namespace InternalApps.Api.Modules.Organization;
 
+using System.IdentityModel.Tokens.Jwt;
+
 internal static class OrganizationEndpoints
 {
     private static readonly HashSet<string> DepartmentSorts =
@@ -34,6 +36,20 @@ internal static class OrganizationEndpoints
 
         organization.MapGet("/departments", ListDepartmentsAsync);
         organization.MapGet("/employees", ListEmployeesAsync);
+        organization.MapPost("/employees", CreateEmployeeAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageEmployees);
+        organization.MapPut("/employees/{publicId:guid}", UpdateEmployeeAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageEmployees);
+        organization.MapPost("/employees/{publicId:guid}/activate",
+                (Guid publicId, HttpContext context, EmployeesService service,
+                    CancellationToken token) =>
+                    SetActiveAsync(publicId, true, context, service, token))
+            .RequireAuthorization(OrganizationPermissions.ManageEmployees);
+        organization.MapPost("/employees/{publicId:guid}/deactivate",
+                (Guid publicId, HttpContext context, EmployeesService service,
+                    CancellationToken token) =>
+                    SetActiveAsync(publicId, false, context, service, token))
+            .RequireAuthorization(OrganizationPermissions.ManageEmployees);
 
         return endpoints;
     }
@@ -61,7 +77,11 @@ internal static class OrganizationEndpoints
 
     private static async Task<IResult> ListEmployeesAsync(
         string? search,
+        string? employeeNumber,
+        string? name,
         Guid? departmentPublicId,
+        string? email,
+        string? status,
         string? sort,
         HttpContext context,
         OrganizationRepository repository,
@@ -73,13 +93,109 @@ internal static class OrganizationEndpoints
             return validationResult;
         }
 
+        var filterErrors = new Dictionary<string, string[]>();
+        ValidateOptionalLength(employeeNumber, "employeeNumber", 30, filterErrors);
+        ValidateOptionalLength(name, "name", 201, filterErrors);
+        ValidateOptionalLength(email, "email", 254, filterErrors);
+        if (status is not null and not "" and not "all" and not "active" and not "inactive")
+            filterErrors["status"] = ["Status must be active, inactive, or all."];
+        if (filterErrors.Count > 0) return ValidationProblem(context, filterErrors);
+
         var employees = await repository.ListEmployeesAsync(
             search,
+            employeeNumber,
+            name,
             departmentPublicId,
+            email,
+            status switch { "active" => "Active", "inactive" => "Inactive", _ => null },
             sort,
             cancellationToken);
 
         return Results.Ok(employees);
+    }
+
+    private static async Task<IResult> CreateEmployeeAsync(
+        CreateEmployeeRequest request, HttpContext context, EmployeesService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.CreateAsync(
+            request, actor, context.TraceIdentifier, cancellationToken);
+        return result.Status == EmployeeWriteStatus.Success
+            ? Results.Created($"/api/v1/organization/employees/{result.Employee!.PublicId}",
+                result.Employee)
+            : WriteProblem(context, result);
+    }
+
+    private static async Task<IResult> UpdateEmployeeAsync(
+        Guid publicId, UpdateEmployeeRequest request, HttpContext context,
+        EmployeesService service, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        return WriteProblem(context, await service.UpdateAsync(
+            publicId, request, actor, context.TraceIdentifier, cancellationToken));
+    }
+
+    private static async Task<IResult> SetActiveAsync(
+        Guid publicId, bool active, HttpContext context, EmployeesService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        return WriteProblem(context, await service.SetActiveAsync(
+            publicId, active, actor, context.TraceIdentifier, cancellationToken));
+    }
+
+    private static IResult WriteProblem(HttpContext context, EmployeeWriteResult result) =>
+        result.Status switch
+        {
+            EmployeeWriteStatus.Success => Results.Ok(result.Employee),
+            EmployeeWriteStatus.ValidationFailed => ValidationProblem(context, result.Errors!),
+            EmployeeWriteStatus.NotFound => Problem(context, 404, "Employee not found",
+                "employee_not_found", "The requested employee does not exist."),
+            EmployeeWriteStatus.InvalidDepartment => Results.ValidationProblem(
+                new Dictionary<string, string[]>
+                {
+                    ["departmentPublicId"] = ["The requested department does not exist."]
+                },
+                title: "Invalid department",
+                detail: "One or more fields are invalid.",
+                instance: context.Request.Path,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "invalid_department",
+                    ["traceId"] = context.TraceIdentifier
+                }),
+            EmployeeWriteStatus.DuplicateEmployeeNumber => Problem(context, 409,
+                "Employee number already exists", "employee_number_conflict",
+                "An employee with the requested employee number already exists."),
+            EmployeeWriteStatus.DuplicateEmail => Problem(context, 409,
+                "Employee email already exists", "employee_email_conflict",
+                "An employee with the requested email already exists."),
+            _ => Results.Problem(statusCode: 500)
+        };
+
+    private static IResult ValidationProblem(HttpContext context,
+        Dictionary<string, string[]> errors) =>
+        Results.ValidationProblem(errors, title: "Validation failed",
+            detail: "One or more fields are invalid.", instance: context.Request.Path,
+            extensions: new Dictionary<string, object?> {
+                ["code"] = "validation_failed", ["traceId"] = context.TraceIdentifier });
+
+    private static IResult Problem(HttpContext context, int status, string title,
+        string code, string detail) =>
+        Results.Problem(statusCode: status, title: title, detail: detail,
+            instance: context.Request.Path,
+            extensions: new Dictionary<string, object?> {
+                ["code"] = code, ["traceId"] = context.TraceIdentifier });
+
+    private static bool TryGetActor(HttpContext context, out Guid actor) =>
+        Guid.TryParse(context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out actor);
+
+    private static void ValidateOptionalLength(string? value, string field, int max,
+        Dictionary<string, string[]> errors)
+    {
+        if (value?.Trim().Length > max)
+            errors[field] = [$"The field must not exceed {max} characters."];
     }
 
     private static IResult? ValidateQuery(

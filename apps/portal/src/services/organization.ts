@@ -5,6 +5,9 @@ import type {
   DepartmentSort,
   Employee,
   EmployeeSort,
+  EmployeeStatusFilter,
+  CreateEmployeeRequest,
+  UpdateEmployeeRequest,
 } from "@/types/organization";
 
 const apiBaseUrl =
@@ -17,7 +20,11 @@ type DepartmentQuery = {
 
 type EmployeeQuery = {
   search?: string;
+  employeeNumber?: string;
+  name?: string;
   departmentPublicId?: string;
+  email?: string;
+  status?: EmployeeStatusFilter;
   sort?: EmployeeSort;
 };
 
@@ -32,6 +39,53 @@ export async function getDepartments(
     query,
     signal,
   );
+}
+
+export async function createEmployee(
+  accessToken: string,
+  request: CreateEmployeeRequest,
+): Promise<Employee> {
+  return writeEmployee("/api/v1/organization/employees", accessToken, "POST", request);
+}
+
+export async function updateEmployee(
+  accessToken: string,
+  publicId: string,
+  request: UpdateEmployeeRequest,
+): Promise<Employee> {
+  return writeEmployee(`/api/v1/organization/employees/${encodeURIComponent(publicId)}`,
+    accessToken, "PUT", request);
+}
+
+export async function activateEmployee(accessToken: string, publicId: string): Promise<Employee> {
+  return writeEmployee(`/api/v1/organization/employees/${encodeURIComponent(publicId)}/activate`,
+    accessToken, "POST");
+}
+
+export async function deactivateEmployee(accessToken: string, publicId: string): Promise<Employee> {
+  return writeEmployee(`/api/v1/organization/employees/${encodeURIComponent(publicId)}/deactivate`,
+    accessToken, "POST");
+}
+
+async function writeEmployee(
+  path: string,
+  accessToken: string,
+  method: "POST" | "PUT",
+  body?: CreateEmployeeRequest | UpdateEmployeeRequest,
+): Promise<Employee> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    credentials: "include",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (response.ok) return (await response.json()) as Employee;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(problem?.title ?? "The employee could not be saved.",
+    problem ?? undefined, response.status);
 }
 
 export async function getEmployees(

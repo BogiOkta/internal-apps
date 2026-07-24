@@ -30,3 +30,21 @@ export type EmployeeSort =
   | "-email"
   | "status"
   | "-status";
+
+export const employeesManagePermission = "organization.employees.manage";
+
+export type EmployeeStatusFilter = "all" | "active" | "inactive";
+
+export type CreateEmployeeRequest = {
+  employeeNumber: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  departmentPublicId: string;
+  isActive: boolean;
+};
+
+export type UpdateEmployeeRequest = Omit<
+  CreateEmployeeRequest,
+  "employeeNumber" | "isActive"
+>;

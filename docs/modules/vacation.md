@@ -6,7 +6,8 @@ Organization and is consumed through Organization contracts.
 
 The current implemented capabilities are:
 
-- an authenticated, read-only employee directory backed by Organization;
+- an authenticated employee directory backed by Organization, with
+  permission-controlled Organization administration actions;
 - authenticated Leave Type listing and details;
 - permission-controlled Leave Type creation, update, activation, and
   deactivation;

@@ -108,6 +108,10 @@ Current module permission:
 | Permission | Read access | Initial role assignment |
 |---|---|---|
 | `vacation.leave-types.manage` | Leave Type reads remain available to authenticated users | Seeded only to the existing `Administrator` role by migration 007 |
+| `organization.employees.manage` | Employee directory reads remain available to authenticated users | Seeded only to the existing `Administrator` role by migration 008 |
+
+After migration 008, existing Administrator access tokens must be refreshed or
+reissued before the new employee-management permission claim is available.
 
 The permission's `vacation` namespace associates it with the Vacation
 application under the current RBAC model. Application assignment and

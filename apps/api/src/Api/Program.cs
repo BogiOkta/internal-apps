@@ -27,6 +27,7 @@ builder.Services.AddSingleton(dataSource);
 builder.Services.AddScoped<ApplicationRepository>();
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<OrganizationRepository>();
+builder.Services.AddScoped<EmployeesService>();
 builder.Services.AddScoped<LeaveTypesRepository>();
 builder.Services.AddScoped<LeaveTypesService>();
 builder.Services.AddScoped<AuditWriter>();
@@ -56,6 +57,11 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireClaim(
             "permission",
             VacationPermissions.ManageLeaveTypes));
+    options.AddPolicy(
+        OrganizationPermissions.ManageEmployees,
+        policy => policy.RequireClaim(
+            "permission",
+            OrganizationPermissions.ManageEmployees));
 });
 builder.Services.AddCors(options =>
 {

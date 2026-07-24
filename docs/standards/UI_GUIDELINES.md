@@ -424,10 +424,10 @@ Types, may apply documented column filters and additional presentation sorts
 client-side after the server has applied global search. Client-side filtering
 must never be described as server-side behavior.
 
-The Vacation employee directory remains the reference read-only list pattern.
-It consumes shared Organization data; the Vacation UI does not imply ownership
-of employees or departments. Selection does not imply an edit action, and no
-employee write controls are enabled.
+The Vacation employee directory consumes shared Organization data; its
+placement does not imply Vacation ownership. Authenticated users retain the
+directory, while permission-aware Organization administration actions use the
+standard right-side details/create/edit panel and remain enforced by the API.
 
 ### 7.3 Narrow screens
 
