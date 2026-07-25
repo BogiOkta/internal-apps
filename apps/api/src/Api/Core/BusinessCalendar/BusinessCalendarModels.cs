@@ -5,9 +5,9 @@ internal sealed record NonWorkingDayRecord(
     DateOnly Date,
     string Name,
     string? Description,
-    DateTimeOffset CreatedAt,
+    DateTime CreatedAt,
     Guid CreatedBy,
-    DateTimeOffset UpdatedAt,
+    DateTime UpdatedAt,
     Guid UpdatedBy);
 
 internal sealed record NonWorkingDayResponse(

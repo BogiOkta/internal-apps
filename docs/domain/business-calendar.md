@@ -44,3 +44,24 @@ Authenticated users may call the calculation endpoints. Administrator CRUD
 temporarily uses `identity.users.manage`, matching current Vacation request
 administration until a dedicated permission is approved. All successful
 creates, updates, and deletes write platform audit events atomically.
+
+## Portal administration
+
+Authorized administrators manage explicit dates at
+`/business-calendar/admin/non-working-days`. The localized Portal screen lists
+dates in ascending order, defaults to the current year, provides a simple year
+filter, and supports create, edit, and confirmed delete operations for date,
+name, and optional description. Successful writes refresh the selected year's
+list; validation, duplicate-date conflicts, loading, empty, forbidden, and safe
+error states are presented without exposing backend exceptions.
+
+The Portal intentionally provides no month calendar, recurrence, drag and
+drop, working-Saturday overrides, collective vacations, country or regional
+selection, import/export, bulk entry, or dashboard widget.
+
+Controlled smoke validated authorized and unauthorized navigation, localized
+direct-access denial, current-year and year-change loading, empty and required
+states, refreshed edit and confirmed delete, API authorization, refresh
+behavior, safe errors, and a clean console. It also corrected the persistence
+timestamp materialization used by administrator list and write responses while
+preserving the existing public API contract.

@@ -23,7 +23,8 @@
 - Business Calendar: the Republic of Serbia shared backend supports explicit
   administrator-maintained non-working dates and inclusive working-day
   calculations with weekends inherently excluded. Vacation delegates all
-  working-day calculations to this shared service.
+  working-day calculations to this shared service. A permission-aware Portal
+  route provides localized year-filtered CRUD administration of those dates.
 - Shared Portal UI: administrative grid, form field conventions, global
   appearance, `AppCalendar`, and `DateRangePicker` are available.
 
@@ -46,6 +47,15 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - API tests: passed, 15/15.
 - Portal production build: passed.
 - Strict TypeScript: passed.
+- Business Calendar Portal contract tests: passed.
+- Business Calendar controlled smoke: passed for authorized navigation,
+  current-year default, year reload, empty/required states, refreshed edit and
+  confirmed delete, unauthorized navigation/direct access, API 401/403/200
+  authorization, refresh behavior, safe errors, and a clean console. The
+  administrator list `timestamptz` persistence mapping discovered during smoke
+  was corrected without changing the API contract. Native date entry and the
+  localized duplicate-date UI message were not fully browser-driven; the API
+  create/409 conflict/cleanup paths and Portal mapping were validated instead.
 - Browser smoke: passed for desktop/mobile layout, light/dark appearance,
   request creation, authoritative working days, details/history, calendar
   navigation, and cancellation.
@@ -75,10 +85,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint BC.2 integrates Vacation with the shared Business Calendar. Request
-creation and its Portal preview now use Business Calendar, and balance
-transitions use the persisted Business Calendar result. No Business Calendar
-UI, RBAC change, or additional endpoint is included.
+Sprint BC.3 controlled validation is complete. The minimal Business Calendar
+administration UI remains limited to year-filtered list, create, edit, and
+confirmed delete using temporary `identity.users.manage`.
 
 ## Session instruction
 

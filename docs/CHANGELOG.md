@@ -1,5 +1,26 @@
 # Internal Apps Platform change history
 
+## 2026-07-25 — Sprint BC.3 Business Calendar administration UI
+
+- Added the permission-aware
+  `/business-calendar/admin/non-working-days` Portal route and authorized
+  administration navigation entry.
+- Added localized ascending date list, current-year default and simple year
+  filter, create/edit form, confirmed delete, validation, duplicate-date
+  feedback, duplicate-submission protection, and refreshed loading, empty,
+  success, forbidden, and safe error states.
+- Added one centralized Business Calendar Portal service and focused contract
+  tests for routes, methods, payloads, permission guarding, required fields,
+  and absence of unsupported controls.
+- Controlled smoke corrected the administrator list runtime mapping from
+  PostgreSQL `timestamptz` values to the unchanged `DateTimeOffset` API
+  contract. Authorized year loading, edit, confirmed delete, refresh,
+  localized forbidden behavior, API authorization, safe errors, and a clean
+  console were then validated; temporary smoke data was removed.
+- Kept month calendars, recurrence, drag and drop, working Saturdays,
+  collective vacations, regions/countries, import/export, bulk entry, and
+  dashboard widgets intentionally excluded.
+
 ## 2026-07-25 — Sprint BC.2 Vacation integration
 
 - Replaced Vacation's Monday-to-Friday request calculator with the shared

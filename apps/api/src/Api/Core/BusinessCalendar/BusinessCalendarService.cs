@@ -160,7 +160,8 @@ internal sealed class NonWorkingDaysService(
 
     private static NonWorkingDayResponse ToResponse(NonWorkingDayRecord record) =>
         new(record.PublicId, record.Date, record.Name, record.Description,
-            record.CreatedAt, record.CreatedBy, record.UpdatedAt, record.UpdatedBy);
+            new DateTimeOffset(record.CreatedAt), record.CreatedBy,
+            new DateTimeOffset(record.UpdatedAt), record.UpdatedBy);
 
     private static AuditEntry Audit(
         Guid actor, string action, Guid target, string traceId,

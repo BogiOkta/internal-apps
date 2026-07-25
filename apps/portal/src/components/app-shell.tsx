@@ -357,6 +357,21 @@ function Navigation({
             );
           })}
 
+        {user.permissions.includes(usersManagePermission) && (
+          <>
+            <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t("navigation.administration")}
+            </p>
+            <NavLink
+              href="/business-calendar/admin/non-working-days"
+              isActive={isRouteActive(currentPath, "/business-calendar/admin/non-working-days")}
+              label={t("businessCalendar.navigation")}
+              icon={<CalendarIcon />}
+              onNavigate={onNavigate}
+            />
+          </>
+        )}
+
         {showDevelopmentNavigation && (
           <>
             <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
