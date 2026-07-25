@@ -54,6 +54,9 @@ export function VacationWorkspace({
       ? [{
           label: t("identity.users.navigation"),
           href: "/identity/users",
+        }, {
+          label: t("vacation.admin.navigation"),
+          href: "/vacation/admin/requests",
         }]
       : []),
     {

@@ -12,6 +12,8 @@ import type {
   VacationLeaveTypeOption,
   VacationRequest,
   VacationRequestHistory,
+  VacationAdminRequestQuery,
+  PagedVacationRequests,
 } from "@/types/vacation";
 
 const apiBaseUrl =
@@ -194,6 +196,52 @@ export function listMyVacationBalances(
   return vacationRequest("/api/v1/vacation/me/balances", accessToken, locale, {
     signal,
   });
+}
+
+export function listAdminVacationRequests(
+  accessToken: string,
+  locale: string,
+  query: VacationAdminRequestQuery,
+  signal?: AbortSignal,
+): Promise<PagedVacationRequests> {
+  const searchParams = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") searchParams.set(key, String(value));
+  });
+  return vacationRequest(
+    `/api/v1/vacation/requests?${searchParams.toString()}`,
+    accessToken,
+    locale,
+    { signal },
+  );
+}
+
+export function getAdminVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  signal?: AbortSignal,
+): Promise<VacationRequest> {
+  return vacationRequest(
+    `/api/v1/vacation/requests/${encodeURIComponent(publicId)}`,
+    accessToken,
+    locale,
+    { signal },
+  );
+}
+
+export function getAdminVacationRequestHistory(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  signal?: AbortSignal,
+): Promise<VacationRequestHistory[]> {
+  return vacationRequest(
+    `/api/v1/vacation/requests/${encodeURIComponent(publicId)}/history`,
+    accessToken,
+    locale,
+    { signal },
+  );
 }
 
 async function vacationRequest<T>(

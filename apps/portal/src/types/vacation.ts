@@ -129,3 +129,22 @@ export type CreateVacationRequest = {
 export type CancelVacationRequest = {
   comment: string | null;
 };
+
+export type VacationAdminRequestQuery = {
+  status?: VacationRequestStatus;
+  leaveTypeId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type PagedVacationRequests = {
+  items: VacationRequest[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+};
+
+export const vacationRequestsManagePermission = "identity.users.manage";

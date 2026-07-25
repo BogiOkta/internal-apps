@@ -30,7 +30,8 @@
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
   transition history, cancellation, and the ownership-scoped history endpoint.
-- Administrator Portal: not implemented.
+- Administrator Portal: read-only request list, filters, and details are
+  implemented; transition controls are not implemented.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
@@ -44,6 +45,11 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - Browser smoke: passed for desktop/mobile layout, light/dark appearance,
   request creation, authoritative working days, details/history, calendar
   navigation, and cancellation.
+- Administrator browser smoke: passed for permission-aware navigation and
+  route/data denial, list fields, filters and clearing, empty and safe error
+  states, responsive layouts, details/history, light/dark appearance, and a
+  clean console. Multi-page pagination was statically reviewed but not forced
+  because only one safe matching request exists.
 - The unlinked-user state, overlap response, and cross-year rejection were
   statically reviewed but were not forced during browser smoke against the
   configured linked fixture.
@@ -51,7 +57,8 @@ Detailed state: [Vacation module](modules/vacation.md) and
 ## Known limitations
 
 - Public holidays are not supported.
-- The Vacation Administrator Portal is not implemented.
+- Vacation administrator approval, rejection, and cancellation controls are
+  not implemented.
 - Vacation administration temporarily reuses `identity.users.manage`; a
   dedicated Vacation administrator permission is not yet introduced.
 - No frontend automated-test framework is currently present.
@@ -59,11 +66,11 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint 05D is complete.
+Sprint 05E.1 read-only Vacation Administrator request workspace is complete.
 
 ## Next task
 
-Sprint 05E – Vacation Administrator Portal, in a new AI session.
+Vacation Administrator transition controls remain a separate future slice.
 
 ## Session instruction
 

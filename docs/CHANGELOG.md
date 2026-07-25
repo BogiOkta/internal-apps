@@ -1,5 +1,23 @@
 # Internal Apps Platform change history
 
+## 2026-07-24 — Sprint 05E.1 Vacation Administrator request workspace
+
+- Added a permission-aware, read-only Vacation Administrator request workspace
+  with server-backed status, Leave Type, employee search, and year filters.
+- Added responsive request tables/cards, shared status badges, pagination, and
+  read-only administrator request details with transition history.
+- Reused the existing typed Vacation service layer and shared workspace/status
+  components. No approval, rejection, cancellation, API, database, migration,
+  or dependency changes were added.
+- Controlled browser smoke passed for authorized navigation, direct-route and
+  API authorization denial, list fields, individual and combined filters,
+  filter clearing, empty and safe not-found states, responsive desktop/mobile
+  layouts, details/history, light/dark appearance, and a clean console.
+- Corrected the list and details routes to render the established localized
+  forbidden state without requesting Administrator data when the current user
+  lacks `identity.users.manage`. Multi-page pagination was statically reviewed
+  but not forced because the configured safe data has only one matching row.
+
 ## 2026-07-24 — AI-assisted development workflow
 
 - Established a binding AI-assisted working agreement based on short,

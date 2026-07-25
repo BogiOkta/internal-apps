@@ -24,8 +24,20 @@ The current implemented capabilities are:
 - employee Portal dashboard, request list, creation, details/history,
   cancellation, and personal calendar.
 
-Administrator approval Portal workflows, public holidays, notifications, and
-configurable approval workflows are not implemented.
+The Administrator Portal includes a read-only request list and request details
+workspace. Approval, rejection, and administrator cancellation Portal
+workflows, public holidays, notifications, and configurable approval workflows
+are not implemented.
+
+Controlled Administrator browser smoke validated authorized navigation,
+localized direct-route denial and API `403` responses for an unauthorized user,
+request fields, individual and combined filters, clearing, empty and safe
+not-found states, desktop tables, mobile cards without horizontal overflow,
+details and chronological history, light/dark appearance, and a clean browser
+console. No internal bigint identifiers or transition controls were displayed.
+Multi-page pagination and filter preservation across a page transition were
+statically reviewed but not forced because the available safe fixture produced
+only one matching row.
 
 See [`../domain/vacation.md`](../domain/vacation.md) for detailed ownership,
 domain rules, persistence, authorization, and current implementation behavior.

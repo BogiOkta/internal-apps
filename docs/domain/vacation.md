@@ -142,7 +142,14 @@ request, optional balance mutation, append-only history, and platform audit on
 one connection and transaction. Failed validation, lookup, conflict, or
 transition attempts write no successful history or audit record.
 
-No Administrator approval Portal, public-holiday calendar, notification,
+The permission-aware Administrator Portal uses
+`/vacation/admin/requests` for the paginated request workspace and
+`/vacation/admin/requests/{requestId}` for read-only details and history.
+It supports server-backed status, Leave Type, employee text, and year filters,
+with a responsive table/card presentation. No approval, rejection, or
+administrator cancellation controls are exposed.
+
+No Administrator transition Portal, public-holiday calendar, notification,
 background job, manager hierarchy, configurable workflow, or physical delete
 is implemented.
 
