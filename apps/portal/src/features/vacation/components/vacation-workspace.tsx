@@ -57,6 +57,9 @@ export function VacationWorkspace({
         }, {
           label: t("vacation.admin.navigation"),
           href: "/vacation/admin/requests",
+        }, {
+          label: t("leavePolicy.navigation"),
+          href: "/vacation/admin/policies",
         }]
       : []),
     {

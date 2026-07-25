@@ -1,5 +1,24 @@
 # Internal Apps Platform change history
 
+## 2026-07-25 — Sprint LV.1 Leave Policy foundation
+
+- Added `vacation.leave_policies`, with one annual entitlement policy per
+  employee and leave year, non-negative entitlement and carry-over, optional
+  carry-over expiration, a signed manual adjustment, notes, and timestamps.
+- Added administrator list/get/create/update/delete API operations with leave
+  year and employee filters, employee-name sorting, transactional audit, and
+  stable validation, not-found, invalid-employee, and duplicate employee/year
+  Problem Details.
+- Added the permission-aware `/vacation/admin/policies` Portal route with
+  employee/year selectors, a simple create/edit form, confirmed deletion, and
+  the requested entitlement columns.
+- Leave Policy represents annual entitlement only. No balance, remaining,
+  consumed, or used-day value is stored or calculated; balance calculation and
+  all allocation/request-processing automation remain deferred.
+- Applied migration 019 and validated the API Release build, 24/24 focused and
+  regression API tests, Portal production build, strict TypeScript, and Git
+  diff checks. Browser smoke was intentionally not run.
+
 ## 2026-07-25 — Sprint BC.3 Business Calendar administration UI
 
 - Added the permission-aware

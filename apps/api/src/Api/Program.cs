@@ -39,6 +39,8 @@ builder.Services.AddScoped<LeaveTypesRepository>();
 builder.Services.AddScoped<LeaveTypesService>();
 builder.Services.AddScoped<LeaveRequestsRepository>();
 builder.Services.AddScoped<LeaveRequestService>();
+builder.Services.AddScoped<LeavePoliciesRepository>();
+builder.Services.AddScoped<LeavePoliciesService>();
 builder.Services.AddScoped<AuditWriter>();
 builder.Services.AddScoped<UsersRepository>();
 builder.Services.AddScoped<UsersService>();
@@ -142,6 +144,7 @@ app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
 app.MapVacationEndpoints();
 app.MapLeaveRequestEndpoints();
+app.MapLeavePolicyEndpoints();
 app.MapBusinessCalendarEndpoints();
 
 app.Run();

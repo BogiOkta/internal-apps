@@ -23,6 +23,7 @@ The database foundation includes:
 - leave requests;
 - leave request transition history;
 - persisted yearly leave balances.
+- annual leave policies.
 
 Business Calendar data is shared Core Platform data and is not part of the
 Vacation database foundation. Approval-step configuration, attachments, and
@@ -86,7 +87,32 @@ required when future services implement consequential writes.
 used days for one employee, leave type, and year. That combination is unique.
 `used_days` changes only through future transactional Vacation business logic.
 
+### Leave policies
+
+`vacation.leave_policies` represents the annual entitlement assigned to an
+employee at the beginning of a leave year. One employee may have at most one
+policy per leave year. A policy stores annual entitlement, carry-over and its
+optional expiration date, a possibly negative manual adjustment, optional
+notes, and timestamps.
+
+Leave Policy is an entitlement-input model only. It contains no balance,
+remaining, consumed, or used-day value, and this sprint does not derive or
+store any calculated value. Balance calculation, allocation generation,
+automatic carry-over, and request deduction will be introduced separately.
+
 ## Current implementation
+
+Administrators may list, retrieve, create, update, and delete annual Leave
+Policies through `/api/v1/vacation/leave-policies`. The list filters by leave
+year and employee and sorts by employee name. The unique employee/year
+constraint is enforced by PostgreSQL and returned as stable Problem Details.
+Administration temporarily reuses `identity.users.manage` and every successful
+write is audited atomically.
+
+The minimal administrator Portal route `/vacation/admin/policies` provides
+employee and year selectors, a compact entitlement form, and create, edit, and
+confirmed delete actions. It does not calculate or display a balance and
+contains no dashboard, chart, report, import, or export.
 
 The Portal exposes a localized Vacation workspace with Overview, Employees,
 and Leave Types sections. Employees is currently a read-only directory backed

@@ -37,6 +37,9 @@
   transition history, cancellation, and the ownership-scoped history endpoint.
 - Administrator Portal: request list, filters, details, history, approval,
   rejection, and administrator cancellation are implemented.
+- Leave Policy foundation: annual employee/year entitlement persistence,
+  administrator CRUD API, and minimal administrator Portal are implemented.
+  Policies contain entitlement inputs only; balance calculation is deferred.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
@@ -47,6 +50,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - API tests: passed, 15/15.
 - Portal production build: passed.
 - Strict TypeScript: passed.
+- Leave Policy migration 019: applied successfully.
+- Leave Policy focused tests: passed as part of the 24/24 API test suite.
+- Leave Policy Portal production route and strict TypeScript: passed.
 - Business Calendar Portal contract tests: passed.
 - Business Calendar controlled smoke: passed for authorized navigation,
   current-year default, year reload, empty/required states, refreshed edit and
@@ -85,9 +91,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint BC.3 controlled validation is complete. The minimal Business Calendar
-administration UI remains limited to year-filtered list, create, edit, and
-confirmed delete using temporary `identity.users.manage`.
+Sprint LV.1 Leave Policy foundation is implemented. Validation status is
+recorded in the latest changelog entry. Leave Policy remains limited to annual
+entitlement administration and uses temporary `identity.users.manage`.
 
 ## Session instruction
 
