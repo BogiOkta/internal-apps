@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from "@/services/api-config";
 import type {
   AuthResponse,
   CurrentUser,
@@ -7,8 +8,7 @@ import type {
   CreateManagedUserRequest,
 } from "@/types/auth";
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+const apiBaseUrl = getApiBaseUrl();
 
 export class ApiError extends Error {
   constructor(

@@ -1,5 +1,17 @@
 # Internal Apps Platform change history
 
+## 2026-07-25 — Sprint DEV.3 project-specific development ports
+
+- Assigned stable local-development URLs to the Portal
+  (`http://localhost:3100`) and API (`http://localhost:5100`) to avoid
+  collisions with other locally developed applications.
+- Added the canonical `DEV_PORTAL_PORT` and `DEV_API_PORT` local settings. The
+  runner derives listening URLs, Portal API configuration, CORS, lifecycle
+  checks, and smoke defaults from them; the API launch profile is only an IDE
+  fallback.
+- Consolidated Portal API base URL resolution into one shared module without
+  changing production/runtime behavior.
+
 ## 2026-07-25 — Sprint DEV.1 minimal developer runner
 
 - Added the repository-root `internal.ps1` entry point with only `start`,

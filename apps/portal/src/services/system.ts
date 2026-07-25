@@ -1,6 +1,7 @@
+import { getApiBaseUrl } from "@/services/api-config";
 import type { SystemInfo } from "@/types/system";
 
-const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:5000";
+const apiBaseUrl = getApiBaseUrl();
 
 export async function getSystemInfo(): Promise<SystemInfo | null> {
   try {

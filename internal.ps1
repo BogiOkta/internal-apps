@@ -10,9 +10,34 @@ $ErrorActionPreference = "Stop"
 $repositoryRoot = $PSScriptRoot
 $stateDirectory = Join-Path $repositoryRoot ".internal"
 $statePath = Join-Path $stateDirectory "runner.json"
-$apiUrl = "http://localhost:5000"
+$environmentPath = Join-Path $repositoryRoot ".env"
+
+function Get-DevelopmentPort {
+    param([string]$Name)
+
+    $value = [Environment]::GetEnvironmentVariable($Name, "Process")
+    if ([string]::IsNullOrWhiteSpace($value) -and (Test-Path -LiteralPath $environmentPath)) {
+        $line = Get-Content -LiteralPath $environmentPath |
+            Where-Object { $_ -match "^\s*$([regex]::Escape($Name))\s*=" } |
+            Select-Object -Last 1
+        if ($null -ne $line) {
+            $value = ($line -split "=", 2)[1].Trim().Trim('"').Trim("'")
+        }
+    }
+
+    $port = 0
+    if (-not [int]::TryParse($value, [ref]$port) -or $port -lt 1 -or $port -gt 65535) {
+        throw "$Name must be an integer from 1 through 65535 in the process environment or $environmentPath."
+    }
+
+    return $port
+}
+
+$apiPort = Get-DevelopmentPort -Name "DEV_API_PORT"
+$portalPort = Get-DevelopmentPort -Name "DEV_PORTAL_PORT"
+$apiUrl = "http://localhost:$apiPort"
 $apiHealthUrl = "$apiUrl/health"
-$portalUrl = "http://localhost:3000"
+$portalUrl = "http://localhost:$portalPort"
 
 function Read-RunnerState {
     if (-not (Test-Path -LiteralPath $statePath)) {
@@ -93,8 +118,8 @@ function Get-ServiceStatus {
 
 function Show-Status {
     $state = Read-RunnerState
-    $apiStatus = Get-ServiceStatus -Port 5000 -ProbeUrl $apiHealthUrl
-    $portalStatus = Get-ServiceStatus -Port 3000 -ProbeUrl $portalUrl
+    $apiStatus = Get-ServiceStatus -Port $apiPort -ProbeUrl $apiHealthUrl
+    $portalStatus = Get-ServiceStatus -Port $portalPort -ProbeUrl $portalUrl
 
     Write-Host "API:    $apiStatus - $apiUrl"
     Write-Host "Portal: $portalStatus - $portalUrl"
@@ -140,8 +165,8 @@ function Start-Runner {
     $newState = [ordered]@{}
 
     foreach ($service in @(
-        [pscustomobject]@{ Name = "api"; Label = "API"; Port = 5000; Probe = $apiHealthUrl },
-        [pscustomobject]@{ Name = "portal"; Label = "Portal"; Port = 3000; Probe = $portalUrl }
+        [pscustomobject]@{ Name = "api"; Label = "API"; Port = $apiPort; Probe = $apiHealthUrl },
+        [pscustomobject]@{ Name = "portal"; Label = "Portal"; Port = $portalPort; Probe = $portalUrl }
     )) {
         $status = Get-ServiceStatus -Port $service.Port -ProbeUrl $service.Probe
         if ($status -eq "running") {
@@ -160,7 +185,7 @@ function Start-Runner {
         $newState.api = Start-ServiceWindow `
             -Title "Internal Apps API" `
             -WorkingDirectory $repositoryRoot `
-            -Body '$env:PORTAL_URL = "http://localhost:3000"; dotnet run --project apps/api/src/Api/InternalApps.Api.csproj --launch-profile http'
+            -Body "`$env:ASPNETCORE_URLS = '$apiUrl'; `$env:PORTAL_URL = '$portalUrl'; dotnet run --project apps/api/src/Api/InternalApps.Api.csproj --no-launch-profile"
     }
 
     if (-not $newState.Contains("portal") -and -not (Test-HttpEndpoint -Url $portalUrl)) {
@@ -168,7 +193,7 @@ function Start-Runner {
         $newState.portal = Start-ServiceWindow `
             -Title "Internal Apps Portal" `
             -WorkingDirectory (Join-Path $repositoryRoot "apps/portal") `
-            -Body '$env:NEXT_PUBLIC_API_BASE_URL = "http://localhost:5000"; npm run dev'
+            -Body "`$env:PORT = '$portalPort'; `$env:API_BASE_URL = '$apiUrl'; `$env:NEXT_PUBLIC_API_BASE_URL = '$apiUrl'; npm run dev -- --port `$env:PORT"
     }
 
     Write-RunnerState -State $newState

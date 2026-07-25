@@ -70,11 +70,10 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint DEV.1 adds a minimal local developer runner with `start`, `stop`,
-`restart`, and `status` commands for the API and Portal. Stop is restricted to
-processes started by the runner. PowerShell parsing, occupied-port handling,
-start, endpoint readiness, duplicate-start reuse, restart, stop, repeated safe
-stop, clear-port cleanup, and repository checks are validated.
+Sprint DEV.3 assigns stable project-specific development ports: the Portal is
+served at `http://localhost:3100` and the API at `http://localhost:5100`.
+The existing `internal.ps1` lifecycle continues to manage and validate these
+services without changing production/runtime behavior.
 
 ## Session instruction
 

@@ -27,7 +27,11 @@ foreach ($name in @(
 $apiBaseUrl = if ($env:API_BASE_URL) {
     $env:API_BASE_URL.TrimEnd("/")
 } else {
-    "http://localhost:5000"
+    $devApiPort = $env:DEV_API_PORT
+    if (-not $devApiPort) {
+        throw "DEV_API_PORT is not set."
+    }
+    "http://localhost:$devApiPort"
 }
 $createdRequestIds = [System.Collections.Generic.List[string]]::new()
 $adminToken = $null

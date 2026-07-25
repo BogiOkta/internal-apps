@@ -192,26 +192,15 @@ npm install
 Set-Location ../..
 ```
 
-## Run the API
+## Run the API and Portal
 
-From the repository root:
+Set `DEV_API_PORT` and `DEV_PORTAL_PORT` in the repository-root `.env`, then
+use the developer runner below. It derives the API listening URL, Portal
+listening port, Portal API base URL, and development CORS origin from those two
+values. Process environment values override `.env`.
 
-```powershell
-$env:PORTAL_URL = "http://localhost:3000"
-dotnet run --project apps/api/src/Api/InternalApps.Api.csproj --launch-profile http
-```
-
-The API loads database and JWT settings from the repository-root `.env`.
-
-## Run the Portal
-
-In a second PowerShell terminal from the repository root:
-
-```powershell
-Set-Location apps/portal
-$env:NEXT_PUBLIC_API_BASE_URL = "http://localhost:5000"
-npm run dev
-```
+The API `http` launch profile remains only as an IDE fallback. The canonical
+runner bypasses it and injects `ASPNETCORE_URLS`.
 
 ## Minimal developer runner
 
@@ -230,7 +219,7 @@ services are reused. An occupied port with no responsive expected service is
 reported and left untouched.
 
 `stop` affects only process trees started by `internal.ps1`. It does not stop
-unrelated processes merely because they use ports 3000 or 5000. Minimal
+unrelated processes merely because they use the configured ports. Minimal
 repository-local PID state is kept under the ignored `.internal/` directory;
 stale PIDs are detected and skipped safely.
 
@@ -238,9 +227,9 @@ stale PIDs are detected and skipped safely.
 
 | Service | URL |
 |---|---|
-| API health | <http://localhost:5000/health> |
-| API information | <http://localhost:5000/api/v1/system/info> |
-| Portal | <http://localhost:3000> |
+| API health | <http://localhost:5100/health> |
+| API information | <http://localhost:5100/api/v1/system/info> |
+| Portal | <http://localhost:3100> |
 
 The current Portal flow is:
 
@@ -250,16 +239,20 @@ The Portal opens at the login page, redirects authenticated users to the dashboa
 
 ## Validate Authentication MVP
 
-Apply migrations, then start the API and Portal using the commands above. Open <http://localhost:3000>, sign in with username `admin` and the private `ADMIN_INITIAL_PASSWORD` used during migration, and confirm the dashboard displays the Administrator user and role.
+Apply migrations, then start the API and Portal using the commands above. Open
+the Portal URL listed above, sign in with username `admin` and the private
+`ADMIN_INITIAL_PASSWORD` used during migration, and confirm the dashboard
+displays the Administrator user and role.
 
 API validation from PowerShell:
 
 ```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $loginBody = @{ username = "admin"; password = "<admin-password>" } | ConvertTo-Json
+$apiBaseUrl = "http://localhost:5100"
 
 $login = Invoke-RestMethod `
-  -Uri "http://localhost:5000/api/v1/auth/login" `
+  -Uri "$apiBaseUrl/api/v1/auth/login" `
   -Method Post `
   -ContentType "application/json" `
   -Body $loginBody `
@@ -267,22 +260,22 @@ $login = Invoke-RestMethod `
 
 $headers = @{ Authorization = "Bearer $($login.accessToken)" }
 Invoke-RestMethod `
-  -Uri "http://localhost:5000/api/v1/auth/me" `
+  -Uri "$apiBaseUrl/api/v1/auth/me" `
   -Headers $headers `
   -WebSession $session
 
 Invoke-RestMethod `
-  -Uri "http://localhost:5000/api/v1/me/applications" `
+  -Uri "$apiBaseUrl/api/v1/me/applications" `
   -Headers $headers `
   -WebSession $session
 
 Invoke-RestMethod `
-  -Uri "http://localhost:5000/api/v1/auth/refresh" `
+  -Uri "$apiBaseUrl/api/v1/auth/refresh" `
   -Method Post `
   -WebSession $session
 
 Invoke-RestMethod `
-  -Uri "http://localhost:5000/api/v1/auth/logout" `
+  -Uri "$apiBaseUrl/api/v1/auth/logout" `
   -Method Post `
   -Headers $headers `
   -WebSession $session

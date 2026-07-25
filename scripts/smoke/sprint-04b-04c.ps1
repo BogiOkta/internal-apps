@@ -25,7 +25,15 @@ foreach ($name in $required) {
     }
 }
 
-$apiBaseUrl = if ($env:API_BASE_URL) { $env:API_BASE_URL.TrimEnd("/") } else { "http://localhost:5000" }
+$apiBaseUrl = if ($env:API_BASE_URL) {
+    $env:API_BASE_URL.TrimEnd("/")
+} else {
+    $devApiPort = $env:DEV_API_PORT
+    if (-not $devApiPort) {
+        throw "DEV_API_PORT is not set."
+    }
+    "http://localhost:$devApiPort"
+}
 
 function ConvertFrom-ResponseJson {
     param([object]$Content)

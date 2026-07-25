@@ -1,9 +1,9 @@
 import { ApiError } from "@/services/auth";
+import { getApiBaseUrl } from "@/services/api-config";
 import type { ProblemDetails } from "@/types/auth";
 import type { AssignedApplication } from "@/types/application";
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+const apiBaseUrl = getApiBaseUrl();
 
 export async function getAssignedApplications(
   accessToken: string,

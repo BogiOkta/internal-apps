@@ -1,4 +1,5 @@
 import { ApiError } from "@/services/auth";
+import { getApiBaseUrl } from "@/services/api-config";
 import type { ProblemDetails } from "@/types/auth";
 import type {
   Department,
@@ -12,8 +13,7 @@ import type {
   UserEmployeeLinkOptions,
 } from "@/types/organization";
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+const apiBaseUrl = getApiBaseUrl();
 
 type DepartmentQuery = {
   search?: string;

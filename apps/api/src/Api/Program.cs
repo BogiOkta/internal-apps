@@ -17,7 +17,7 @@ const string LocalPortalCorsPolicy = "LocalPortal";
 var envPath = FindEnvironmentFile()
     ?? throw new InvalidOperationException(
         "Repository .env file was not found from the current or application directory.");
-Env.Load(envPath);
+Env.NoClobber().Load(envPath);
 SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,7 +86,21 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(LocalPortalCorsPolicy, policy =>
     {
-        var portalUrl = builder.Configuration["PORTAL_URL"] ?? "http://localhost:3000";
+        var portalUrl = builder.Configuration["PORTAL_URL"];
+        if (string.IsNullOrWhiteSpace(portalUrl) && builder.Environment.IsDevelopment())
+        {
+            var portalPort = builder.Configuration["DEV_PORTAL_PORT"]
+                ?? throw new InvalidOperationException(
+                    "DEV_PORTAL_PORT is required for local development.");
+            portalUrl = $"http://localhost:{portalPort}";
+        }
+
+        if (string.IsNullOrWhiteSpace(portalUrl))
+        {
+            throw new InvalidOperationException(
+                "PORTAL_URL is required outside local development.");
+        }
+
         policy
             .WithOrigins(portalUrl)
             .AllowAnyHeader()
