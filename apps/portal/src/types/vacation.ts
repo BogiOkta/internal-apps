@@ -130,6 +130,10 @@ export type CancelVacationRequest = {
   comment: string | null;
 };
 
+export type VacationRequestTransition = {
+  comment: string | null;
+};
+
 export type VacationAdminRequestQuery = {
   status?: VacationRequestStatus;
   leaveTypeId?: string;

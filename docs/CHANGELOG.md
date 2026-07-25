@@ -1,5 +1,28 @@
 # Internal Apps Platform change history
 
+## 2026-07-25 — Sprint 05E.2 Vacation Administrator actions
+
+- Added permission-aware approval, rejection, and administrator cancellation
+  controls to Vacation Administrator request details.
+- Matched backend transitions: submitted requests may be approved, rejected,
+  or cancelled; approved requests may be cancelled; terminal requests expose
+  no actions.
+- Added explicit localized confirmations, optional administrator comments,
+  duplicate-submission protection, loading states, success/error feedback, and
+  post-transition details/history refresh through the typed Vacation service.
+- Reused `identity.users.manage`; no backend, database, migration, dependency,
+  or component-level fetch changes were introduced.
+- Controlled browser smoke validated submitted/approved/terminal action
+  visibility, every confirmation, optional comments, approval, rejection,
+  submitted and approved cancellation, refreshed details/history/list status,
+  localized safe Problem Details presentation, permission denial, and a clean
+  console. The loading label could not be captured against the fast local API;
+  duplicate-submission prevention was confirmed by the disabled-state
+  implementation and successful single-transition histories. A transient
+  database connection reset during fixture creation rendered only the safe
+  localized generic error and succeeded on retry; no runtime correction was
+  required. All created requests were left terminal.
+
 ## 2026-07-24 — Sprint 05E.1 Vacation Administrator request workspace
 
 - Added a permission-aware, read-only Vacation Administrator request workspace

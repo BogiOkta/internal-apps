@@ -30,8 +30,8 @@
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
   transition history, cancellation, and the ownership-scoped history endpoint.
-- Administrator Portal: read-only request list, filters, and details are
-  implemented; transition controls are not implemented.
+- Administrator Portal: request list, filters, details, history, approval,
+  rejection, and administrator cancellation are implemented.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
@@ -48,8 +48,14 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - Administrator browser smoke: passed for permission-aware navigation and
   route/data denial, list fields, filters and clearing, empty and safe error
   states, responsive layouts, details/history, light/dark appearance, and a
-  clean console. Multi-page pagination was statically reviewed but not forced
-  because only one safe matching request exists.
+  clean console. Administrator action smoke additionally passed for
+  status-dependent action visibility, confirmations, optional comments,
+  approval, rejection, submitted and approved cancellation, refreshed
+  details/history/list state, localized safe errors, authorization denial, and
+  terminal smoke data. The loading label was not observable against the fast
+  local API; its disabled duplicate-submission guard was statically confirmed.
+  Multi-page pagination was statically reviewed but not forced because only one
+  safe matching request exists.
 - The unlinked-user state, overlap response, and cross-year rejection were
   statically reviewed but were not forced during browser smoke against the
   configured linked fixture.
@@ -57,8 +63,6 @@ Detailed state: [Vacation module](modules/vacation.md) and
 ## Known limitations
 
 - Public holidays are not supported.
-- Vacation administrator approval, rejection, and cancellation controls are
-  not implemented.
 - Vacation administration temporarily reuses `identity.users.manage`; a
   dedicated Vacation administrator permission is not yet introduced.
 - No frontend automated-test framework is currently present.
@@ -66,11 +70,8 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint 05E.1 read-only Vacation Administrator request workspace is complete.
-
-## Next task
-
-Vacation Administrator transition controls remain a separate future slice.
+Sprint 05E.3 controlled browser smoke for Vacation Administrator actions is
+complete. No runtime correction was required.
 
 ## Session instruction
 

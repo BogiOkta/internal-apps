@@ -15,8 +15,11 @@ import { VacationWorkspace } from "@/features/vacation/components/vacation-works
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
 import {
+  approveAdminVacationRequest,
+  cancelAdminVacationRequest,
   getAdminVacationRequest,
   getAdminVacationRequestHistory,
+  rejectAdminVacationRequest,
 } from "@/services/vacation";
 import {
   vacationRequestsManagePermission,
@@ -31,7 +34,11 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
   const [request, setRequest] = useState<VacationRequest | null>(null);
   const [history, setHistory] = useState<VacationRequestHistory[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [action, setAction] = useState<AdminAction | null>(null);
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!accessToken || !allowed) return;
@@ -58,6 +65,32 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
     return () => controller.abort();
   }, [load]);
 
+  async function submitAction() {
+    if (!accessToken || !request || !action || isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const body = { comment: comment.trim() || null };
+      if (action === "approve") {
+        await approveAdminVacationRequest(accessToken, locale, request.publicId, body);
+      } else if (action === "reject") {
+        await rejectAdminVacationRequest(accessToken, locale, request.publicId, body);
+      } else {
+        await cancelAdminVacationRequest(accessToken, locale, request.publicId, body);
+      }
+      setSuccess(t(`vacation.admin.action.${action}.success`));
+      setAction(null);
+      setComment("");
+      await load();
+    } catch (caught) {
+      setError(problemMessage(
+        caught instanceof ApiError ? caught.problem?.code ?? "generic" : "generic", t));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   if (!allowed) return <VacationWorkspace title={t("vacation.admin.detailsTitle")}>
     <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
       {t("vacation.admin.forbidden")}
@@ -69,6 +102,7 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
     <div className="mb-4"><Link href="/vacation/admin/requests" className={secondaryButtonClass}>
       {t("vacation.admin.back")}
     </Link></div>
+    {success && <div role="status" className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">{success}</div>}
     {error && <div role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">{error}</div>}
     {isLoading ? <div className="h-72 animate-pulse rounded-lg bg-slate-200" />
       : request && <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.55fr)]">
@@ -89,6 +123,11 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
             {request.decisionNote && <Detail label={t("vacation.employeePortal.decisionNote")}
               value={request.decisionNote} />}
           </dl>
+          <AdminActions request={request} action={action} comment={comment}
+            isSubmitting={isSubmitting} t={t}
+            onChoose={(nextAction) => { setAction(nextAction); setComment(""); setError(null); }}
+            onComment={setComment} onSubmit={() => void submitAction()}
+            onClose={() => { setAction(null); setComment(""); }} />
         </article>
         <aside className="rounded-lg border border-slate-300 bg-white p-6">
           <h2 className="text-lg font-semibold">{t("vacation.employeePortal.history")}</h2>
@@ -102,6 +141,57 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
         </aside>
       </div>}
   </VacationWorkspace>;
+}
+
+type AdminAction = "approve" | "reject" | "cancel";
+
+function AdminActions({ request, action, comment, isSubmitting, t, onChoose,
+  onComment, onSubmit, onClose }: {
+  request: VacationRequest;
+  action: AdminAction | null;
+  comment: string;
+  isSubmitting: boolean;
+  t: ReturnType<typeof useTranslations>["t"];
+  onChoose: (action: AdminAction) => void;
+  onComment: (comment: string) => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
+  const actions: AdminAction[] = request.status === "SUBMITTED"
+    ? ["approve", "reject", "cancel"]
+    : request.status === "APPROVED" ? ["cancel"] : [];
+  if (actions.length === 0) return null;
+
+  return <div className="mt-6 border-t border-slate-200 pt-5">
+    {!action ? <div className="flex flex-wrap gap-2">
+      {actions.map((item) => <button key={item} type="button"
+        onClick={() => onChoose(item)}
+        className={item === "approve"
+          ? "min-h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white"
+          : secondaryButtonClass}>
+        {t(`vacation.admin.action.${item}.button`)}
+      </button>)}
+    </div> : <div className="rounded-md border border-amber-300 bg-amber-50 p-4">
+      <h3 className="font-semibold">{t(`vacation.admin.action.${action}.title`)}</h3>
+      <p className="mt-1 text-sm">{t(`vacation.admin.action.${action}.warning`)}</p>
+      <label className="mt-3 block text-sm font-medium">
+        {t("vacation.admin.action.comment")}
+        <textarea value={comment} maxLength={1000} rows={3}
+          disabled={isSubmitting} onChange={(event) => onComment(event.target.value)}
+          className="mt-1 block w-full resize-y rounded-md border border-slate-300 bg-white p-2 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+      </label>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" onClick={onSubmit} disabled={isSubmitting}
+          className="min-h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
+          {isSubmitting
+            ? t(`vacation.admin.action.${action}.loading`)
+            : t(`vacation.admin.action.${action}.confirm`)}
+        </button>
+        <button type="button" onClick={onClose} disabled={isSubmitting}
+          className={secondaryButtonClass}>{t("vacation.admin.action.keep")}</button>
+      </div>
+    </div>}
+  </div>;
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

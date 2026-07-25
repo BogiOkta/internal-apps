@@ -14,6 +14,7 @@ import type {
   VacationRequestHistory,
   VacationAdminRequestQuery,
   PagedVacationRequests,
+  VacationRequestTransition,
 } from "@/types/vacation";
 
 const apiBaseUrl =
@@ -241,6 +242,48 @@ export function getAdminVacationRequestHistory(
     accessToken,
     locale,
     { signal },
+  );
+}
+
+export function approveAdminVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  body: VacationRequestTransition,
+): Promise<VacationRequest> {
+  return adminVacationRequestTransition(accessToken, locale, publicId, "approve", body);
+}
+
+export function rejectAdminVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  body: VacationRequestTransition,
+): Promise<VacationRequest> {
+  return adminVacationRequestTransition(accessToken, locale, publicId, "reject", body);
+}
+
+export function cancelAdminVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  body: VacationRequestTransition,
+): Promise<VacationRequest> {
+  return adminVacationRequestTransition(accessToken, locale, publicId, "cancel", body);
+}
+
+function adminVacationRequestTransition(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  action: "approve" | "reject" | "cancel",
+  body: VacationRequestTransition,
+): Promise<VacationRequest> {
+  return vacationRequest(
+    `/api/v1/vacation/requests/${encodeURIComponent(publicId)}/${action}`,
+    accessToken,
+    locale,
+    { method: "POST", body },
   );
 }
 
