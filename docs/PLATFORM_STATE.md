@@ -70,8 +70,11 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint 05E.3 controlled browser smoke for Vacation Administrator actions is
-complete. No runtime correction was required.
+Sprint DEV.1 adds a minimal local developer runner with `start`, `stop`,
+`restart`, and `status` commands for the API and Portal. Stop is restricted to
+processes started by the runner. PowerShell parsing, occupied-port handling,
+start, endpoint readiness, duplicate-start reuse, restart, stop, repeated safe
+stop, clear-port cleanup, and repository checks are validated.
 
 ## Session instruction
 

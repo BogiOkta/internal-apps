@@ -1,5 +1,16 @@
 # Internal Apps Platform change history
 
+## 2026-07-25 — Sprint DEV.1 minimal developer runner
+
+- Added the repository-root `internal.ps1` entry point with only `start`,
+  `stop`, `restart`, and `status` commands.
+- The runner reuses responsive services, refuses unknown or unresponsive port
+  occupants, starts the canonical API and Portal development commands in
+  visible PowerShell windows, and verifies their HTTP endpoints.
+- Stop targets only process trees whose PID and start time match
+  repository-local state under the ignored `.internal/` directory. Stale
+  process state is reported and skipped safely.
+
 ## 2026-07-25 — Sprint 05E.2 Vacation Administrator actions
 
 - Added permission-aware approval, rejection, and administrator cancellation

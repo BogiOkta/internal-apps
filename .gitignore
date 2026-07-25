@@ -28,6 +28,7 @@ yarn-error.log*
 # Logs
 logs/
 *.log
+.internal/
 
 # Docker
 docker-data/

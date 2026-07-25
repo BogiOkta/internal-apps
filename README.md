@@ -213,6 +213,27 @@ $env:NEXT_PUBLIC_API_BASE_URL = "http://localhost:5000"
 npm run dev
 ```
 
+## Minimal developer runner
+
+From the repository root, the API and Portal can be managed with:
+
+```powershell
+.\internal.ps1 start
+.\internal.ps1 status
+.\internal.ps1 stop
+.\internal.ps1 restart
+```
+
+`start` uses the canonical development commands above in separate visible
+PowerShell windows and verifies both local HTTP endpoints. Responsive existing
+services are reused. An occupied port with no responsive expected service is
+reported and left untouched.
+
+`stop` affects only process trees started by `internal.ps1`. It does not stop
+unrelated processes merely because they use ports 3000 or 5000. Minimal
+repository-local PID state is kept under the ignored `.internal/` directory;
+stale PIDs are detected and skipped safely.
+
 ## Local URLs
 
 | Service | URL |
