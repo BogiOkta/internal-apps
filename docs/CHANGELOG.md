@@ -1,5 +1,38 @@
 # Internal Apps Platform change history
 
+## 2026-07-25 — Sprint BC.2 Vacation integration
+
+- Replaced Vacation's Monday-to-Friday request calculator with the shared
+  Business Calendar service. Created requests persist its inclusive result,
+  including configured non-working dates.
+- Kept balance behavior transactional and unchanged in shape: approval deducts,
+  and approved cancellation restores, the persisted Business Calendar result.
+- Replaced the request form's local weekday estimate with the existing
+  authenticated Business Calendar range endpoint. No new endpoint,
+  administration UI, or RBAC change was added.
+- Removed the duplicated backend calculator, its obsolete tests, and the
+  Portal weekday-count helper. Added focused shared-calendar and Vacation
+  integration tests, including balance-use and duplication guards.
+- Validated API Release build, 15/15 API tests, Portal production build, strict
+  TypeScript, and repository diff checks. Administrator browser smoke was not
+  run, as required for this sprint.
+
+## 2026-07-25 — Sprint BC.1 Serbian non-working days backend
+
+- Added `core.non_working_days` for administrator-entered official
+  non-working dates in the Republic of Serbia, with unique dates, Identity
+  audit-user references, least-privilege grants, and atomic platform audit.
+- Added authenticated working-day check and inclusive range-count operations;
+  Saturdays, Sundays, and configured dates are non-working, and weekend
+  holidays are not double-counted.
+- Added minimal administrator list/get/create/update/delete endpoints using
+  the temporary `identity.users.manage` permission and safe Problem Details.
+- Kept the capability deliberately Serbia-only and explicit-date-only: no
+  working Saturdays, collective vacations, recurrence engine, regional or
+  multi-calendar abstractions, cache, background job, UI, or Vacation
+  integration was introduced.
+- Added focused automated service, validation, and migration-contract tests.
+
 ## 2026-07-25 — Sprint DEV.3 project-specific development ports
 
 - Assigned stable local-development URLs to the Portal

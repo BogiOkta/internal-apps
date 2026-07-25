@@ -20,6 +20,10 @@
   employee resolution are complete.
 - RBAC and audit: permission policies and shared atomic audit infrastructure
   are established.
+- Business Calendar: the Republic of Serbia shared backend supports explicit
+  administrator-maintained non-working dates and inclusive working-day
+  calculations with weekends inherently excluded. Vacation delegates all
+  working-day calculations to this shared service.
 - Shared Portal UI: administrative grid, form field conventions, global
   appearance, `AppCalendar`, and `DateRangePicker` are available.
 
@@ -39,7 +43,7 @@ Detailed state: [Vacation module](modules/vacation.md) and
 ## Current validation
 
 - API Release build: passed with zero warnings and errors.
-- API tests: passed, 7/7.
+- API tests: passed, 15/15.
 - Portal production build: passed.
 - Strict TypeScript: passed.
 - Browser smoke: passed for desktop/mobile layout, light/dark appearance,
@@ -62,7 +66,8 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Known limitations
 
-- Public holidays are not supported.
+- Business Calendar has no working-Saturday, collective-vacation, regional,
+  recurrence, multi-country, or multi-calendar support.
 - Vacation administration temporarily reuses `identity.users.manage`; a
   dedicated Vacation administrator permission is not yet introduced.
 - No frontend automated-test framework is currently present.
@@ -70,10 +75,10 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Sprint DEV.3 assigns stable project-specific development ports: the Portal is
-served at `http://localhost:3100` and the API at `http://localhost:5100`.
-The existing `internal.ps1` lifecycle continues to manage and validate these
-services without changing production/runtime behavior.
+Sprint BC.2 integrates Vacation with the shared Business Calendar. Request
+creation and its Portal preview now use Business Calendar, and balance
+transitions use the persisted Business Calendar result. No Business Calendar
+UI, RBAC change, or additional endpoint is included.
 
 ## Session instruction
 

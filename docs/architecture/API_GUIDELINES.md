@@ -81,6 +81,21 @@ Current platform-access endpoint:
 |---|---|---|
 | `GET /api/v1/me/applications` | Required | Returns the active applications assigned to the current JWT subject, ordered by display order and name. It accepts no user identifier and exposes only application public IDs. |
 
+Current Business Calendar endpoints:
+
+| Endpoint | Access | Behavior |
+|---|---|---|
+| `GET /api/v1/business-calendar/working-days/{date}` | Authenticated | Returns whether one date is a working day. |
+| `GET /api/v1/business-calendar/working-days?from=YYYY-MM-DD&to=YYYY-MM-DD` | Authenticated | Returns the inclusive working-day count; a reversed range is invalid. |
+| `GET /api/v1/business-calendar/non-working-days?year=2026` | `identity.users.manage` | Lists explicit dates in stable date order, optionally filtered by year. |
+| `GET /api/v1/business-calendar/non-working-days/{publicId}` | `identity.users.manage` | Returns one explicit non-working date or safe `404`. |
+| `POST /api/v1/business-calendar/non-working-days` | `identity.users.manage` | Creates an explicit date; duplicate dates return `409`. |
+| `PUT /api/v1/business-calendar/non-working-days/{publicId}` | `identity.users.manage` | Updates date, name, and optional description. |
+| `DELETE /api/v1/business-calendar/non-working-days/{publicId}` | `identity.users.manage` | Deletes one explicit date and returns `204`. |
+
+Business Calendar is Republic-of-Serbia-only. Saturday and Sunday are
+inherently non-working; explicit entries add official non-working dates.
+
 ## 4. DTO Conventions
 
 Transport DTOs are distinct from database records and domain entities.
@@ -389,8 +404,9 @@ Authorization: Bearer <access-token>
 }
 ```
 
-The server derives the employee from the explicit current-user link, calculates
-Monday-to-Friday working days, and supplies status and actor metadata.
+The server derives the employee from the explicit current-user link, obtains
+the inclusive working-day count from Business Calendar, and supplies status
+and actor metadata.
 
 ## 12. OpenAPI
 

@@ -202,7 +202,7 @@ internal static class LeaveRequestEndpoints
                     "A leave request cannot span calendar years."),
             LeaveRequestOperationStatus.NoWorkingDays =>
                 (400, "No working days", "vacation_request_no_working_days",
-                    "The selected range contains no Monday-to-Friday working days."),
+                    "The selected range contains no working days."),
             LeaveRequestOperationStatus.Overlap =>
                 (409, "Leave request overlaps", "vacation_request_overlap",
                     "The request overlaps an existing submitted or approved request."),

@@ -570,8 +570,10 @@ administrator-managed values.
 
 `leave_requests` is the central Vacation workflow record. It relates one
 Organization employee to one leave type and an inclusive date-only interval.
-The persisted `working_days` value is calculated by future business logic using
-Monday through Friday only. Requests cannot cross calendar years.
+The persisted `working_days` value is calculated by the shared Business
+Calendar using inclusive interval semantics. Requests cannot cross calendar
+years. Later approval and approved cancellation use this persisted value;
+calendar changes do not recalculate historical requests.
 
 The only MVP statuses are `SUBMITTED`, `APPROVED`, `REJECTED`, and
 `CANCELLED`. There is no draft or physical delete. A request has at most one
@@ -606,11 +608,12 @@ INSERT/UPDATE, and identity-sequence USAGE privileges. It grants no DELETE
 privilege on Vacation business tables and no UPDATE privilege on transition
 history.
 
-#### 7.2.5 Public holidays
+#### 7.2.5 Business Calendar dependency
 
-`public_holidays` represents dates excluded or specially treated in leave calculations for a company or applicable calendar. Logical uniqueness prevents duplicate definitions for the same calendar context and date.
-
-Holiday records are date-based, not timestamp-based. A change to the holiday calendar may affect future calculations; whether it recalculates existing requests is a documented Vacation business rule.
+Vacation does not own holiday data. The shared Business Calendar capability
+stores explicit Serbian non-working dates in `core.non_working_days`. Vacation
+delegates request working-day calculations to that capability and persists the
+result for later balance deduction and restoration.
 
 ---
 
@@ -895,6 +898,16 @@ Permission keys, module keys, setting keys, feature keys, job types, notificatio
 ## 15. Migration and Database Versioning Strategy
 
 All database change occurs through ordered, immutable migrations under `database/migrations/`. No manual environment changes are part of the architecture.
+
+### Business Calendar
+
+Migration 018 adds `core.non_working_days`, owned by the shared Business
+Calendar capability. Each row represents one explicit official non-working
+date for the Republic of Serbia. The date is unique; the required name and
+optional description are accompanied by the standard public identifier,
+timestamps, and Identity audit-user references. Weekends are a service rule
+and are not stored as rows. No country, calendar, tenant-calendar, recurrence,
+or holiday-type tables are part of this capability.
 
 ### 15.1 Migration ownership
 

@@ -12,11 +12,12 @@ import {
   secondaryButtonClass,
 } from "@/features/vacation/components/employee-vacation-dashboard";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
-import { calculateWeekdayEstimate, toApiDate } from "@/features/vacation/vacation-request-utils";
+import { toApiDate } from "@/features/vacation/vacation-request-utils";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
 import {
   createMyVacationRequest,
+  getWorkingDaysBetween,
   listMyVacationBalances,
   listMyVacationLeaveTypes,
 } from "@/services/vacation";
@@ -34,6 +35,7 @@ export default function NewVacationRequestPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [estimate, setEstimate] = useState<number | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -52,9 +54,27 @@ export default function NewVacationRequestPage() {
     return () => controller.abort();
   }, [accessToken, locale, t]);
 
+  useEffect(() => {
+    if (!accessToken || !range.from || !range.to || range.to < range.from) {
+      setEstimate(null);
+      return;
+    }
+    const controller = new AbortController();
+    setEstimate(null);
+    getWorkingDaysBetween(
+      accessToken,
+      toApiDate(range.from),
+      toApiDate(range.to),
+      controller.signal,
+    ).then((result) => setEstimate(result.workingDays))
+      .catch((caught) => {
+        if (!controller.signal.aborted) setError(problemMessage(
+          caught instanceof ApiError ? caught.problem?.code ?? "generic" : "generic", t));
+      });
+    return () => controller.abort();
+  }, [accessToken, range.from, range.to, t]);
+
   const selectedType = leaveTypes.find((type) => type.publicId === leaveTypeId);
-  const estimate = range.from && range.to
-    ? calculateWeekdayEstimate(range.from, range.to) : null;
   const matchingBalance = useMemo(() => {
     if (!selectedType?.requiresBalance || !range.from) return undefined;
     return balances.find((balance) =>
@@ -68,7 +88,7 @@ export default function NewVacationRequestPage() {
     if (range.to < range.from) return t("vacation.employeePortal.error.invalidRange");
     if (range.from.getFullYear() !== range.to.getFullYear())
       return t("vacation.employeePortal.error.crossYear");
-    if (calculateWeekdayEstimate(range.from, range.to) === 0)
+    if (estimate === 0)
       return t("vacation.employeePortal.error.noWorkingDays");
     if (note.trim().length > 1000)
       return t("vacation.employeePortal.validation.noteLength");

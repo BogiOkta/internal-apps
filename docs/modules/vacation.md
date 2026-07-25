@@ -19,7 +19,7 @@ The current implemented capabilities are:
   active Leave Type options, and balance reads;
 - Administrator request listing, detail/history, approval, rejection, and
   cancellation;
-- inclusive Monday-to-Friday calculation and transactional balance use and
+- inclusive Business Calendar calculation and transactional balance use and
   restoration.
 - employee Portal dashboard, request list, creation, details/history,
   cancellation, and personal calendar.
@@ -27,8 +27,9 @@ The current implemented capabilities are:
 The Administrator Portal includes the request list and request details
 workspace. Submitted requests can be approved, rejected, or cancelled;
 approved requests can be cancelled. Each action requires confirmation and
-refreshes the details and transition history after success. Public holidays,
-notifications, and configurable approval workflows are not implemented.
+refreshes the details and transition history after success. The shared
+Business Calendar supplies Vacation working-day calculations; notifications
+and configurable approval workflows are not implemented.
 
 Controlled Administrator browser smoke validated authorized navigation,
 localized direct-route denial and API `403` responses for an unauthorized user,

@@ -4,6 +4,7 @@ using Dapper;
 using DotNetEnv;
 using InternalApps.Api.Applications;
 using InternalApps.Api.Authentication;
+using InternalApps.Api.Core.BusinessCalendar;
 using InternalApps.Api.Infrastructure;
 using InternalApps.Api.Infrastructure.Auditing;
 using InternalApps.Api.Modules.Organization;
@@ -38,10 +39,14 @@ builder.Services.AddScoped<LeaveTypesRepository>();
 builder.Services.AddScoped<LeaveTypesService>();
 builder.Services.AddScoped<LeaveRequestsRepository>();
 builder.Services.AddScoped<LeaveRequestService>();
-builder.Services.AddSingleton<IWorkingDayCalculator, MondayToFridayWorkingDayCalculator>();
 builder.Services.AddScoped<AuditWriter>();
 builder.Services.AddScoped<UsersRepository>();
 builder.Services.AddScoped<UsersService>();
+builder.Services.AddScoped<BusinessCalendarRepository>();
+builder.Services.AddScoped<INonWorkingDayStore>(
+    services => services.GetRequiredService<BusinessCalendarRepository>());
+builder.Services.AddScoped<BusinessCalendarService>();
+builder.Services.AddScoped<NonWorkingDaysService>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -137,6 +142,7 @@ app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
 app.MapVacationEndpoints();
 app.MapLeaveRequestEndpoints();
+app.MapBusinessCalendarEndpoints();
 
 app.Run();
 

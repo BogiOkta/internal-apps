@@ -20,6 +20,27 @@ import type {
 
 const apiBaseUrl = getApiBaseUrl();
 
+export interface WorkingDaysBetween {
+  from: string;
+  to: string;
+  workingDays: number;
+}
+
+export function getWorkingDaysBetween(
+  accessToken: string,
+  from: string,
+  to: string,
+  signal?: AbortSignal,
+): Promise<WorkingDaysBetween> {
+  const query = new URLSearchParams({ from, to });
+  return vacationRequest(
+    `/api/v1/business-calendar/working-days?${query.toString()}`,
+    accessToken,
+    "",
+    { signal },
+  );
+}
+
 export async function listLeaveTypes(
   accessToken: string,
   locale: string,
@@ -301,7 +322,7 @@ async function vacationRequest<T>(
     method: options.method ?? "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      "Accept-Language": locale,
+      ...(locale ? { "Accept-Language": locale } : {}),
       ...(options.body ? { "Content-Type": "application/json" } : {}),
     },
     credentials: "include",

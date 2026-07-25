@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using InternalApps.Api.Authentication;
+using InternalApps.Api.Core.BusinessCalendar;
 using InternalApps.Api.Infrastructure.Auditing;
 using InternalApps.Api.Modules.Organization;
 using Npgsql;
@@ -10,7 +11,7 @@ internal sealed class LeaveRequestService(
     NpgsqlDataSource dataSource,
     LeaveRequestsRepository repository,
     CurrentEmployeeResolver currentEmployeeResolver,
-    IWorkingDayCalculator workingDayCalculator,
+    BusinessCalendarService businessCalendar,
     AuditWriter auditWriter)
 {
     private const int NoteMaxLength = 1000;
@@ -85,7 +86,8 @@ internal sealed class LeaveRequestService(
 
         var dateFrom = request.DateFrom!.Value;
         var dateTo = request.DateTo!.Value;
-        var workingDays = workingDayCalculator.Calculate(dateFrom, dateTo);
+        var workingDays = await businessCalendar.WorkingDaysBetween(
+            dateFrom, dateTo, cancellationToken);
         if (workingDays == 0)
             return new(LeaveRequestOperationStatus.NoWorkingDays);
 

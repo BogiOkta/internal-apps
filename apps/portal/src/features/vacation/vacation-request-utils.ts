@@ -22,18 +22,6 @@ export function addCalendarDays(value: string, days: number): string {
   return toApiDate(date);
 }
 
-export function calculateWeekdayEstimate(from: Date, to: Date): number {
-  if (to < from) return 0;
-  let count = 0;
-  const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
-  while (cursor <= end) {
-    if (cursor.getDay() !== 0 && cursor.getDay() !== 6) count += 1;
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return count;
-}
-
 export function isCancellationEligible(status: VacationRequestStatus): boolean {
   return status === "SUBMITTED" || status === "APPROVED";
 }

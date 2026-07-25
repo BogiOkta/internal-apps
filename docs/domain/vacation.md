@@ -24,8 +24,9 @@ The database foundation includes:
 - leave request transition history;
 - persisted yearly leave balances.
 
-Public holidays, approval-step configuration, attachments, and notifications
-are not part of the MVP database foundation.
+Business Calendar data is shared Core Platform data and is not part of the
+Vacation database foundation. Approval-step configuration, attachments, and
+notifications are also excluded.
 
 ### Leave types
 
@@ -65,8 +66,9 @@ refreshed or reissued before they contain the new permission claim.
 
 A request belongs to one Organization employee and exactly one leave type.
 Dates are inclusive, date-only, ordered, and must remain within one calendar
-year. Future application logic calculates and persists working days using
-Monday through Friday only; public holidays are intentionally excluded.
+year. Vacation delegates all working-day calculations to the shared Business
+Calendar and persists its inclusive result. Vacation does not reinterpret
+weekends or configured non-working dates.
 
 The only statuses are `SUBMITTED`, `APPROVED`, `REJECTED`, and `CANCELLED`.
 There is no draft and no physical deletion. A single Administrator decision
@@ -123,11 +125,12 @@ Identity User–Organization Employee link. An unlinked user receives
 `current_user_employee_not_linked`; an inactive employee cannot use
 self-service.
 
-The server calculates inclusive Monday-to-Friday working days and never accepts
-an employee, status, or working-day value in the create contract. Public
-holidays are not supported. Requests must remain within one calendar year and
-contain at least one working day. The database exclusion constraint remains the
-final race-safe overlap protection for submitted and approved requests.
+The server obtains inclusive working days from Business Calendar and never
+accepts an employee, status, or working-day value in the create contract.
+Requests must remain within one calendar year and contain at least one working
+day. The persisted Business Calendar result is the value used by later balance
+deduction and restoration. The database exclusion constraint remains the final
+race-safe overlap protection for submitted and approved requests.
 
 Administrator operations temporarily reuse the existing Administrator-only
 platform permission `identity.users.manage`, without username or role-name
@@ -161,9 +164,11 @@ The employee Portal uses `/vacation` as the operational dashboard,
 `/vacation/requests/{requestId}` for details, history, and eligible
 cancellation. Sprint 05D adds no Administrator approval screens.
 
-The form mirrors date-order, same-year, note-length, and Monday-to-Friday rules
-for immediate feedback. Its working-day value is explicitly provisional and is
-never submitted; the API calculation remains authoritative. Balance guidance
+The form mirrors date-order, same-year, and note-length rules for immediate
+feedback. Its working-day preview calls the authenticated shared Business
+Calendar range endpoint; no working-day rules are implemented in the Portal,
+and the value is never submitted. Vacation request creation calls the same
+Business Calendar service directly and remains authoritative. Balance guidance
 uses the matching persisted Leave Type/year balance and does not invent a
 balance for non-balance Leave Types.
 
