@@ -83,6 +83,7 @@ internal sealed record CreateLeaveTypeRequest(
     string? DescriptionEn,
     string? CalendarColor,
     bool? CountsAgainstVacationBalance,
+    bool? RequiresBalance,
     bool? RequiresApproval,
     bool? IsActive,
     int? DisplayOrder);
@@ -105,6 +106,7 @@ internal sealed record CreateLeaveTypeCommand(
     string? DescriptionEn,
     string? CalendarColor,
     bool CountsAgainstVacationBalance,
+    bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
     int DisplayOrder);

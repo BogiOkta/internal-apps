@@ -96,6 +96,23 @@ Current Business Calendar endpoints:
 Business Calendar is Republic-of-Serbia-only. Saturday and Sunday are
 inherently non-working; explicit entries add official non-working dates.
 
+### Leave Balance Ledger LV.2 endpoints
+
+All LV.2 ledger routes require the existing temporary Vacation-administrator
+policy, `identity.users.manage`. The three posting commands require employee
+and Leave Type public IDs, leave year, non-zero half-day quantity, an
+effective date within that year, reason, and source reference. Entitlement and
+carry-over quantities must be positive. Successful writes return `201`, are
+audited atomically, and duplicate kind/source references return `409`.
+
+| Endpoint | Behavior |
+|---|---|
+| `GET /api/v1/vacation/leave-balances?employeeId={uuid}&leaveTypeId={uuid}&year=2026` | Returns the derived signed current balance for exactly one ledger scope; an absent scope returns `404`. |
+| `GET /api/v1/vacation/leave-balances/history?employeeId={uuid}&leaveTypeId={uuid}&year=2026` | Returns append-only ledger entries in acceptance order for exactly one scope. |
+| `POST /api/v1/vacation/leave-balances/entitlements` | Appends one annual-entitlement entry. |
+| `POST /api/v1/vacation/leave-balances/carry-overs` | Appends one carry-over entry. |
+| `POST /api/v1/vacation/leave-balances/manual-adjustments` | Appends one positive or negative, reasoned manual-adjustment entry, subject to the non-negative balance invariant. |
+
 ## 4. DTO Conventions
 
 Transport DTOs are distinct from database records and domain entities.

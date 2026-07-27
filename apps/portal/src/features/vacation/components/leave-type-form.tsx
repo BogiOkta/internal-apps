@@ -138,6 +138,7 @@ export function LeaveTypeForm({
           calendarColor: emptyToNull(normalized.calendarColor),
           countsAgainstVacationBalance:
             normalized.countsAgainstVacationBalance,
+          requiresBalance: normalized.countsAgainstVacationBalance,
           requiresApproval: normalized.requiresApproval,
           isActive: normalized.isActive,
           displayOrder: normalized.displayOrder,

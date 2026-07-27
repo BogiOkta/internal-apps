@@ -1,5 +1,233 @@
 # Internal Apps Platform change history
 
+## 2026-07-27 — LV.2 final review and validation
+
+- Reviewed the complete uncommitted vertical slice against the LV.2 amendments
+  in ADR-0005 and ADR-0006, including migrations 020/021, API, Portal, request
+  integration, runtime smoke, tests, documentation, least privilege, and
+  append-only retention.
+- Corrected the Leave Type Portal create request to supply the API-required
+  `requiresBalance` value from the existing counts-against-balance choice, and
+  cleared loaded ledger data/forms when the administrator changes scope so a
+  posting cannot silently target the previously displayed scope.
+- Strengthened the controlled smoke to assert exactly one approval history
+  event and one cancellation history event. Development-only retained fixture
+  `LV2SMOKE-20260727091915` passed the complete approval/cancellation,
+  reversal, duplicate, insufficient rollback, and non-balance scenarios.
+- Migration validation found 21 applied migrations and no pending scripts;
+  API Release build, 36/36 API tests, Portal production build with strict
+  TypeScript, and Git diff checks passed.
+
+## 2026-07-27 — LV.2 approved-cancellation reversal correction
+
+- Corrected the request-ledger cancellation lookup to use migration 020's
+  `request_consumption` entry kind instead of the stale `consumption` value.
+  The existing transactional transition continues to restore the legacy
+  balance, append the exact linked `cancellation_reversal`, write request
+  history and audit, and commit as one unit.
+- Extended the opt-in real PostgreSQL runtime regression to verify the exact
+  `reverses_entry_id` link, equal-and-opposite quantity, and unique-constraint
+  rejection of a duplicate reversal in a rolled-back transaction.
+- Updated the controlled smoke to verify duplicate approved cancellation is a
+  conflict and leaves exactly one reversal. Fixture
+  `LV2SMOKE-20260727084338` passed approval, cancellation, reversal linkage,
+  duplicate protection, insufficient rollback, and the non-balance control.
+
+## 2026-07-27 — LV.2 sufficient-approval runtime correction
+
+- Captured the remaining sufficient-balance approval failure under
+  `internal_apps_app` as `Npgsql.PostgresException`, SQLSTATE `42601`,
+  `syntax error at or near "FROM"`. The request-derived INSERT in
+  `LeaveBalanceLedgerRepository.InsertRequestEntryAsync` omitted the closing
+  `END` from its nullable reversal-link `CASE`; PostgreSQL rejected the
+  command before constraints or triggers ran and left the transaction aborted.
+- Added only the missing SQL `END`. Migration 020's applied table, constraints,
+  triggers, grants, sequence privilege, request scope, negative signed
+  quantity, internal request linkage, and numeric request source reference
+  were verified correct, so no migration was added and migrations 020/021 were
+  not edited.
+- Added an opt-in rollback-only xUnit integration test that executes the real
+  repository command, API `DateOnly` handler, runtime role, and applied
+  PostgreSQL trigger contract. Updated the controlled smoke assertions to
+  verify migration 020's internal request/source linkage and least-privilege
+  read boundary.
+- Retained fixture `LV2SMOKE-20260727083334` passed sufficient approval with
+  exactly one consumption, insufficient approval with
+  `409 vacation_balance_insufficient` and atomic request/history/ledger/legacy
+  balance rollback, duplicate transition conflict, and the non-balance
+  control. No append-only entry was deleted.
+
+## 2026-07-27 — LV.2 development-database smoke correction
+
+- Added the timestamp-prefixed `scripts/smoke/lv2-request-ledger.ps1` fixture
+  workflow for the explicitly approved development database; ledger entries
+  are retained and reported.
+- Corrected Leave Type creation to accept `requiresBalance` and migration 021
+  grants the runtime role INSERT access to that existing column only.
+- Sufficient ledger credit succeeded, but request approval initially returned
+  an unhandled `500` during request-ledger insertion. The later entry above
+  records its verified correction; no append-only ledger entry was deleted.
+
+## 2026-07-27 — LV.2 Leave Request ledger smoke blocked by local fixture
+
+- Started the documented local API and Portal using the existing developer
+  Data Protection key ring and authenticated with the configured smoke
+  identities.
+- The configured linked smoke employee has no `vacation.leave_balances` record
+  for any active balance-consuming Leave Type, and `.env` has no documented
+  Vacation smoke date range. Consequently, a request approval would stop at
+  `409 vacation_balance_not_found` before the LV.2 posting path.
+- No direct database fixture was inserted, no append-only ledger entry was
+  created or deleted, and no request, history, or audit smoke record was
+  retained. The Portal/browser and complete request-ledger smoke remain
+  pending an approved local balance fixture and date range.
+
+## 2026-07-27 — LV.2 Leave Request approval insufficient-balance correction
+
+- Diagnosed the balance-consuming approval `500` as an unhandled migration-020
+  ledger-trigger `P0001` exception: `Leave balance entry would make the balance
+  negative.` The request transition already rolls back atomically when the
+  insert fails.
+- Translated that precise database condition to the established
+  `409 vacation_balance_insufficient` workflow result, preserving the atomic
+  rollback of request status, mutable baseline, append-only ledger, history,
+  and audit.
+- Added regression coverage that binds the application exception translation
+  to migration 020's non-negative trigger contract. A runtime-role replay in
+  an always-rolled-back transaction verified one consumption with sufficient
+  temporary credit and the exact insufficient-balance database exception.
+- Retained smoke ledger entries were not modified. Portal/browser workflow and
+  cancellation-reversal smoke remain outside this focused correction.
+
+## 2026-07-26 — LV.2 Leave Request ledger integration
+
+- Balance-consuming approval now posts exactly one idempotent
+  `request_consumption` entry using the Leave Request's stored working-day
+  quantity. Cancelling an approved request posts one exact, linked
+  `cancellation_reversal`; other transitions have no ledger effect.
+- The request row transition, existing mutable-balance baseline mutation,
+  ledger entry, request history, and platform audit use one database
+  transaction. Ledger non-negative enforcement rejects approval and rolls back
+  every part of the transition.
+- Scoped ledger locking, unique request-derived business causes, and the
+  reversal-to-consumption uniqueness constraint protect concurrent approvals,
+  retries, duplicate consumption, and duplicate reversal. No public
+  request-derived ledger posting endpoint was added.
+- Added focused regression coverage for transaction ordering, stored-quantity
+  usage, reversal linkage, and insufficiency rollback. Annual closing, expiry,
+  buckets, allocations, projections, Portal features, and cutover remain out
+  of scope.
+
+## 2026-07-25 — LV.2 Leave Balance Portal
+
+- Added the permission-aware administrator route
+  `/vacation/admin/leave-balances`, with employee, balance-consuming Leave
+  Type, and calendar-year selection; derived current balance; and
+  acceptance-ordered ledger history.
+- Added simple localized entry forms for annual entitlement, carry-over, and
+  reasoned manual adjustments. The Portal mirrors required scope, half-day,
+  positive-credit, effective-year, reason, and source-reference validation;
+  API authorization, idempotency, and non-negative balance enforcement remain
+  authoritative.
+- Added focused Portal contract checks for ledger routes, permission guarding,
+  validation shape, and the absence of deferred ledger controls. No dashboard,
+  chart, export, projection, annual closing, expiry, bucket, or request
+  workflow integration was added.
+- Controlled browser smoke passed for the administrator route, scoped employee,
+  Leave Type, and year loading, derived balance and history, annual
+  entitlement, carry-over, positive and negative manual adjustments, native
+  validation, duplicate-source and insufficient-balance conflicts, Serbian and
+  English rendering, and a clean console. Smoke entries are retained as the
+  append-only ledger has no deletion operation. A stale localized feedback
+  string remained Serbian after switching to English; feedback now retains a
+  translation key and rerenders in the active language.
+
+## 2026-07-25 — LV.2 Leave Balance Ledger API foundation
+
+- Added administrator-authorized API commands to append annual entitlement,
+  carry-over, and reasoned manual-adjustment entries, preserving the migration
+  020 source-idempotency and append-only constraints.
+- Added derived current-balance and acceptance-ordered history reads for one
+  employee, balance-consuming Leave Type, and calendar year.
+- Successful posts append a platform audit event in the same transaction;
+  input, missing references, duplicate sources, and insufficient balance map
+  to stable validation, not-found, or conflict responses.
+- Deliberately excluded Leave Request approval/cancellation integration,
+  Portal UI, annual closing, expiry, buckets, allocations, projections, and
+  deferred ledger capabilities.
+
+## 2026-07-25 — LV.2 Leave Balance Ledger database foundation
+
+- Added migration 020 with the Vacation-owned append-only
+  `leave_balance_entries` ledger. Its key is employee, existing balance-
+  consuming Leave Type, and calendar year; its five entry kinds are annual
+  entitlement, carry-over, manual adjustment, request consumption, and
+  cancellation reversal.
+- Enforced public and business-cause uniqueness, half-day signed quantities,
+  effective-date year scope, actor-or-system origin, request scope/quantity,
+  one exact reversal per consumption, non-negative balances under a scoped
+  transaction lock, and database-level update/delete rejection.
+- Granted the runtime role only ledger SELECT/INSERT and identity-sequence
+  usage. Added focused migration-contract validation. No API, Portal,
+  request-workflow integration, annual close, expiry, bucket, allocation,
+  projection, or cutover was introduced.
+
+## 2026-07-25 — Leave Balance Ledger LV.2 reduction
+
+- Reduced ADR-0005 and ADR-0006 to the smallest viable ledger: append-only
+  annual entitlement, carry-over, manual adjustment, approved-request
+  consumption, cancellation reversal, derived current balance, and employee
+  balance history.
+- Kept the existing Leave Type and calendar-year concepts; explicitly deferred
+  categories, separate periods, dual control, annual closing, buckets,
+  allocations, and premature generic extensibility.
+- Defined the first vertical slice without approving SQL, migrations, APIs, or
+  application code.
+
+## 2026-07-25 — Leave Balance Ledger logical persistence
+
+- Accepted ADR-0006 with Vacation-owned categories, calendar-year periods,
+  prospective Leave Type mappings, employee/category/period accounts, and
+  dual-control adjustment authorizations.
+- Defined immutable transaction headers and signed entries, typed idempotent
+  source correlation, entry-level reversal/correction relationships, and
+  public-identifier boundaries.
+- Required opening-entitlement and carry-over buckets plus debit allocations
+  to preserve expiry, priority, non-compounding, closing eligibility, and
+  exact reversal.
+- Defined one atomic annual closing per period and the logical uniqueness and
+  integrity rules without introducing SQL, migrations, APIs, projections, or
+  application code.
+
+## 2026-07-25 — Leave Balance Ledger business rules
+
+- Finalized account dimensions, supported balance effect types, working-day
+  half-day precision, calendar-year entitlement periods, carry-over,
+  expiration, deterministic consumption priority, and the fixed non-negative
+  policy.
+- Finalized dual-controlled manual adjustments, full reversal versus
+  replacement correction, annual closing, and append-only historical
+  consistency.
+- Recorded the business rationale, owner capability, and
+  fixed-versus-configurable classification for every rule without introducing
+  a database, SQL, API, or application design.
+
+## 2026-07-25 — Leave Balance Ledger domain boundaries
+
+- Accepted ADR-0005, keeping the Leave Balance Ledger inside Vacation and
+  separating its responsibilities from Leave Policy, Leave Request,
+  Organization, Business Calendar, Core Audit, and the Portal.
+- Defined append-only balance effects, traceable compensation, idempotent
+  business causes, derived and reconcilable balances, atomic approval posting,
+  exact approved-cancellation reversal, non-negative concurrent approval, and
+  historical quantity stability as core invariants.
+- Prohibited policy, request, calendar, audit, Portal, cross-module, and
+  premature shared-Core ownership overlaps.
+- Recorded the domain decisions that block database design, including account
+  dimensions, policy mapping, units, period and carry-over lifecycle,
+  adjustments, ordering, projections, and legacy cutover. No table, migration,
+  API, or application design was introduced.
+
 ## 2026-07-25 — Sprint LV.1 Leave Policy foundation
 
 - Added `vacation.leave_policies`, with one annual entitlement policy per

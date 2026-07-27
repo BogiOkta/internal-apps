@@ -10,6 +10,7 @@ namespace InternalApps.Api.Modules.Vacation;
 internal sealed class LeaveRequestService(
     NpgsqlDataSource dataSource,
     LeaveRequestsRepository repository,
+    LeaveBalanceLedgerRepository ledgerRepository,
     CurrentEmployeeResolver currentEmployeeResolver,
     BusinessCalendarService businessCalendar,
     AuditWriter auditWriter)
@@ -257,6 +258,23 @@ internal sealed class LeaveRequestService(
 
         var updated = await repository.SetStatusAsync(connection, transaction,
             entity.Id, targetStatus, comment, actor, english, cancellationToken);
+        try
+        {
+            if (entity.RequiresBalance && targetStatus == LeaveRequestStatuses.Approved)
+                await ledgerRepository.InsertRequestConsumptionAsync(connection, transaction,
+                    entity, actor, cancellationToken);
+            else if (entity.RequiresBalance && targetStatus == LeaveRequestStatuses.Cancelled &&
+                     entity.Status == LeaveRequestStatuses.Approved)
+                await ledgerRepository.InsertCancellationReversalAsync(connection, transaction,
+                    entity, actor, cancellationToken);
+        }
+        catch (PostgresException exception) when (
+            exception.SqlState == PostgresErrorCodes.RaiseException &&
+            exception.MessageText.Contains("negative", StringComparison.OrdinalIgnoreCase))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(LeaveRequestOperationStatus.BalanceInsufficient);
+        }
         await repository.InsertHistoryAsync(connection, transaction, entity.Id,
             entity.Status, targetStatus, actor, comment, cancellationToken);
         await auditWriter.WriteAsync(connection, transaction,

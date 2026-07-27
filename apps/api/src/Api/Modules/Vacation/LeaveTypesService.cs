@@ -336,6 +336,7 @@ internal sealed class LeaveTypesService(
             request.CountsAgainstVacationBalance,
             "countsAgainstVacationBalance",
             errors);
+        ValidateRequiredBoolean(request.RequiresBalance, "requiresBalance", errors);
         ValidateRequiredBoolean(
             request.RequiresApproval,
             "requiresApproval",
@@ -350,6 +351,7 @@ internal sealed class LeaveTypesService(
             descriptionEn,
             calendarColor,
             request.CountsAgainstVacationBalance.GetValueOrDefault(),
+            request.RequiresBalance.GetValueOrDefault(),
             request.RequiresApproval.GetValueOrDefault(),
             request.IsActive.GetValueOrDefault(),
             request.DisplayOrder.GetValueOrDefault());

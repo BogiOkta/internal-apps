@@ -600,13 +600,46 @@ adjustment, and used days for one leave type and calendar year. A unique
 constraint on employee, leave type, and year prevents duplicate balances.
 Checks prevent negative entitlement, carry-over, or usage and prevent usage
 from exceeding the effective available total. `used_days` is changed only by
-future transactional Vacation business logic.
+transactional Vacation request business logic.
+
+This section documents the currently implemented persistence only. The future
+Leave Balance Ledger boundary and rules are defined by
+[ADR-0005](../adr/ADR-0005-leave-balance-ledger-boundaries.md), and its logical
+persistence model by
+[ADR-0006](../adr/ADR-0006-leave-balance-ledger-logical-persistence.md).
+Neither decision changes the implemented schema; migration and cutover remain
+separately unapproved.
 
 Migrations 013–015 create requests, transition history, and balances.
 Migration 017 grants the runtime role only the required SELECT, column-level
 INSERT/UPDATE, and identity-sequence USAGE privileges. It grants no DELETE
 privilege on Vacation business tables and no UPDATE privilege on transition
 history.
+
+#### 7.2.4 LV.2 Leave Balance Ledger logical model
+
+The approved LV.2 target uses the existing employee, Leave Type, and
+calendar-year dimensions. It has immutable entries for annual entitlement,
+carry-over, manual adjustment, approved-request consumption, and linked
+cancellation reversal. Current balance and employee history are derived from
+the signed entry history; no mutable ledger total is authoritative.
+
+Balance categories, Leave Type mappings, entitlement-period infrastructure,
+dual-control records, transaction headers, buckets, allocations, corrections,
+annual closing, expiration, and generic source or ledger abstractions are
+explicitly deferred. ADR-0006 is normative for the LV.2 logical model.
+Physical types, indexes, locking, SQL, migrations, projections, APIs,
+application code, and cutover remain open.
+
+Migration 020 implements only the LV.2 database foundation as
+`vacation.leave_balance_entries`. It has no mutable total: future reads derive
+the balance by summing the signed entries in the employee, Leave Type, and
+calendar-year scope. The migration enforces the fixed entry vocabulary,
+half-day precision, source idempotency, request-consumption/cancellation-
+reversal linkage, balance scope, non-negative accepted result, and append-only
+history. The runtime role receives SELECT/INSERT only. It does not add a
+ledger API, a request transition integration, views/projections, annual
+closing, expiry, or cutover from `leave_balances`.
 
 #### 7.2.5 Business Calendar dependency
 

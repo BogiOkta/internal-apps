@@ -26,6 +26,7 @@ export type CreateLeaveTypeRequest = {
   descriptionEn: string | null;
   calendarColor: string | null;
   countsAgainstVacationBalance: boolean;
+  requiresBalance: boolean;
   requiresApproval: boolean;
   isActive: boolean;
   displayOrder: number;
@@ -33,7 +34,7 @@ export type CreateLeaveTypeRequest = {
 
 export type UpdateLeaveTypeRequest = Omit<
   CreateLeaveTypeRequest,
-  "code" | "isActive"
+  "code" | "requiresBalance" | "isActive"
 >;
 
 export type LeaveTypeStatusFilter = "active" | "inactive" | "all";

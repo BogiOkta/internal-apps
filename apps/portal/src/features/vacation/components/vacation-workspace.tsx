@@ -60,6 +60,9 @@ export function VacationWorkspace({
         }, {
           label: t("leavePolicy.navigation"),
           href: "/vacation/admin/policies",
+        }, {
+          label: t("leaveBalance.navigation"),
+          href: "/vacation/admin/leave-balances",
         }]
       : []),
     {

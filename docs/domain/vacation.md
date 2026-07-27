@@ -85,7 +85,16 @@ required when future services implement consequential writes.
 
 `vacation.leave_balances` persists entitlement, carry-over, adjustment, and
 used days for one employee, leave type, and year. That combination is unique.
-`used_days` changes only through future transactional Vacation business logic.
+The current request application logic changes `used_days` transactionally on
+approval and approved cancellation.
+
+This mutable yearly balance is the implemented baseline, not the approved
+future source of truth for a Leave Balance Ledger. The target ownership,
+responsibility boundaries, and invariants are defined by
+[ADR-0005](../adr/ADR-0005-leave-balance-ledger-boundaries.md), and the logical
+persistence model is defined by
+[ADR-0006](../adr/ADR-0006-leave-balance-ledger-logical-persistence.md). No
+physical schema, migration, or cutover has been approved.
 
 ### Leave policies
 
@@ -97,8 +106,162 @@ notes, and timestamps.
 
 Leave Policy is an entitlement-input model only. It contains no balance,
 remaining, consumed, or used-day value, and this sprint does not derive or
-store any calculated value. Balance calculation, allocation generation,
-automatic carry-over, and request deduction will be introduced separately.
+store any calculated value. Policy-derived balance calculation, allocation
+generation, automatic carry-over, and ledger integration remain separate
+future work.
+
+### Leave Balance Ledger LV.2 boundary
+
+The following LV.2 statement is normative and supersedes the retained
+historical target description in this section. LV.2 uses the existing employee,
+Leave Type, and calendar-year balance key. It records immutable annual
+entitlement, carry-over, manual adjustment, approved-request consumption, and
+linked cancellation-reversal entries. Current balance is their signed sum and
+employee balance history is their chronological view.
+
+Categories, Leave Type mappings, separate entitlement periods, dual-control
+adjustments, corrections, annual closing, expiration, buckets, allocations,
+transaction headers, generic source infrastructure, and generic ledger
+abstractions are deferred. The first vertical slice establishes entitlement and
+carry-over credits; exposes current balance and history; posts consumption and
+its cancellation reversal atomically with request transitions and audit; and
+allows reasoned manual adjustments. ADR-0005 and ADR-0006 are canonical for
+this reduced model.
+
+Migration 020 implements the append-only
+`vacation.leave_balance_entries` table. It enforces the employee + Leave Type
++ calendar-year scope, the five LV.2 kinds, signed half-day quantities,
+idempotent source references, request consumption and exact cancellation
+reversal links, and a non-negative derived balance. The runtime role may read
+and insert entries but cannot update or delete them. Balance-consuming approval
+posts one negative request-consumption entry from the request's persisted
+working-day quantity, and cancellation of an approved request posts one exact,
+linked positive reversal. The request row lock plus the ledger's scoped
+transaction lock and unique business causes prevent duplicate posting and
+concurrent negative ledger balances. Transition, legacy baseline mutation,
+ledger entry, transition history, and platform audit commit atomically; a
+ledger insufficiency rolls the transition back. The mutable `leave_balances`
+baseline remains in place pending a separately approved cutover.
+
+For request-derived entries, migration 020 stores the internal bigint request
+key in `leave_request_id` and its decimal text in `source_reference`; the
+public UUID remains the API identifier and is not stored in those cause
+columns. `reverses_entry_id` is null for consumption and must identify the
+exact original `request_consumption` for a reversal. The runtime cancellation
+lookup uses that migration-defined kind, so the inserted positive reversal
+exactly negates the original consumption. The request transition guard and
+the unique reversal link prevent a duplicate cancellation from adding another
+reversal.
+
+The LV.2 API exposes administrator-only posting commands for annual
+entitlement, carry-over, and reasoned manual adjustment, plus derived balance
+and chronological history reads for one employee, Leave Type, and calendar
+year. Posting requires a source reference for retry idempotency and is atomic
+with its Vacation audit event. Leave Request itself posts consumption and
+cancellation reversals internally; no public posting endpoint exists for either
+request-derived entry kind.
+
+The administrator Portal route `/vacation/admin/leave-balances` uses those
+commands without deriving balances itself. An authorized administrator selects
+an employee, balance-consuming Leave Type, and calendar year, loads the
+derived balance and acceptance-ordered history, and can append entitlement,
+carry-over, or reasoned manual-adjustment entries. It mirrors required IDs,
+non-zero half-day quantity, positive credit quantities, effective-year, reason,
+and source-reference checks only for prompt feedback; server validation,
+authorization, idempotency, and non-negative balance enforcement remain
+authoritative. Charts, exports, projections, annual closing, expiry, buckets,
+and request workflow integration are not present.
+
+### Superseded pre-LV.2 target description
+
+The Leave Balance Ledger is a Vacation-owned capability. It is not a separate
+module and is not shared Core infrastructure.
+
+Its responsibility is to provide the authoritative, append-only explanation
+of accepted balance effects, their traceable reversals, and the balance derived
+from those effects. It owns leave-account sufficiency and reconciliation.
+Derived balance views may support reads, but they cannot become an independent
+source of truth.
+
+The adjacent capability boundaries are:
+
+- Organization owns employee and department master data, not entitlement or
+  leave history.
+- Leave Policy owns entitlement inputs, not usage or remaining balance.
+- Leave Request owns request state and the persisted Business Calendar
+  quantity. Approval and approved cancellation cause balance effects, but the
+  request workflow does not independently own balance accounting.
+- Business Calendar owns working-day rules and calculations, not entitlement,
+  posting, reversal, or carry-over.
+- Core Audit owns the cross-platform audit record, not balance reconstruction.
+- The Vacation application layer coordinates request, ledger, and audit
+  changes atomically.
+
+The ledger's core business invariants are:
+
+- every accepted effect is attributable to one resolved leave account, an
+  employee, applicable period and balance category, a signed quantity, a
+  business source, an effective business date, an actor or system origin, and
+  a reason; credits increase and debits decrease the balance;
+- accepted effects are append-only; correction and cancellation use a
+  traceable equal-and-opposite reversal and, when needed, a new corrected
+  effect rather than mutation or deletion;
+- one business cause produces at most one effective posting, including under
+  retry;
+- authoritative balance is the algebraic result of applicable effects, and
+  every projection must be reconcilable to them;
+- approval of a balance-consuming request posts its persisted working-day
+  quantity exactly once, and approved cancellation reverses exactly that
+  effect; other request states do not consume balance;
+- approval, its balance effect, and Core Audit succeed or fail together, and
+  concurrent approvals cannot make the effective balance negative;
+- later Business Calendar changes never recalculate an existing request's
+  persisted quantity or its balance effect;
+- inactive master or reference records remain attributable in history; and
+- ledger history, request transition history, and Core Audit remain distinct
+  but correlatable records.
+
+Leave Policy must not store calculated balance, Leave Request must not become a
+second ledger, Business Calendar must not decide balance rules, Core Audit must
+not be used to reconstruct a balance, and the Portal must not authoritatively
+calculate or mutate balance. No other module or repository may write the
+Vacation ledger directly. A generic Core ledger is prohibited unless a second
+domain-neutral use case and a separate architecture decision justify it.
+
+ADR-0005 finalizes the ledger business rules. In summary:
+
+- an account is employee, balance category, and calendar-year entitlement
+  period; balance-consuming Leave Types map prospectively to one category;
+- opening entitlement, carry-over, consumption, expiration, manual
+  adjustment, reversal, and closing transfer are the only effect types;
+- quantities are working days in whole or half-day increments; hours and
+  smaller fractions are unsupported;
+- carry-over is capped, reaches only the next period, does not compound,
+  expires on a configured date, and is consumed before current entitlement;
+- balances cannot be negative and no role can override sufficiency;
+- manual adjustments use fixed exceptional reasons, an open period, factual
+  explanation, and proposer/independent-approver segregation of duties;
+- reversal cancels a whole accepted effect, while correction reverses it and
+  posts the corrected effect;
+- annual closing is reconciled, atomic, idempotent, and final; and
+- later master-data, policy, calendar, permission, or status changes never
+  rewrite accepted history.
+
+The complete rationale, owner capability, and fixed-versus-configurable
+classification for every rule are normative in ADR-0005. The approved logical
+persistence model is normative in
+[ADR-0006](../adr/ADR-0006-leave-balance-ledger-logical-persistence.md). It
+defines categories, periods, mappings, employee/category/period accounts,
+dual-control adjustment authorizations, immutable transactions and entries,
+opening and carry-over buckets, debit allocations, typed source correlation,
+reversal/correction relationships, annual closings, public identifiers, and
+logical constraints.
+
+Entries are authoritative; accounts store no authoritative entitlement, used,
+or remaining total. Buckets exist only for opening entitlement and carry-over
+to preserve expiry, priority, non-compounding, closing eligibility, and exact
+reversal. Initial policy values, physical design, indexes, concurrency,
+projections, SQL, migrations, APIs, application code, and cutover remain open.
 
 ## Current implementation
 
@@ -173,14 +336,14 @@ transition attempts write no successful history or audit record.
 
 The permission-aware Administrator Portal uses
 `/vacation/admin/requests` for the paginated request workspace and
-`/vacation/admin/requests/{requestId}` for read-only details and history.
+`/vacation/admin/requests/{requestId}` for details and history.
 It supports server-backed status, Leave Type, employee text, and year filters,
-with a responsive table/card presentation. No approval, rejection, or
-administrator cancellation controls are exposed.
+with a responsive table/card presentation. Submitted requests expose approval,
+rejection, and administrator cancellation; approved requests expose
+administrator cancellation; terminal requests expose no transition actions.
 
-No Administrator transition Portal, public-holiday calendar, notification,
-background job, manager hierarchy, configurable workflow, or physical delete
-is implemented.
+No Vacation-owned public-holiday calendar, notification, background job,
+manager hierarchy, configurable workflow, or physical delete is implemented.
 
 ### Employee Portal
 
@@ -188,7 +351,7 @@ The employee Portal uses `/vacation` as the operational dashboard,
 `/vacation/requests` for the complete own-request list,
 `/vacation/requests/new` for creation, and
 `/vacation/requests/{requestId}` for details, history, and eligible
-cancellation. Sprint 05D adds no Administrator approval screens.
+cancellation.
 
 The form mirrors date-order, same-year, and note-length rules for immediate
 feedback. Its working-day preview calls the authenticated shared Business

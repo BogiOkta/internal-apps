@@ -96,6 +96,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                 description_en,
                 calendar_color,
                 counts_against_vacation_balance,
+                requires_balance,
                 requires_approval,
                 is_active,
                 display_order
@@ -108,6 +109,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                 @DescriptionEn,
                 @CalendarColor,
                 @CountsAgainstVacationBalance,
+                @RequiresBalance,
                 @RequiresApproval,
                 @IsActive,
                 @DisplayOrder
