@@ -5,6 +5,7 @@ import { useAuth } from "@/components/auth-provider";
 import { FormField, formControlClassName } from "@/components/form-field";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
+import { formatPortalDate } from "@/utils/portal-date-format";
 import { ApiError } from "@/services/auth";
 import {
   createLeavePolicy, deleteLeavePolicy, listLeavePolicies, updateLeavePolicy,
@@ -24,7 +25,7 @@ const emptyForm: SaveLeavePolicyRequest = {
 
 export default function LeavePoliciesPage() {
   const { accessToken, user } = useAuth();
-  const { browserLocale, t } = useTranslations();
+  const { t } = useTranslations();
   const allowed = user?.permissions.includes(leavePolicyManagePermission) ?? false;
   const [year, setYear] = useState(currentYear);
   const [employeeFilter, setEmployeeFilter] = useState("");
@@ -149,8 +150,7 @@ export default function LeavePoliciesPage() {
                 <td className="px-3 py-3">{policy.annualEntitlementDays}</td>
                 <td className="px-3 py-3">{policy.carryOverDays}</td>
                 <td className="px-3 py-3">{policy.carryOverExpirationDate
-                  ? new Intl.DateTimeFormat(browserLocale, { dateStyle: "medium", timeZone: "UTC" })
-                    .format(new Date(`${policy.carryOverExpirationDate}T00:00:00Z`)) : "—"}</td>
+                  ? formatPortalDate(policy.carryOverExpirationDate) : "—"}</td>
                 <td className="px-3 py-3">{policy.manualAdjustmentDays}</td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   <button className="mr-3 text-blue-700 underline" onClick={() => {

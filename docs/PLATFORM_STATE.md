@@ -27,7 +27,10 @@
   working-day calculations to this shared service. A permission-aware Portal
   route provides localized year-filtered CRUD administration of those dates.
 - Shared Portal UI: administrative grid, form field conventions, global
-  appearance, `AppCalendar`, and `DateRangePicker` are available.
+  appearance, `AppCalendar`, `DateRangePicker`, and the mandatory shared
+  Serbian Latin date-display formatter are available. Organization Employees
+  uses compact expandable date-range filters and an internally scrolling wide
+  grid.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Vacation
   navigation is limited to leave-request, Leave Type, Leave Policy, and Leave
@@ -118,6 +121,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - Vacation administration temporarily reuses `identity.users.manage`; a
   dedicated Vacation administrator permission is not yet introduced.
 - No frontend automated-test framework is currently present.
+- Employee start/end-date ranges are Portal-side filters after the existing
+  server-filtered employee result because the current API contract intentionally
+  has no date-range query parameters.
 - Some controlled smoke scenarios require safe configured fixtures.
 
 ## Current task

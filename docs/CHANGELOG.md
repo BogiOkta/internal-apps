@@ -1,5 +1,25 @@
 # Internal Apps Platform change history
 
+## 2026-07-27 — Organization Employees Portal UX increment
+
+- Established `src/utils/portal-date-format.ts` as the mandatory Portal
+  display formatter: dates render as `dd.MM.yyyy.` and date-times as
+  `dd.MM.yyyy. HH:mm`. Migrated safe visible date and timestamp usages in
+  Organization Employees, Vacation requests, Business Calendar, Leave Policy,
+  and Leave Balance administration.
+- Updated the employee grid to use normal-cased concise date headers, keep
+  `Ime i prezime` separate from optional `Srednje ime`, provide expandable
+  Serbian date-range and end-date-state filters, and preserve existing API
+  filters and reset behavior. Date ranges are client-side after existing
+  server-side employee filtering; no API or backend behavior changed.
+- Made the employee grid a readable wide, internally horizontally scrolling
+  surface with the details panel retained at desktop width. Disabled the
+  Next.js development indicator, whose framework-provided circular `N` was the
+  duplicate-looking bottom-left control; the canonical sidebar user/logout
+  controls remain unchanged.
+- Documented the shared date formatter, date-range filter behavior, and wide
+  administrative-grid standards.
+
 ## 2026-07-27 — Organization employee administration increment
 
 - Added responsive Employment start/end date columns and confirmed administrator deletion.

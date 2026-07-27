@@ -13,6 +13,7 @@ import {
 } from "@/features/vacation/vacation-request-utils";
 import type { TranslationKey } from "@/i18n/translations";
 import { useTranslations } from "@/i18n/use-translations";
+import { formatPortalDate, formatPortalDateTime } from "@/utils/portal-date-format";
 import { ApiError } from "@/services/auth";
 import {
   listMyVacationBalances,
@@ -164,13 +165,12 @@ export const secondaryButtonClass =
 export function statusLabel(status: VacationRequestStatus, t: Translate) {
   return t(`vacation.employeePortal.status.${status.toLowerCase()}` as TranslationKey);
 }
-export function formatDate(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" })
-    .format(new Date(`${value}T00:00:00`));
+export function formatDate(value: string, _locale?: string) {
+  return formatPortalDate(value);
 }
-export function formatDateTime(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" })
-    .format(new Date(value));
+
+export function formatDateTime(value: string, _locale?: string) {
+  return formatPortalDateTime(value);
 }
 export function problemMessage(code: string, t: Translate) {
   return t((vacationProblemTranslationKeys[code] ??

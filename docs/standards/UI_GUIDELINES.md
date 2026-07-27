@@ -336,7 +336,22 @@ Validation or server error
 
 Placeholder text is not a label.
 
-### 6.2 Validation
+### 6.2 Date presentation and date-range filters
+
+All current and future Portal applications MUST use the shared
+`src/utils/portal-date-format.ts` utility for user-visible API dates and
+timestamps. Serbian Latin display is fixed across the Portal: a date is
+`dd.MM.yyyy.` and a date-time is `dd.MM.yyyy. HH:mm`. API and form transport
+values remain ISO; pages must not reimplement display formatting with local
+`Intl` or string-formatting code.
+
+When a list filters a date field by range, use date-picker inputs in its
+expandable grid filter area, with explicit From and To labels. Preserve the
+existing clear-all behavior and keep range controls out of the compact command
+bar unless date filtering is the page's primary task. A related null/present
+state filter may be offered where it has a clear business meaning.
+
+### 6.3 Validation
 
 Zod provides immediate format and required-field feedback. The API may return additional field and business errors through Problem Details.
 
@@ -351,7 +366,7 @@ The form must:
 
 Do not duplicate complex business rules in Zod. Date overlap, leave balance, workflow state, and authorization remain server decisions.
 
-### 6.3 Unsaved changes
+### 6.4 Unsaved changes
 
 Warn before leaving a form with meaningful unsaved changes. Do not warn when only defaults or automatically loaded data changed. After a successful save, reset dirty state before navigation.
 
@@ -422,6 +437,13 @@ Administrative lists use one compact grid interaction standard:
   contract explicitly requires them;
 - selection highlighting is paired with a semantic button in the identifying
   cell; table rows are not assigned button roles.
+
+Wide administrative grids use stable readable column widths and a sensible
+table `min-width`; their grid surface, not the page, owns horizontal scrolling.
+Do not compress meaningful columns until text becomes unreadable. Keep related
+details panels usable beside the grid on desktop and stack them at narrower
+widths. Headers use normal title/sentence casing and must not be forced into
+uppercase or multi-line labels merely to fit more columns.
 
 Filtering and sorting ownership is explicit per list. Employee search,
 department filtering, and sorting remain server-side because the employee

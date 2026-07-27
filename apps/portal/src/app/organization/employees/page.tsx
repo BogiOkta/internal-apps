@@ -38,6 +38,7 @@ import {
   exportGridXlsx,
   type ExportColumn,
 } from "@/utils/admin-grid-export";
+import { formatPortalDate } from "@/utils/portal-date-format";
 
 type EmployeeSortField =
   | "employeeNumber"
@@ -50,7 +51,7 @@ export default function EmployeesPage() {
   const { accessToken, user } = useAuth();
   const { t } = useTranslations();
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeResult, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [departmentPublicId, setDepartmentPublicId] = useState("");
@@ -58,6 +59,11 @@ export default function EmployeesPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<EmployeeStatusFilter>("all");
+  const [employmentStartDateFrom, setEmploymentStartDateFrom] = useState("");
+  const [employmentStartDateTo, setEmploymentStartDateTo] = useState("");
+  const [employmentEndDateFrom, setEmploymentEndDateFrom] = useState("");
+  const [employmentEndDateTo, setEmploymentEndDateTo] = useState("");
+  const [employmentEndDateState, setEmploymentEndDateState] = useState<"all" | "missing" | "present">("all");
   const [panelMode, setPanelMode] = useState<"details" | "create" | "edit">("details");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -162,6 +168,17 @@ export default function EmployeesPage() {
     sort,
   ]);
 
+  const employees = useMemo(
+    () => employeeResult.filter((employee) => matchesDateFilters(employee, {
+      employmentStartDateFrom,
+      employmentStartDateTo,
+      employmentEndDateFrom,
+      employmentEndDateTo,
+      employmentEndDateState,
+    })),
+    [employeeResult, employmentStartDateFrom, employmentStartDateTo,
+      employmentEndDateFrom, employmentEndDateTo, employmentEndDateState],
+  );
   const selectedEmployee = useMemo(
     () =>
       employees.find(
@@ -171,7 +188,9 @@ export default function EmployeesPage() {
   );
   const canManage = user?.permissions.includes(employeesManagePermission) ?? false;
   const activeFilterCount = [employeeNumber, name, departmentPublicId, email,
-    status === "all" ? "" : status].filter(Boolean).length;
+    status === "all" ? "" : status, employmentStartDateFrom, employmentStartDateTo,
+    employmentEndDateFrom, employmentEndDateTo,
+    employmentEndDateState === "all" ? "" : employmentEndDateState].filter(Boolean).length;
 
   async function create(request: CreateEmployeeRequest) {
     if (!accessToken) return;
@@ -240,11 +259,9 @@ export default function EmployeesPage() {
 
   const exportColumns: ExportColumn<Employee>[] = [
     { heading: t("vacation.employees.employeeNumber"), value: (row) => row.employeeNumber, width: 18 },
-    { heading: t("vacation.employees.employmentStartDate"), value: (row) => row.employmentStartDate ?? t("vacation.employees.notProvided"), width: 16 },
-    { heading: t("vacation.employees.employmentEndDate"), value: (row) => row.employmentEndDate ?? t("vacation.employees.notProvided"), width: 16 },
-    { heading: t("vacation.employees.name"), value: (row) => [row.firstName, row.middleName, row.lastName].filter(Boolean).join(" "), width: 28 },
+    { heading: t("vacation.employees.name"), value: (row) => [row.firstName, row.lastName].join(" "), width: 28 },
+    { heading: t("vacation.employees.middleName"), value: (row) => row.middleName ?? "", width: 20 },
     { heading: t("vacation.employees.department"), value: (row) => row.departmentName, width: 24 },
-    { heading: t("vacation.employees.email"), value: (row) => row.email ?? "", width: 32 },
     {
       heading: t("vacation.employees.status"),
       value: (row) =>
@@ -253,6 +270,9 @@ export default function EmployeesPage() {
           : t("vacation.employees.inactive"),
       width: 14,
     },
+    { heading: t("vacation.employees.employmentStartDate"), value: (row) => row.employmentStartDate ? formatPortalDate(row.employmentStartDate) : t("vacation.employees.notProvided"), width: 16 },
+    { heading: t("vacation.employees.employmentEndDate"), value: (row) => row.employmentEndDate ? formatPortalDate(row.employmentEndDate) : t("vacation.employees.notProvided"), width: 16 },
+    { heading: t("vacation.employees.email"), value: (row) => row.email ?? "", width: 32 },
   ];
 
   async function exportEmployees(format: "csv" | "xlsx") {
@@ -287,7 +307,9 @@ export default function EmployeesPage() {
       exportDisabled={employees.length === 0}
       onClearFilters={() => {
         setEmployeeNumber(""); setName(""); setDepartmentPublicId("");
-        setEmail(""); setStatus("all");
+        setEmail(""); setStatus("all"); setEmploymentStartDateFrom("");
+        setEmploymentStartDateTo(""); setEmploymentEndDateFrom("");
+        setEmploymentEndDateTo(""); setEmploymentEndDateState("all");
       }}
       onNew={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }}
       onExportCsv={() => void exportEmployees("csv")}
@@ -335,14 +357,14 @@ export default function EmployeesPage() {
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section
           aria-label={t("vacation.employees.tableLabel")}
-          className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm"
+          className="min-w-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm [contain:paint]"
         >
           <div className="overflow-x-auto">
             <table
               aria-busy={isLoading}
-              className="w-full min-w-[780px] border-collapse text-left text-sm"
+              className="w-full min-w-[1160px] border-collapse text-left text-sm"
             >
-              <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
                 <tr>
                   <SortableGridHeader
                     field="employeeNumber"
@@ -353,8 +375,6 @@ export default function EmployeesPage() {
                     clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.employeeNumber") })}
                     onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
-                  <th scope="col" className="hidden px-4 py-2 xl:table-cell">{t("vacation.employees.employmentStartDate")}</th>
-                  <th scope="col" className="hidden px-4 py-2 xl:table-cell">{t("vacation.employees.employmentEndDate")}</th>
                   <SortableGridHeader
                     field="name"
                     label={t("vacation.employees.name")}
@@ -364,6 +384,7 @@ export default function EmployeesPage() {
                     clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.name") })}
                     onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
+                  <th scope="col" className="w-40 px-4 py-2">{t("vacation.employees.middleName")}</th>
                   <SortableGridHeader
                     field="department"
                     label={t("vacation.employees.department")}
@@ -371,15 +392,6 @@ export default function EmployeesPage() {
                     sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.department") })}
                     sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.department") })}
                     clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.department") })}
-                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
-                  />
-                  <SortableGridHeader
-                    field="email"
-                    label={t("vacation.employees.email")}
-                    sort={sort}
-                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.email") })}
-                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.email") })}
-                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.email") })}
                     onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
                   <SortableGridHeader
@@ -391,12 +403,22 @@ export default function EmployeesPage() {
                     clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.status") })}
                     onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
+                  <th scope="col" className="w-36 px-4 py-2">{t("vacation.employees.employmentStartDate")}</th>
+                  <th scope="col" className="w-36 px-4 py-2">{t("vacation.employees.employmentEndDate")}</th>
+                  <SortableGridHeader
+                    field="email"
+                    label={t("vacation.employees.email")}
+                    sort={sort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.email") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.email") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.email") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
+                  />
                 </tr>
                 <GridFilterRow visible={areFiltersVisible}>
                   <GridFilterCell><FilterInput value={employeeNumber} label={t("vacation.employees.employeeNumberFilter")} maxLength={30} onChange={setEmployeeNumber} /></GridFilterCell>
-                  <GridFilterCell />
-                  <GridFilterCell />
                   <GridFilterCell><FilterInput value={name} label={t("vacation.employees.nameFilter")} maxLength={201} onChange={setName} /></GridFilterCell>
+                  <GridFilterCell />
                   <GridFilterCell>
                     <label>
                       <span className="sr-only">{t("vacation.employees.departmentFilter")}</span>
@@ -413,19 +435,21 @@ export default function EmployeesPage() {
                       </select>
                     </label>
                   </GridFilterCell>
-                  <GridFilterCell><FilterInput value={email} label={t("vacation.employees.emailFilter")} maxLength={254} onChange={setEmail} /></GridFilterCell>
                   <GridFilterCell><label><span className="sr-only">{t("vacation.employees.statusFilter")}</span><select value={status} onChange={(event) => setStatus(event.target.value as EmployeeStatusFilter)} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allStatuses")}</option><option value="active">{t("vacation.employees.active")}</option><option value="inactive">{t("vacation.employees.inactive")}</option></select></label></GridFilterCell>
+                  <GridFilterCell><DateFilterInput value={employmentStartDateFrom} label={t("vacation.employees.employmentStartDateFrom")} onChange={setEmploymentStartDateFrom} /><DateFilterInput value={employmentStartDateTo} label={t("vacation.employees.employmentStartDateTo")} onChange={setEmploymentStartDateTo} /></GridFilterCell>
+                  <GridFilterCell><DateFilterInput value={employmentEndDateFrom} label={t("vacation.employees.employmentEndDateFrom")} onChange={setEmploymentEndDateFrom} /><DateFilterInput value={employmentEndDateTo} label={t("vacation.employees.employmentEndDateTo")} onChange={setEmploymentEndDateTo} /><label className="mt-1 block"><span className="sr-only">{t("vacation.employees.employmentEndDateState")}</span><select value={employmentEndDateState} onChange={(event) => setEmploymentEndDateState(event.target.value as "all" | "missing" | "present")} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allEndDateStates")}</option><option value="missing">{t("vacation.employees.withoutEmploymentEndDate")}</option><option value="present">{t("vacation.employees.withEmploymentEndDate")}</option></select></label></GridFilterCell>
+                  <GridFilterCell><FilterInput value={email} label={t("vacation.employees.emailFilter")} maxLength={254} onChange={setEmail} /></GridFilterCell>
                 </GridFilterRow>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                <GridStateRows columnCount={7} isLoading={isLoading} hasError={hasError} isEmpty={employees.length === 0} loadingLabel={t("vacation.employees.loading")} emptyTitle={t("vacation.employees.emptyTitle")} emptyDescription={t("vacation.employees.emptyDescription")} />
+                <GridStateRows columnCount={8} isLoading={isLoading} hasError={hasError} isEmpty={employees.length === 0} loadingLabel={t("vacation.employees.loading")} emptyTitle={t("vacation.employees.emptyTitle")} emptyDescription={t("vacation.employees.emptyDescription")} />
 
                 {!isLoading &&
                   !hasError &&
                   employees.map((employee) => {
                     const isSelected =
                       employee.publicId === selectedEmployeePublicId;
-                    const fullName = [employee.firstName, employee.middleName, employee.lastName].filter(Boolean).join(" ");
+                    const fullName = [employee.firstName, employee.lastName].join(" ");
 
                     return (
                       <tr
@@ -441,21 +465,22 @@ export default function EmployeesPage() {
                         <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
                           {employee.employeeNumber}
                         </td>
-                        <td className="hidden whitespace-nowrap px-4 py-3 text-slate-700 xl:table-cell">{employee.employmentStartDate ?? t("vacation.employees.notProvided")}</td>
-                        <td className="hidden whitespace-nowrap px-4 py-3 text-slate-700 xl:table-cell">{employee.employmentEndDate ?? t("vacation.employees.notProvided")}</td>
                         <td className="whitespace-nowrap px-4 py-3">
                           <button type="button" aria-pressed={isSelected} onClick={(event) => { event.stopPropagation(); selectEmployee(employee); }} className="rounded-sm text-left font-semibold text-slate-950 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
                             {fullName}
                           </button>
                         </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-700">{employee.middleName ?? t("vacation.employees.notProvided")}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                           {employee.departmentName}
                         </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {employee.email ?? t("vacation.employees.notProvided")}
-                        </td>
                         <td className="whitespace-nowrap px-4 py-3">
                           <EmploymentStatus status={employee.employmentStatus} />
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-700">{employee.employmentStartDate ? formatPortalDate(employee.employmentStartDate) : t("vacation.employees.notProvided")}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-700">{employee.employmentEndDate ? formatPortalDate(employee.employmentEndDate) : t("vacation.employees.notProvided")}</td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {employee.email ?? t("vacation.employees.notProvided")}
                         </td>
                       </tr>
                     );
@@ -475,9 +500,10 @@ export default function EmployeesPage() {
           ) : selectedEmployee ? (
             <div className="space-y-3 text-sm">
               <Detail label={t("vacation.employees.employeeNumber")} value={selectedEmployee.employeeNumber} />
-              <Detail label={t("vacation.employees.name")} value={[selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ")} />
-              <Detail label={t("vacation.employees.employmentStartDate")} value={selectedEmployee.employmentStartDate ?? t("vacation.employees.notProvided")} />
-              <Detail label={t("vacation.employees.employmentEndDate")} value={selectedEmployee.employmentEndDate ?? t("vacation.employees.notProvided")} />
+              <Detail label={t("vacation.employees.name")} value={[selectedEmployee.firstName, selectedEmployee.lastName].join(" ")} />
+              <Detail label={t("vacation.employees.middleName")} value={selectedEmployee.middleName ?? t("vacation.employees.notProvided")} />
+              <Detail label={t("vacation.employees.employmentStartDate")} value={selectedEmployee.employmentStartDate ? formatPortalDate(selectedEmployee.employmentStartDate) : t("vacation.employees.notProvided")} />
+              <Detail label={t("vacation.employees.employmentEndDate")} value={selectedEmployee.employmentEndDate ? formatPortalDate(selectedEmployee.employmentEndDate) : t("vacation.employees.notProvided")} />
               <Detail label={t("vacation.employees.department")} value={selectedEmployee.departmentName} />
               <Detail label={t("vacation.employees.email")} value={selectedEmployee.email ?? t("vacation.employees.notProvided")} />
               <Detail label={t("vacation.employees.status")} value={selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.active") : t("vacation.employees.inactive")} />
@@ -546,7 +572,7 @@ function EmployeeCommandBar({
       </button>
 
       <div className="ml-0 flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:ml-auto lg:justify-end">
-        <label className="min-w-[210px] flex-1 lg:max-w-xs">
+        <label className="w-full min-w-0 flex-1 sm:min-w-[210px] lg:max-w-xs">
           <span className="sr-only">
             {t("vacation.employees.searchLabel")}
           </span>
@@ -596,6 +622,32 @@ function FilterInput({ value, label, maxLength, onChange }: {
     maxLength={maxLength} onChange={(event) => onChange(event.target.value)}
     className="min-h-9 w-full min-w-28 rounded-md border border-slate-300 px-2 text-sm"
   /></label>;
+}
+
+function DateFilterInput({ value, label, onChange }: {
+  value: string; label: string; onChange: (value: string) => void;
+}) {
+  return <label className="mb-1 block last:mb-0"><span className="mb-0.5 block text-[11px] font-medium text-slate-600">{label}</span><input type="date" value={value}
+    onChange={(event) => onChange(event.target.value)} aria-label={label}
+    className="min-h-9 w-full rounded-md border border-slate-300 px-2 text-sm" /></label>;
+}
+
+function matchesDateFilters(employee: Employee, filters: {
+  employmentStartDateFrom: string;
+  employmentStartDateTo: string;
+  employmentEndDateFrom: string;
+  employmentEndDateTo: string;
+  employmentEndDateState: "all" | "missing" | "present";
+}) {
+  return matchesDateRange(employee.employmentStartDate, filters.employmentStartDateFrom, filters.employmentStartDateTo)
+    && matchesDateRange(employee.employmentEndDate, filters.employmentEndDateFrom, filters.employmentEndDateTo)
+    && (filters.employmentEndDateState === "all"
+      || (filters.employmentEndDateState === "missing") === (employee.employmentEndDate === null));
+}
+
+function matchesDateRange(value: string | null, from: string, to: string) {
+  if (!value) return !from && !to;
+  return (!from || value >= from) && (!to || value <= to);
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

@@ -9,6 +9,7 @@ import {
 } from "@/components/form-field";
 import { useAuth } from "@/components/auth-provider";
 import { useTranslations } from "@/i18n/use-translations";
+import { formatPortalDate } from "@/utils/portal-date-format";
 import {
   createNonWorkingDay,
   deleteNonWorkingDay,
@@ -27,7 +28,7 @@ const emptyForm: FormState = { date: "", name: "", description: null };
 
 export default function NonWorkingDaysPage() {
   const { accessToken, user } = useAuth();
-  const { browserLocale, t } = useTranslations();
+  const { t } = useTranslations();
   const allowed =
     user?.permissions.includes(businessCalendarManagePermission) ?? false;
   const [year, setYear] = useState(new Date().getFullYear());
@@ -140,7 +141,7 @@ export default function NonWorkingDaysPage() {
                   <th className="px-4 py-3">{t("businessCalendar.actions")}</th>
                 </tr></thead>
                 <tbody className="divide-y divide-slate-200">{days.map((day) => <tr key={day.publicId}>
-                  <td className="px-4 py-3 whitespace-nowrap">{new Intl.DateTimeFormat(browserLocale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${day.date}T00:00:00Z`))}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{formatPortalDate(day.date)}</td>
                   <td className="px-4 py-3 font-medium">{day.name}</td>
                   <td className="px-4 py-3 text-slate-600">{day.description || "—"}</td>
                   <td className="px-4 py-3 whitespace-nowrap"><button type="button" className="mr-3 text-blue-700 underline"
