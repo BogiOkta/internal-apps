@@ -37,14 +37,51 @@ by migration 008 only to the existing `Administrator` role. Existing
 Administrator tokens must be refreshed or reissued after that migration.
 
 Employee number is supplied on creation and is immutable thereafter. Normal
-edits cover name, optional email, optional employment dates, and department; status changes use explicit activate
-and deactivate commands. There is no physical delete contract or runtime
-delete privilege. Every successful mutation and its shared audit event commit
-in one transaction. Repeating a state command for the current state returns
-the current record without an update or a new audit event.
+edits cover name, optional email, optional employment dates, and department;
+status changes use explicit activate and deactivate commands. Controlled
+physical deletion is limited to administrators and employees with no
+dependencies. Every successful mutation and its shared audit event commit in
+one transaction. Repeating a state command for the current state returns the
+current record without an update or a new audit event.
 
 The employee list combines global search with server-side employee-number,
 full-name, exact-department-public-ID, email, and active-status filters.
+Administrators may delete only an unreferenced employee. The API checks links,
+Vacation history, audit targets, and future employee-related records through a
+central permanent database marker; it never cascades or deletes history. A
+dependency returns `409 employee_delete_conflict`, and the employee must be
+deactivated instead.
+
+Migration 024 revokes direct `DELETE` on `organization.employees` from the
+runtime role. The API can request physical deletion only through the
+owner-controlled `organization.delete_unreferenced_employee(uuid)` function.
+That function locks the employee, checks the permanent marker, and deletes only
+the employee row. Explicit employee foreign keys provide defense in depth, and
+any foreign-key conflict is converted to the same deterministic
+`employee_delete_conflict`.
+
+Migration 025 permanently records the first protected dependency for each
+employee. Migration 026 forward-upgrades that already-journaled marker to keep
+declaratively configured dependency names, and migration 027 forward-upgrades
+the controlled function to return those names. Removing a link or another
+independently managed mutable reference does not make that employee deletable
+later. Runtime roles have no access to the marker table, and the marker's own
+employee foreign key is `NO ACTION`. The shared trigger function records the
+configured dependency name without a module-specific application-code mapping.
+
+Every new employee-related table is incomplete unless its focused migration:
+
+1. creates the normal foreign key to `organization.employees` with explicit
+   `ON DELETE NO ACTION` or `ON DELETE RESTRICT`;
+2. attaches `organization.remember_employee_protected_dependency()` using the
+   employee-reference column, reference kind, and a concise user-facing
+   dependency name as trigger arguments; and
+3. tests both the foreign key and trigger attachment.
+
+No employee-related foreign key may use `ON DELETE CASCADE`. Employee deletion
+must never clean up dependent rows. This extension procedure requires no API,
+C#, employee-service, or Portal code change.
+
 Employee number, name, department, email, and status sorts are fixed,
 allowlisted contracts with deterministic tie-breakers.
 
@@ -94,24 +131,29 @@ not silently reassigned.
 `scripts/development/seed-okta-organization-employees.ps1` is the repeatable,
 development-only reconciler for the approved Okta employee dataset. It reads
 the owner connection settings from `.env`, ensures the active
-`NERASPOREDJENI` / `Neraspoređeni` department, and reconciles the 30 supplied
+`NERASPOREDJENI` / `Neraspoređeni` department, and reconciles the 29 supplied
 employees by immutable `employee_number`. It sets imported email values to
 null and makes the supplied employment status, names, dates, and department
 authoritative on every run.
 
-Run it only against the explicitly approved development database:
+Run it only against the explicitly approved development database. In addition
+to the confirmation switch, `APPROVED_DEVELOPMENT_DB_NAME` must exactly match
+the configured `DB_NAME`:
 
 ```powershell
 pwsh -File scripts/development/seed-okta-organization-employees.ps1 `
     -ConfirmDevelopmentDatabase
 ```
 
-The reset is intentionally narrow. Only the ten obsolete migration-004
+The reset is intentionally narrow. Employee number `1` is excluded from the
+authoritative set and is removed only when unreferenced. Employee `123` is the
+canonical Vladimir Ljubiša Bogićević record and its Identity link is retained.
+Only the ten obsolete migration-004
 `EMP-0001` through `EMP-0010` development seed rows are candidates for
-removal; unrelated employees are never selected. Candidates with user links,
-leave requests, legacy balances, leave policies, append-only LV2 ledger
-entries, or audit targets are preserved and reported with their reasons.
-Ledger and history records are never deleted. The script reports inserted,
-updated, skipped, removed, and preserved employee numbers, and is safe to
-rerun. It refuses to connect unless the operator explicitly supplies the
-development-database confirmation switch.
+removal; unrelated employees are never selected. Candidates with a permanent
+protected dependency marker, user links, leave requests, legacy balances,
+leave policies, append-only LV2 ledger entries, or audit targets are preserved
+and reported with their reasons. Ledger and history records are never deleted.
+The script reports inserted, updated, skipped, removed, and preserved employee
+numbers, and is safe to rerun. It refuses to connect unless the operator
+explicitly supplies the development-database confirmation switch.

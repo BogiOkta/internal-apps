@@ -153,6 +153,44 @@ internal sealed class EmployeesService(
         return new(EmployeeWriteStatus.Success, employee);
     }
 
+    public async Task<EmployeeDeleteResult> DeleteAsync(Guid publicId, Guid actorUserPublicId,
+        string traceId, CancellationToken cancellationToken)
+    {
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var deleted = await repository.DeleteUnreferencedEmployeeAsync(
+                connection, transaction, publicId, cancellationToken);
+            if (!deleted)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new(EmployeeWriteStatus.NotFound);
+            }
+
+            await auditWriter.WriteAsync(connection, transaction,
+                new AuditEntry(actorUserPublicId, "organization",
+                    "organization.employees.deleted", "employee_deletion",
+                    publicId, traceId,
+                    [new AuditChange("record", "present", "deleted")]),
+                cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new(EmployeeWriteStatus.Success);
+        }
+        catch (PostgresException exception) when (
+            exception.SqlState == "P0001" &&
+            exception.MessageText == "employee_delete_conflict")
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            var dependencies = string.IsNullOrWhiteSpace(exception.Detail)
+                ? []
+                : exception.Detail.Split(
+                    ", ", StringSplitOptions.RemoveEmptyEntries |
+                          StringSplitOptions.TrimEntries);
+            return new(EmployeeWriteStatus.HasDependencies, dependencies);
+        }
+    }
+
     private static Dictionary<string, string[]> Validate(
         CreateEmployeeRequest request,
         out CreateEmployeeCommand command)

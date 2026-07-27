@@ -40,6 +40,8 @@ internal static class OrganizationEndpoints
             .RequireAuthorization(OrganizationPermissions.ManageEmployees);
         organization.MapPut("/employees/{publicId:guid}", UpdateEmployeeAsync)
             .RequireAuthorization(OrganizationPermissions.ManageEmployees);
+        organization.MapDelete("/employees/{publicId:guid}", DeleteEmployeeAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageEmployees);
         organization.MapPost("/employees/{publicId:guid}/activate",
                 (Guid publicId, HttpContext context, EmployeesService service,
                     CancellationToken token) =>
@@ -233,6 +235,20 @@ internal static class OrganizationEndpoints
         if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
         return WriteProblem(context, await service.SetActiveAsync(
             publicId, active, actor, context.TraceIdentifier, cancellationToken));
+    }
+
+    private static async Task<IResult> DeleteEmployeeAsync(Guid publicId,
+        HttpContext context, EmployeesService service, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.DeleteAsync(publicId, actor, context.TraceIdentifier, cancellationToken);
+        return result.Status switch
+        {
+            EmployeeWriteStatus.Success => Results.NoContent(),
+            EmployeeWriteStatus.NotFound => Problem(context, 404, "Employee not found", "employee_not_found", "The requested employee does not exist."),
+            EmployeeWriteStatus.HasDependencies => Results.Problem(statusCode: 409, title: "Employee is referenced", detail: "Referenced employees cannot be deleted and must be deactivated instead.", instance: context.Request.Path, extensions: new Dictionary<string, object?> { ["code"] = "employee_delete_conflict", ["traceId"] = context.TraceIdentifier, ["dependencies"] = result.Dependencies ?? [] }),
+            _ => Results.Problem(statusCode: 500)
+        };
     }
 
     private static IResult WriteProblem(HttpContext context, EmployeeWriteResult result) =>

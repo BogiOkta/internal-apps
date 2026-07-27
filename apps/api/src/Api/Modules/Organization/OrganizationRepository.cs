@@ -231,6 +231,19 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
             connection, transaction, publicId, cancellationToken))!;
     }
 
+    public Task<bool> DeleteUnreferencedEmployeeAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        CancellationToken cancellationToken) =>
+        connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+            """
+            SELECT organization.delete_unreferenced_employee(@PublicId)
+            """,
+            new { PublicId = publicId },
+            transaction,
+            cancellationToken: cancellationToken));
+
     private const string EmployeeSelect = """
         SELECT
             employees.public_id AS PublicId,

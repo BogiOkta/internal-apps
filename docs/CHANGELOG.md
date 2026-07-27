@@ -1,5 +1,17 @@
 # Internal Apps Platform change history
 
+## 2026-07-27 — Organization employee administration increment
+
+- Added responsive Employment start/end date columns and confirmed administrator deletion.
+- Hardened deletion so the runtime role cannot directly delete employees; the
+  API uses an owner-controlled function that rejects every referenced employee
+  with deterministic `409 employee_delete_conflict` and never deletes history.
+- Preserved the already-journaled anonymous dependency marker in migration 025,
+  upgraded it forward to declarative dependency names in migration 026, and
+  added migration 027 so already-upgraded databases return those names without
+  rewriting an applied migration as the repair mechanism.
+- Corrected the development Okta reconciler to 29 employees: duplicate `1` is removal-only when unreferenced and `123` is canonical.
+
 ## 2026-07-27 — Portal company-administration navigation polish
 
 - Added the localized Company administration / Administracija firme section

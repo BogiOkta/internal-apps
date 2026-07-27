@@ -108,6 +108,15 @@ export async function deactivateEmployee(accessToken: string, publicId: string):
     accessToken, "POST");
 }
 
+export async function deleteEmployee(accessToken: string, publicId: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/organization/employees/${encodeURIComponent(publicId)}`, {
+    method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` }, credentials: "include",
+  });
+  if (response.ok) return;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(problem?.detail ?? problem?.title ?? "The employee could not be deleted.", problem ?? undefined, response.status);
+}
+
 async function writeEmployee(
   path: string,
   accessToken: string,

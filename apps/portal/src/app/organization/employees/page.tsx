@@ -18,6 +18,7 @@ import {
   activateEmployee,
   createEmployee,
   deactivateEmployee,
+  deleteEmployee,
   getDepartments,
   getEmployees,
   updateEmployee,
@@ -61,6 +62,8 @@ export default function EmployeesPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [sort, setSort] = useState<GridSort<EmployeeSortField>>(null);
   const [areFiltersVisible, setAreFiltersVisible] = useState(false);
   const [exportError, setExportError] = useState(false);
@@ -204,12 +207,41 @@ export default function EmployeesPage() {
     }
   }
 
+  async function remove() {
+    if (!accessToken || !selectedEmployee || isDeleting) return;
+    setWriteError(null);
+    setIsDeleting(true);
+    try {
+      await deleteEmployee(accessToken, selectedEmployee.publicId);
+      setSelectedEmployeePublicId(null);
+      setPanelMode("details");
+      setIsConfirmingDelete(false);
+      setFeedback(t("vacation.employees.deleteSuccess"));
+      setRefreshVersion((value) => value + 1);
+    } catch (error) {
+      const code = error instanceof Error && "problem" in error && (error as { problem?: { code?: string } }).problem?.code;
+      const dependencies = error instanceof Error && "problem" in error
+        ? (error as { problem?: { dependencies?: string[] } }).problem?.dependencies
+        : undefined;
+      setWriteError(code === "employee_delete_conflict"
+        ? `${t("vacation.employees.deleteReferenced")}${dependencies?.length ? ` ${dependencies.join(", ")}.` : ""}`
+        : t("vacation.employees.deleteFailed"));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   function selectEmployee(employee: Employee) {
+    setIsConfirmingStatus(false);
+    setIsConfirmingDelete(false);
+    setWriteError(null);
     setSelectedEmployeePublicId(employee.publicId);
   }
 
   const exportColumns: ExportColumn<Employee>[] = [
     { heading: t("vacation.employees.employeeNumber"), value: (row) => row.employeeNumber, width: 18 },
+    { heading: t("vacation.employees.employmentStartDate"), value: (row) => row.employmentStartDate ?? t("vacation.employees.notProvided"), width: 16 },
+    { heading: t("vacation.employees.employmentEndDate"), value: (row) => row.employmentEndDate ?? t("vacation.employees.notProvided"), width: 16 },
     { heading: t("vacation.employees.name"), value: (row) => [row.firstName, row.middleName, row.lastName].filter(Boolean).join(" "), width: 28 },
     { heading: t("vacation.employees.department"), value: (row) => row.departmentName, width: 24 },
     { heading: t("vacation.employees.email"), value: (row) => row.email ?? "", width: 32 },
@@ -321,6 +353,8 @@ export default function EmployeesPage() {
                     clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.employeeNumber") })}
                     onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
+                  <th scope="col" className="hidden px-4 py-2 xl:table-cell">{t("vacation.employees.employmentStartDate")}</th>
+                  <th scope="col" className="hidden px-4 py-2 xl:table-cell">{t("vacation.employees.employmentEndDate")}</th>
                   <SortableGridHeader
                     field="name"
                     label={t("vacation.employees.name")}
@@ -360,6 +394,8 @@ export default function EmployeesPage() {
                 </tr>
                 <GridFilterRow visible={areFiltersVisible}>
                   <GridFilterCell><FilterInput value={employeeNumber} label={t("vacation.employees.employeeNumberFilter")} maxLength={30} onChange={setEmployeeNumber} /></GridFilterCell>
+                  <GridFilterCell />
+                  <GridFilterCell />
                   <GridFilterCell><FilterInput value={name} label={t("vacation.employees.nameFilter")} maxLength={201} onChange={setName} /></GridFilterCell>
                   <GridFilterCell>
                     <label>
@@ -382,7 +418,7 @@ export default function EmployeesPage() {
                 </GridFilterRow>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                <GridStateRows columnCount={5} isLoading={isLoading} hasError={hasError} isEmpty={employees.length === 0} loadingLabel={t("vacation.employees.loading")} emptyTitle={t("vacation.employees.emptyTitle")} emptyDescription={t("vacation.employees.emptyDescription")} />
+                <GridStateRows columnCount={7} isLoading={isLoading} hasError={hasError} isEmpty={employees.length === 0} loadingLabel={t("vacation.employees.loading")} emptyTitle={t("vacation.employees.emptyTitle")} emptyDescription={t("vacation.employees.emptyDescription")} />
 
                 {!isLoading &&
                   !hasError &&
@@ -405,6 +441,8 @@ export default function EmployeesPage() {
                         <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
                           {employee.employeeNumber}
                         </td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 text-slate-700 xl:table-cell">{employee.employmentStartDate ?? t("vacation.employees.notProvided")}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 text-slate-700 xl:table-cell">{employee.employmentEndDate ?? t("vacation.employees.notProvided")}</td>
                         <td className="whitespace-nowrap px-4 py-3">
                           <button type="button" aria-pressed={isSelected} onClick={(event) => { event.stopPropagation(); selectEmployee(employee); }} className="rounded-sm text-left font-semibold text-slate-950 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
                             {fullName}
@@ -443,7 +481,7 @@ export default function EmployeesPage() {
               <Detail label={t("vacation.employees.department")} value={selectedEmployee.departmentName} />
               <Detail label={t("vacation.employees.email")} value={selectedEmployee.email ?? t("vacation.employees.notProvided")} />
               <Detail label={t("vacation.employees.status")} value={selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.active") : t("vacation.employees.inactive")} />
-              {canManage && <div className="space-y-2 pt-2"><div className="flex gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivate") : t("vacation.employees.activate")}</button></div>{isConfirmingStatus && <div className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="text-sm text-amber-900">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivateConfirmation") : t("vacation.employees.activateConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" onClick={() => void changeStatus()} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.confirm")}</button><button type="button" onClick={() => setIsConfirmingStatus(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm">{t("vacation.employees.cancel")}</button></div></div>}</div>}
+              {canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivate") : t("vacation.employees.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className="min-h-9 rounded-md border border-red-300 px-3 text-sm font-medium text-red-700">{t("vacation.employees.delete")}</button></div>{isConfirmingStatus && <div className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="text-sm text-amber-900">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivateConfirmation") : t("vacation.employees.activateConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" onClick={() => void changeStatus()} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.confirm")}</button><button type="button" onClick={() => setIsConfirmingStatus(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm">{t("vacation.employees.cancel")}</button></div></div>}{isConfirmingDelete && <div role="alertdialog" aria-modal="true" className="rounded-md border border-red-200 bg-red-50 p-3"><p className="text-sm text-red-900">{t("vacation.employees.deleteConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" disabled={isDeleting} onClick={() => void remove()} className="min-h-9 rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.delete")}</button><button type="button" disabled={isDeleting} onClick={() => setIsConfirmingDelete(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.cancel")}</button></div></div>}</div>}
             </div>
           ) : <p className="text-sm text-slate-600">{t("vacation.employees.selectForDetails")}</p>}
         </aside>

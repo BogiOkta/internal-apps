@@ -501,6 +501,40 @@ the runtime role only the employee INSERT columns, mutable UPDATE columns, and
 identity-sequence usage required by audited administration. It grants no
 employee DELETE capability. The employee table shape is unchanged.
 
+Migration `024_harden_organization_employee_deletion.sql` restores that
+least-privilege boundary after the temporary migration-023 grant by revoking
+direct runtime `DELETE`. Runtime employee deletion is available only through
+the owner-controlled `organization.delete_unreferenced_employee(uuid)`
+function. The function deletes the employee row only when it has no Identity,
+Vacation, balance, policy, ledger, audit, or other foreign-key dependency; it
+never removes dependent records.
+
+Migration `025_remember_organization_employee_dependencies.sql` backfills and
+maintains an owner-only permanent marker when an employee first acquires a
+protected dependency. Migration
+`026_upgrade_organization_employee_dependency_markers.sql` forward-upgrades
+that already-journaled marker to store trigger-supplied dependency labels.
+Migration `027_return_employee_dependency_names.sql` forward-upgrades the
+controlled function so the API may return those labels without knowing which
+module owns the table. The controlled function relies on the permanent marker;
+employee foreign keys remain a defense-in-depth guard against trigger omissions
+and concurrent writes. Later independent removal of a mutable link or policy
+cannot make a formerly referenced employee physically deletable.
+
+Every future table whose rows relate to an employee MUST:
+
+1. define its normal foreign key to `organization.employees`;
+2. use explicit `ON DELETE NO ACTION` or `ON DELETE RESTRICT`;
+3. attach `organization.remember_employee_protected_dependency()` with only
+   declarative arguments: the employee-reference column, reference kind
+   (`id` or `public_id`), and a concise user-facing dependency name;
+4. include a focused migration test for its foreign key and marker trigger.
+
+`ON DELETE CASCADE` is prohibited for every foreign key that references
+`organization.employees`. Employee deletion MUST NOT delete, unlink, archive,
+or otherwise clean up dependent rows. Adding an employee-related table does
+not require a change to the API or employee deletion service.
+
 Migration `009_user_employee_links.sql` adds
 `core.user_employee_links` as the neutral relationship between Identity users
 and Organization employees. Unique constraints on `user_id` and `employee_id`

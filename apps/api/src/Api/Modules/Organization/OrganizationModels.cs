@@ -66,10 +66,15 @@ internal enum EmployeeWriteStatus
     NotFound,
     InvalidDepartment,
     DuplicateEmployeeNumber,
-    DuplicateEmail
+    DuplicateEmail,
+    HasDependencies
 }
 
 internal sealed record EmployeeWriteResult(
     EmployeeWriteStatus Status,
     EmployeeResponse? Employee = null,
     Dictionary<string, string[]>? Errors = null);
+
+internal sealed record EmployeeDeleteResult(
+    EmployeeWriteStatus Status,
+    IReadOnlyList<string>? Dependencies = null);

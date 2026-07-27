@@ -22,6 +22,7 @@ export type ProblemDetails = {
   detail?: string;
   code?: string;
   traceId?: string;
+  dependencies?: string[];
   errors?: Record<string, string[]>;
 };
 
