@@ -88,3 +88,30 @@ to the canonical routes.
 Employee create and update accept only active departments. Employees already
 assigned to a department that later becomes inactive remain readable and are
 not silently reassigned.
+
+## Development Okta employee seed
+
+`scripts/development/seed-okta-organization-employees.ps1` is the repeatable,
+development-only reconciler for the approved Okta employee dataset. It reads
+the owner connection settings from `.env`, ensures the active
+`NERASPOREDJENI` / `Neraspoređeni` department, and reconciles the 30 supplied
+employees by immutable `employee_number`. It sets imported email values to
+null and makes the supplied employment status, names, dates, and department
+authoritative on every run.
+
+Run it only against the explicitly approved development database:
+
+```powershell
+pwsh -File scripts/development/seed-okta-organization-employees.ps1 `
+    -ConfirmDevelopmentDatabase
+```
+
+The reset is intentionally narrow. Only the ten obsolete migration-004
+`EMP-0001` through `EMP-0010` development seed rows are candidates for
+removal; unrelated employees are never selected. Candidates with user links,
+leave requests, legacy balances, leave policies, append-only LV2 ledger
+entries, or audit targets are preserved and reported with their reasons.
+Ledger and history records are never deleted. The script reports inserted,
+updated, skipped, removed, and preserved employee numbers, and is safe to
+rerun. It refuses to connect unless the operator explicitly supplies the
+development-database confirmation switch.
