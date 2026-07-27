@@ -25,6 +25,7 @@ import { getAssignedApplications } from "@/services/applications";
 import type { AssignedApplication } from "@/types/application";
 import type { CurrentUser } from "@/types/auth";
 import { usersManagePermission } from "@/types/auth";
+import { userEmployeeLinksManagePermission } from "@/types/organization";
 
 type AppShellContext = {
   applications: AssignedApplication[];
@@ -218,10 +219,7 @@ export function AppShell({
                 </p>
               )}
             </div>
-            <div className="hidden min-w-0 items-center gap-3 text-right xl:flex">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
-                {getInitials(user.displayName)}
-              </div>
+            <div className="hidden min-w-0 text-right xl:block">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-900">
                 {user.displayName}
@@ -357,11 +355,25 @@ function Navigation({
             );
           })}
 
+        <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          {t("navigation.companyAdministration")}
+        </p>
+        <NavLink
+          href="/organization/departments"
+          isActive={isRouteActive(currentPath, "/organization/departments")}
+          label={t("organization.departments.title")}
+          icon={<OrganizationIcon />}
+          onNavigate={onNavigate}
+        />
+        <NavLink
+          href="/organization/employees"
+          isActive={isRouteActive(currentPath, "/organization/employees")}
+          label={t("vacation.employees.title")}
+          icon={<UsersIcon />}
+          onNavigate={onNavigate}
+        />
         {user.permissions.includes(usersManagePermission) && (
           <>
-            <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {t("navigation.administration")}
-            </p>
             <NavLink
               href="/business-calendar/admin/non-working-days"
               isActive={isRouteActive(currentPath, "/business-calendar/admin/non-working-days")}
@@ -369,7 +381,23 @@ function Navigation({
               icon={<CalendarIcon />}
               onNavigate={onNavigate}
             />
+            <NavLink
+              href="/identity/users"
+              isActive={isRouteActive(currentPath, "/identity/users")}
+              label={t("identity.users.navigation")}
+              icon={<UsersIcon />}
+              onNavigate={onNavigate}
+            />
           </>
+        )}
+        {user.permissions.includes(userEmployeeLinksManagePermission) && (
+          <NavLink
+            href="/organization/user-employee-links"
+            isActive={isRouteActive(currentPath, "/organization/user-employee-links")}
+            label={t("organization.links.navigation")}
+            icon={<LinkIcon />}
+            onNavigate={onNavigate}
+          />
         )}
 
         {showDevelopmentNavigation && (
@@ -493,15 +521,6 @@ function isRouteActive(currentPath: string, route: string) {
   return currentPath === route || currentPath.startsWith(`${route}/`);
 }
 
-function getInitials(displayName: string) {
-  return displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
-}
-
 export function ApplicationIcon({
   code,
   className,
@@ -565,6 +584,30 @@ function GridIcon(props: SVGProps<SVGSVGElement>) {
       <rect x="14" y="4" width="6" height="6" rx="1" />
       <rect x="4" y="14" width="6" height="6" rx="1" />
       <rect x="14" y="14" width="6" height="6" rx="1" />
+    </IconBase>
+  );
+}
+
+function OrganizationIcon() {
+  return (
+    <IconBase>
+      <path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M2 21h20M8 7h4M8 11h4M8 15h4M16 9h2M16 13h2" />
+    </IconBase>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <IconBase>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </IconBase>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <IconBase>
+      <path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15" />
     </IconBase>
   );
 }

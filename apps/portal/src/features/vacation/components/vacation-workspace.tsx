@@ -8,7 +8,6 @@ import {
 } from "@/components/workspace-navigation";
 import { useTranslations } from "@/i18n/use-translations";
 import { useAuth } from "@/components/auth-provider";
-import { userEmployeeLinksManagePermission } from "@/types/organization";
 import { usersManagePermission } from "@/types/auth";
 
 type VacationWorkspaceProps = {
@@ -29,32 +28,15 @@ export function VacationWorkspace({
 
   const items: WorkspaceNavigationItem[] = [
     {
-      label: t("vacation.workspace.overview"),
-      href: "/vacation",
-    },
-    {
-      label: t("vacation.workspace.employees"),
-      href: "/organization/employees",
-    },
-    {
-      label: t("vacation.workspace.departments"),
-      href: "/organization/departments",
+      label: t("vacation.workspace.requests"),
+      href: "/vacation/requests",
     },
     {
       label: t("vacation.workspace.leaveTypes"),
       href: "/vacation/leave-types",
     },
-    ...(user?.permissions.includes(userEmployeeLinksManagePermission)
-      ? [{
-          label: t("organization.links.navigation"),
-          href: "/organization/user-employee-links",
-        }]
-      : []),
     ...(user?.permissions.includes(usersManagePermission)
       ? [{
-          label: t("identity.users.navigation"),
-          href: "/identity/users",
-        }, {
           label: t("vacation.admin.navigation"),
           href: "/vacation/admin/requests",
         }, {
@@ -65,14 +47,6 @@ export function VacationWorkspace({
           href: "/vacation/admin/leave-balances",
         }]
       : []),
-    {
-      label: t("vacation.workspace.requests"),
-      href: "/vacation/requests",
-    },
-    {
-      label: t("vacation.workspace.calendar"),
-      href: "/vacation#calendar",
-    },
   ];
 
   return (

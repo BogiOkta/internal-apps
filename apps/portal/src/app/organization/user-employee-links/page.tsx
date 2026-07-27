@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { SearchableCombobox } from "@/components/searchable-combobox";
-import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
+import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import {
   createUserEmployeeLink, getUserEmployeeLinkOptions, getUserEmployeeLinks,
@@ -82,12 +82,12 @@ export default function UserEmployeeLinksPage() {
     finally { setSaving(false); }
   }
 
-  if (!allowed) return <VacationWorkspace title={t("organization.links.title")}>
+  if (!allowed) return <CompanyAdministrationWorkspace title={t("organization.links.title")}>
     <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
       {t("organization.links.forbidden")}
-    </div></VacationWorkspace>;
+    </div></CompanyAdministrationWorkspace>;
 
-  return <VacationWorkspace title={t("organization.links.title")}
+  return <CompanyAdministrationWorkspace title={t("organization.links.title")}
     description={t("organization.links.description")}
     commandBar={<button type="button" onClick={beginCreate}
       className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">
@@ -144,5 +144,5 @@ export default function UserEmployeeLinksPage() {
         </div>
       </aside>
     </div>
-  </VacationWorkspace>;
+  </CompanyAdministrationWorkspace>;
 }

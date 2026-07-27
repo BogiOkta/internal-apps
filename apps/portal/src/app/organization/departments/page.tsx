@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
+import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { getDepartments } from "@/services/organization";
 import type { Department } from "@/types/organization";
@@ -23,7 +23,7 @@ export default function DepartmentsPage() {
     return () => controller.abort();
   }, [accessToken]);
 
-  return <VacationWorkspace title={t("organization.departments.title")}
+  return <CompanyAdministrationWorkspace title={t("organization.departments.title")}
     description={t("organization.departments.description")}>
     <section className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
       <table className="w-full text-left text-sm">
@@ -41,5 +41,5 @@ export default function DepartmentsPage() {
         </tbody>
       </table>
     </section>
-  </VacationWorkspace>;
+  </CompanyAdministrationWorkspace>;
 }

@@ -26,6 +26,10 @@
   route provides localized year-filtered CRUD administration of those dates.
 - Shared Portal UI: administrative grid, form field conventions, global
   appearance, `AppCalendar`, and `DateRangePicker` are available.
+- Portal navigation keeps Organization master data and Business Calendar
+  administration in a shared Company administration section. Vacation
+  navigation is limited to leave-request, Leave Type, Leave Policy, and Leave
+  Balance work.
 
 ## Vacation module
 

@@ -12,7 +12,7 @@ import {
   type GridSort,
 } from "@/components/admin-data-grid";
 import { useAuth } from "@/components/auth-provider";
-import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
+import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import {
   activateEmployee,
@@ -267,7 +267,7 @@ export default function EmployeesPage() {
   );
 
   return (
-    <VacationWorkspace
+    <CompanyAdministrationWorkspace
       title={t("vacation.employees.title")}
       description={t("vacation.employees.description")}
       commandBar={commandBar}
@@ -449,7 +449,7 @@ export default function EmployeesPage() {
         </aside>
         </div>
       </div>
-    </VacationWorkspace>
+    </CompanyAdministrationWorkspace>
   );
 }
 

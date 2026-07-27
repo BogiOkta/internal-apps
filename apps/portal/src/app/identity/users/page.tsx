@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { GridFooter, GridStateRows } from "@/components/admin-data-grid";
 import { useAuth } from "@/components/auth-provider";
 import { FormField, formControlClassName } from "@/components/form-field";
-import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
+import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { activateUser, ApiError, createUser, deactivateUser, listUsers } from "@/services/auth";
 import { usersManagePermission, type ManagedUser } from "@/types/auth";
@@ -44,11 +44,11 @@ export default function UsersPage() {
     } catch { setError(t("identity.users.stateFailed")); }
   }
 
-  if (!allowed) return <VacationWorkspace title={t("identity.users.title")}>
+  if (!allowed) return <CompanyAdministrationWorkspace title={t("identity.users.title")}>
     <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
-      {t("identity.users.forbidden")}</div></VacationWorkspace>;
+      {t("identity.users.forbidden")}</div></CompanyAdministrationWorkspace>;
 
-  return <VacationWorkspace title={t("identity.users.title")}
+  return <CompanyAdministrationWorkspace title={t("identity.users.title")}
     description={t("identity.users.description")}
     commandBar={<button type="button" onClick={() => { setCreating(true); setSelected(null); }}
       className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">
@@ -96,7 +96,7 @@ export default function UsersPage() {
           <p className="text-sm text-slate-600">{t("identity.users.selectHint")}</p>}
       </aside>
     </div>
-  </VacationWorkspace>;
+  </CompanyAdministrationWorkspace>;
 }
 
 function CreateUserForm({ onCancel, onCreated }: {

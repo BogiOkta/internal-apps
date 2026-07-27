@@ -1,5 +1,20 @@
 # Internal Apps Platform change history
 
+## 2026-07-27 — Portal company-administration navigation polish
+
+- Added the localized Company administration / Administracija firme section
+  to the shared responsive Portal navigation. It contains the canonical
+  Organization Departments and Employees routes, plus the permission-aware
+  Business Calendar non-working-days route; existing Identity administration
+  links remain permission-aware there as well.
+- Removed Organization pages from the Vacation workspace navigation. Vacation
+  navigation now presents leave requests, Leave Types, and administrator-only
+  request, Leave Policy, and Leave Balance work without changing any route,
+  API, ownership, or permission contract.
+- Removed the redundant desktop header initial avatar and updated the dashboard
+  application wording to My applications / Moje aplikacije. Added focused
+  Portal navigation contract coverage.
+
 ## 2026-07-27 — Organization historical employment data
 
 - Added migration 022 to extend Organization employees with nullable middle
