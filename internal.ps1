@@ -1,256 +1,191 @@
-[CmdletBinding()]
 param(
-    [Parameter(Position = 0, Mandatory = $true)]
+    [Parameter(Position = 0)]
     [ValidateSet("start", "stop", "restart", "status")]
-    [string]$Command
+    [string]$Command = "status"
 )
 
 $ErrorActionPreference = "Stop"
+$root = $PSScriptRoot
+$internalDirectory = Join-Path $root ".internal"
+$statePath = Join-Path $internalDirectory "runner.json"
+$logDirectory = Join-Path $internalDirectory "logs"
+$portalDirectory = Join-Path $root "apps/portal"
+$apiProject = Join-Path $root "apps/api/src/Api/InternalApps.Api.csproj"
+$apiDll = Join-Path $root "apps/api/src/Api/bin/Debug/net8.0/InternalApps.Api.dll"
 
-$repositoryRoot = $PSScriptRoot
-$stateDirectory = Join-Path $repositoryRoot ".internal"
-$statePath = Join-Path $stateDirectory "runner.json"
-$environmentPath = Join-Path $repositoryRoot ".env"
-
-function Get-DevelopmentPort {
-    param([string]$Name)
-
+function Get-Port([string]$Name) {
     $value = [Environment]::GetEnvironmentVariable($Name, "Process")
-    if ([string]::IsNullOrWhiteSpace($value) -and (Test-Path -LiteralPath $environmentPath)) {
-        $line = Get-Content -LiteralPath $environmentPath |
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        $line = Get-Content (Join-Path $root ".env") |
             Where-Object { $_ -match "^\s*$([regex]::Escape($Name))\s*=" } |
             Select-Object -Last 1
-        if ($null -ne $line) {
-            $value = ($line -split "=", 2)[1].Trim().Trim('"').Trim("'")
-        }
+        if ($line) { $value = ($line -split "=", 2)[1].Trim().Trim('"').Trim("'") }
     }
-
     $port = 0
-    if (-not [int]::TryParse($value, [ref]$port) -or $port -lt 1 -or $port -gt 65535) {
-        throw "$Name must be an integer from 1 through 65535 in the process environment or $environmentPath."
+    if (-not [int]::TryParse($value, [ref]$port) -or $port -notin 1..65535) {
+        throw "$Name must contain a valid port."
     }
-
-    return $port
+    $port
 }
 
-$apiPort = Get-DevelopmentPort -Name "DEV_API_PORT"
-$portalPort = Get-DevelopmentPort -Name "DEV_PORTAL_PORT"
+$apiPort = Get-Port "DEV_API_PORT"
+$portalPort = Get-Port "DEV_PORTAL_PORT"
 $apiUrl = "http://localhost:$apiPort"
-$apiHealthUrl = "$apiUrl/health"
+$healthUrl = "$apiUrl/health"
 $portalUrl = "http://localhost:$portalPort"
 
-function Read-RunnerState {
-    if (-not (Test-Path -LiteralPath $statePath)) {
-        return $null
-    }
-
-    try {
-        return Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
-    }
-    catch {
-        Write-Warning "Runner state is unreadable and will be treated as stale: $statePath"
-        return $null
-    }
+function Read-State {
+    if (-not (Test-Path $statePath)) { return $null }
+    try { Get-Content $statePath -Raw | ConvertFrom-Json }
+    catch { return $null }
 }
 
-function Write-RunnerState {
-    param([object]$State)
+function Remove-State { Remove-Item $statePath -Force -ErrorAction SilentlyContinue }
 
-    New-Item -ItemType Directory -Path $stateDirectory -Force | Out-Null
-    $State | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $statePath -Encoding utf8
-}
-
-function Test-OwnedProcess {
-    param([object]$ProcessState)
-
-    if ($null -eq $ProcessState -or $null -eq $ProcessState.pid -or $null -eq $ProcessState.startedAtUtc) {
-        return $false
+function Get-OwnedProcess([object]$ProcessState, [string]$ExpectedName) {
+    if (-not $ProcessState -or -not $ProcessState.pid -or -not $ProcessState.startedAtUtc) {
+        return $null
     }
-
     $process = Get-Process -Id ([int]$ProcessState.pid) -ErrorAction SilentlyContinue
-    if ($null -eq $process) {
-        return $false
+    if (-not $process -or $process.ProcessName -ne $ExpectedName) { return $null }
+    try {
+        $storedStart = ([datetime]$ProcessState.startedAtUtc).ToUniversalTime()
+        if ($process.StartTime.ToUniversalTime() -ne $storedStart) { return $null }
+        return $process
     }
+    catch { return $null }
+}
+
+function Stop-Tree([object]$ProcessState, [string]$ExpectedName) {
+    $process = Get-OwnedProcess $ProcessState $ExpectedName
+    if ($process) {
+        & taskkill.exe /PID $process.Id /T /F *> $null
+    }
+}
+
+function Stop-Services([switch]$Quiet) {
+    $state = Read-State
+    Stop-Tree $state.portal "node"
+    Stop-Tree $state.api "dotnet"
+    Remove-State
+    $occupied = $false
+    foreach ($service in @(
+        @{ Name = "API"; Port = $apiPort },
+        @{ Name = "Portal"; Port = $portalPort }
+    )) {
+        $listener = Get-NetTCPConnection -LocalPort $service.Port -State Listen `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($listener) {
+            $occupied = $true
+            Write-Host "$($service.Name): port $($service.Port) is occupied by PID $($listener.OwningProcess)."
+        }
+    }
+    if (-not $Quiet) { Write-Host "API and Portal stopped." }
+    return $occupied
+}
+
+function Test-Ready([string]$Url) {
+    try { return (Invoke-WebRequest $Url -UseBasicParsing -TimeoutSec 2).StatusCode -eq 200 }
+    catch { return $false }
+}
+
+function Wait-Ready([string]$Name, [string]$Url, [int]$ProcessId) {
+    $deadline = (Get-Date).AddSeconds(30)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-Ready $Url) { return }
+        if (-not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) {
+            throw "$Name exited before it was ready."
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    throw "$Name did not become ready within 30 seconds."
+}
+
+function Start-Services {
+    if (Stop-Services -Quiet) { throw "Start failed: a configured port is still occupied." }
+    Remove-State
+    $apiProcess = $null
+    $portalProcess = $null
 
     try {
-        $storedStartTime = ([datetime]$ProcessState.startedAtUtc).ToUniversalTime()
-        return $process.StartTime.ToUniversalTime() -eq $storedStartTime
+        $nextDirectory = Join-Path $portalDirectory ".next"
+        if (Test-Path $nextDirectory) {
+            try { Remove-Item $nextDirectory -Recurse -Force }
+            catch { throw "Portal .next directory could not be removed." }
+        }
+
+        New-Item -ItemType Directory $logDirectory -Force | Out-Null
+        & dotnet build $apiProject --no-restore
+        if ($LASTEXITCODE -ne 0) { throw "API build failed." }
+
+        $apiProcess = Start-Process dotnet -ArgumentList $apiDll -WorkingDirectory $root `
+            -Environment @{ ASPNETCORE_ENVIRONMENT = "Development"; ASPNETCORE_URLS = $apiUrl; PORTAL_URL = $portalUrl } `
+            -RedirectStandardOutput (Join-Path $logDirectory "api.log") `
+            -RedirectStandardError (Join-Path $logDirectory "api.err.log") -PassThru
+        Wait-Ready "API" $healthUrl $apiProcess.Id
+
+        $next = Join-Path $portalDirectory "node_modules/next/dist/bin/next"
+        if (-not (Test-Path $next)) { throw "Portal dependencies are missing." }
+        $portalProcess = Start-Process node -ArgumentList @($next, "dev", "--port", "$portalPort") `
+            -WorkingDirectory $portalDirectory `
+            -Environment @{ PORT = "$portalPort"; API_BASE_URL = $apiUrl; NEXT_PUBLIC_API_BASE_URL = $apiUrl } `
+            -RedirectStandardOutput (Join-Path $logDirectory "portal.log") `
+            -RedirectStandardError (Join-Path $logDirectory "portal.err.log") -PassThru
+        Wait-Ready "Portal" $portalUrl $portalProcess.Id
+
+        [ordered]@{
+            api = [ordered]@{
+                pid = $apiProcess.Id
+                startedAtUtc = $apiProcess.StartTime.ToUniversalTime().ToString("o")
+            }
+            portal = [ordered]@{
+                pid = $portalProcess.Id
+                startedAtUtc = $portalProcess.StartTime.ToUniversalTime().ToString("o")
+            }
+        } |
+            ConvertTo-Json | Set-Content $statePath -Encoding utf8
+        Write-Host "API: running - PID $($apiProcess.Id) - $apiUrl"
+        Write-Host "Portal: running - PID $($portalProcess.Id) - $portalUrl"
     }
     catch {
-        return $false
+        if ($portalProcess) {
+            Stop-Tree ([pscustomobject]@{
+                pid = $portalProcess.Id
+                startedAtUtc = $portalProcess.StartTime.ToUniversalTime().ToString("o")
+            }) "node"
+        }
+        if ($apiProcess) {
+            Stop-Tree ([pscustomobject]@{
+                pid = $apiProcess.Id
+                startedAtUtc = $apiProcess.StartTime.ToUniversalTime().ToString("o")
+            }) "dotnet"
+        }
+        Remove-State
+        throw "Start failed: $($_.Exception.Message)"
     }
-}
-
-function Test-PortInUse {
-    param([int]$Port)
-
-    return $null -ne (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1)
-}
-
-function Test-HttpEndpoint {
-    param([string]$Url)
-
-    try {
-        $response = Invoke-WebRequest -Uri $Url -Method Get -TimeoutSec 3 -UseBasicParsing
-        return $response.StatusCode -ge 200 -and $response.StatusCode -lt 400
-    }
-    catch {
-        return $false
-    }
-}
-
-function Get-ServiceStatus {
-    param(
-        [int]$Port,
-        [string]$ProbeUrl
-    )
-
-    if (Test-HttpEndpoint -Url $ProbeUrl) {
-        return "running"
-    }
-
-    if (Test-PortInUse -Port $Port) {
-        return "port occupied"
-    }
-
-    return "stopped"
 }
 
 function Show-Status {
-    $state = Read-RunnerState
-    $apiStatus = Get-ServiceStatus -Port $apiPort -ProbeUrl $apiHealthUrl
-    $portalStatus = Get-ServiceStatus -Port $portalPort -ProbeUrl $portalUrl
-
-    Write-Host "API:    $apiStatus - $apiUrl"
-    Write-Host "Portal: $portalStatus - $portalUrl"
-
-    foreach ($serviceName in @("api", "portal")) {
-        $processState = if ($null -ne $state) { $state.$serviceName } else { $null }
-        if ($null -eq $processState) {
-            Write-Host "$($serviceName.ToUpper()) stored PID: none"
-        }
-        elseif (Test-OwnedProcess -ProcessState $processState) {
-            Write-Host "$($serviceName.ToUpper()) stored PID: $($processState.pid) (current)"
-        }
-        else {
-            Write-Host "$($serviceName.ToUpper()) stored PID: $($processState.pid) (stale)"
-        }
-    }
-}
-
-function Start-ServiceWindow {
-    param(
-        [string]$Title,
-        [string]$WorkingDirectory,
-        [string]$Body
-    )
-
-    $windowScript = @"
-`$Host.UI.RawUI.WindowTitle = '$Title'
-Set-Location -LiteralPath '$($WorkingDirectory.Replace("'", "''"))'
-$Body
-"@
-    $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($windowScript))
-    $powerShellPath = (Get-Process -Id $PID).Path
-    $process = Start-Process -FilePath $powerShellPath -ArgumentList "-NoExit", "-EncodedCommand", $encodedCommand -PassThru
-
-    return [ordered]@{
-        pid = $process.Id
-        startedAtUtc = $process.StartTime.ToUniversalTime().ToString("o")
-    }
-}
-
-function Start-Runner {
-    $state = Read-RunnerState
-    $newState = [ordered]@{}
-
+    $state = Read-State
+    $ownedProcessCount = 0
     foreach ($service in @(
-        [pscustomobject]@{ Name = "api"; Label = "API"; Port = $apiPort; Probe = $apiHealthUrl },
-        [pscustomobject]@{ Name = "portal"; Label = "Portal"; Port = $portalPort; Probe = $portalUrl }
+        @{ Name = "API"; Process = $state.api; ExpectedName = "dotnet"; Probe = $healthUrl; Url = $apiUrl },
+        @{ Name = "Portal"; Process = $state.portal; ExpectedName = "node"; Probe = $portalUrl; Url = $portalUrl }
     )) {
-        $status = Get-ServiceStatus -Port $service.Port -ProbeUrl $service.Probe
-        if ($status -eq "running") {
-            Write-Host "$($service.Label) is already responsive; reusing it."
-            if ($null -ne $state -and (Test-OwnedProcess -ProcessState $state.($service.Name))) {
-                $newState[$service.Name] = $state.($service.Name)
-            }
-        }
-        elseif ($status -eq "port occupied") {
-            throw "$($service.Label) cannot start: port $($service.Port) is occupied by an unknown or unresponsive process."
+        $process = Get-OwnedProcess $service.Process $service.ExpectedName
+        if ($process -and (Test-Ready $service.Probe)) {
+            $ownedProcessCount++
+            Write-Host "$($service.Name): running - PID $($process.Id) - $($service.Url)"
+        } else {
+            Write-Host "$($service.Name): stopped"
         }
     }
-
-    if (-not $newState.Contains("api") -and -not (Test-HttpEndpoint -Url $apiHealthUrl)) {
-        Write-Host "Starting API in a visible PowerShell window..."
-        $newState.api = Start-ServiceWindow `
-            -Title "Internal Apps API" `
-            -WorkingDirectory $repositoryRoot `
-            -Body "`$env:ASPNETCORE_URLS = '$apiUrl'; `$env:PORTAL_URL = '$portalUrl'; dotnet run --project apps/api/src/Api/InternalApps.Api.csproj --no-launch-profile"
-    }
-
-    if (-not $newState.Contains("portal") -and -not (Test-HttpEndpoint -Url $portalUrl)) {
-        Write-Host "Starting Portal in a visible PowerShell window..."
-        $newState.portal = Start-ServiceWindow `
-            -Title "Internal Apps Portal" `
-            -WorkingDirectory (Join-Path $repositoryRoot "apps/portal") `
-            -Body "`$env:PORT = '$portalPort'; `$env:API_BASE_URL = '$apiUrl'; `$env:NEXT_PUBLIC_API_BASE_URL = '$apiUrl'; npm run dev -- --port `$env:PORT"
-    }
-
-    Write-RunnerState -State $newState
-
-    $deadline = (Get-Date).AddSeconds(30)
-    do {
-        $apiReady = Test-HttpEndpoint -Url $apiHealthUrl
-        $portalReady = Test-HttpEndpoint -Url $portalUrl
-        if ($apiReady -and $portalReady) {
-            break
-        }
-        Start-Sleep -Milliseconds 500
-    } while ((Get-Date) -lt $deadline)
-
-    Write-Host "API:    $(if ($apiReady) { "ready" } else { "not ready" }) - $apiUrl"
-    Write-Host "Portal: $(if ($portalReady) { "ready" } else { "not ready" }) - $portalUrl"
-
-    if (-not ($apiReady -and $portalReady)) {
-        throw "One or more services did not become responsive within 30 seconds. Check the visible service windows."
-    }
-}
-
-function Stop-Runner {
-    $state = Read-RunnerState
-    if ($null -eq $state) {
-        Write-Host "No runner-owned processes are recorded. Nothing to stop."
-        return
-    }
-
-    foreach ($serviceName in @("portal", "api")) {
-        $processState = $state.$serviceName
-        if ($null -eq $processState) {
-            continue
-        }
-
-        if (-not (Test-OwnedProcess -ProcessState $processState)) {
-            Write-Host "$($serviceName.ToUpper()) stored PID $($processState.pid) is stale; skipping it."
-            continue
-        }
-
-        Write-Host "Stopping runner-owned $($serviceName.ToUpper()) process tree (PID $($processState.pid))..."
-        & taskkill.exe /PID ([int]$processState.pid) /T /F | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Could not stop $($serviceName.ToUpper()) PID $($processState.pid)."
-        }
-    }
-
-    Remove-Item -LiteralPath $statePath -Force -ErrorAction SilentlyContinue
-    Write-Host "Runner-owned processes stopped."
+    if ($state -and $ownedProcessCount -eq 0) { Remove-State }
 }
 
 switch ($Command) {
-    "start" { Start-Runner }
-    "stop" { Stop-Runner }
-    "restart" {
-        Stop-Runner
-        Start-Runner
-    }
+    "start" { Start-Services }
+    "restart" { Start-Services }
+    "stop" { Stop-Services | Out-Null }
     "status" { Show-Status }
 }

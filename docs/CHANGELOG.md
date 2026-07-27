@@ -1,5 +1,22 @@
 # Internal Apps Platform change history
 
+## 2026-07-27 — Organization Employees pagination and date-input standard
+
+- Refined `PortalDateInput` to the platform Serbian segmented date standard:
+  `dd.MM.yyyy.` keyboard entry with automatic separators, normalized paste,
+  real calendar validation, and an integrated Serbian Latin Monday-first
+  calendar. API date-only transport remains ISO `yyyy-MM-dd`.
+
+- Simplified Employee filters to global search, organization unit, employee
+  status, and a compact end-date state; removed the four employment date-range
+  controls while preserving reset behavior.
+- Added the shared administrative-grid pagination pattern: default 20 rows,
+  20/50/100 page sizes, visible range/total, first/previous/next/last controls,
+  filter/sort-before-pagination semantics, and page-one resets.
+- Employee deletion conflicts now map only known generic dependency names to
+  concise business labels and preserve the stable conflict code, deactivation
+  guidance, and a safe no-list fallback.
+
 ## 2026-07-27 — Organization Employees Portal UX increment
 
 - Established `src/utils/portal-date-format.ts` as the mandatory Portal

@@ -11,6 +11,7 @@ import {
   SortableGridHeader,
   type GridSort,
 } from "@/components/admin-data-grid";
+import { GridPagination } from "@/components/grid-pagination";
 import { useAuth } from "@/components/auth-provider";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import { useTranslations } from "@/i18n/use-translations";
@@ -55,15 +56,10 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [departmentPublicId, setDepartmentPublicId] = useState("");
-  const [employeeNumber, setEmployeeNumber] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [status, setStatus] = useState<EmployeeStatusFilter>("all");
-  const [employmentStartDateFrom, setEmploymentStartDateFrom] = useState("");
-  const [employmentStartDateTo, setEmploymentStartDateTo] = useState("");
-  const [employmentEndDateFrom, setEmploymentEndDateFrom] = useState("");
-  const [employmentEndDateTo, setEmploymentEndDateTo] = useState("");
   const [employmentEndDateState, setEmploymentEndDateState] = useState<"all" | "missing" | "present">("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [panelMode, setPanelMode] = useState<"details" | "create" | "edit">("details");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -122,10 +118,7 @@ export default function EmployeesPage() {
       accessToken,
       {
         search: debouncedSearch || undefined,
-        employeeNumber: employeeNumber || undefined,
-        name: name || undefined,
         departmentPublicId: departmentPublicId || undefined,
-        email: email || undefined,
         status,
         sort: sort
           ? ((sort.direction === "desc" ? `-${sort.field}` : sort.field) as EmployeeSort)
@@ -159,26 +152,17 @@ export default function EmployeesPage() {
   }, [
     accessToken,
     debouncedSearch,
-    employeeNumber,
-    name,
     departmentPublicId,
-    email,
     status,
     refreshVersion,
     sort,
   ]);
 
-  const employees = useMemo(
-    () => employeeResult.filter((employee) => matchesDateFilters(employee, {
-      employmentStartDateFrom,
-      employmentStartDateTo,
-      employmentEndDateFrom,
-      employmentEndDateTo,
-      employmentEndDateState,
-    })),
-    [employeeResult, employmentStartDateFrom, employmentStartDateTo,
-      employmentEndDateFrom, employmentEndDateTo, employmentEndDateState],
-  );
+  const employees = useMemo(() => employeeResult.filter((employee) =>
+    employmentEndDateState === "all" || (employmentEndDateState === "missing") === (employee.employmentEndDate === null),
+  ), [employeeResult, employmentEndDateState]);
+  const totalPages = Math.max(1, Math.ceil(employees.length / pageSize));
+  const visibleEmployees = useMemo(() => employees.slice((page - 1) * pageSize, page * pageSize), [employees, page, pageSize]);
   const selectedEmployee = useMemo(
     () =>
       employees.find(
@@ -187,10 +171,11 @@ export default function EmployeesPage() {
     [employees, selectedEmployeePublicId],
   );
   const canManage = user?.permissions.includes(employeesManagePermission) ?? false;
-  const activeFilterCount = [employeeNumber, name, departmentPublicId, email,
-    status === "all" ? "" : status, employmentStartDateFrom, employmentStartDateTo,
-    employmentEndDateFrom, employmentEndDateTo,
+  const activeFilterCount = [departmentPublicId, status === "all" ? "" : status,
     employmentEndDateState === "all" ? "" : employmentEndDateState].filter(Boolean).length;
+
+  useEffect(() => { setPage(1); }, [debouncedSearch, departmentPublicId, status, employmentEndDateState, sort, pageSize]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
 
   async function create(request: CreateEmployeeRequest) {
     if (!accessToken) return;
@@ -243,7 +228,7 @@ export default function EmployeesPage() {
         ? (error as { problem?: { dependencies?: string[] } }).problem?.dependencies
         : undefined;
       setWriteError(code === "employee_delete_conflict"
-        ? `${t("vacation.employees.deleteReferenced")}${dependencies?.length ? ` ${dependencies.join(", ")}.` : ""}`
+        ? deleteConflictMessage(dependencies, t)
         : t("vacation.employees.deleteFailed"));
     } finally {
       setIsDeleting(false);
@@ -306,10 +291,7 @@ export default function EmployeesPage() {
       areFiltersVisible={areFiltersVisible}
       exportDisabled={employees.length === 0}
       onClearFilters={() => {
-        setEmployeeNumber(""); setName(""); setDepartmentPublicId("");
-        setEmail(""); setStatus("all"); setEmploymentStartDateFrom("");
-        setEmploymentStartDateTo(""); setEmploymentEndDateFrom("");
-        setEmploymentEndDateTo(""); setEmploymentEndDateState("all");
+        setDepartmentPublicId(""); setStatus("all"); setEmploymentEndDateState("all");
       }}
       onNew={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }}
       onExportCsv={() => void exportEmployees("csv")}
@@ -328,7 +310,7 @@ export default function EmployeesPage() {
     >
       <div className="space-y-3">
         {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
-        {writeError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
+        {writeError && <div role="alert" className="whitespace-pre-line rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
         {hasDepartmentError && (
           <div
             role="status"
@@ -416,8 +398,8 @@ export default function EmployeesPage() {
                   />
                 </tr>
                 <GridFilterRow visible={areFiltersVisible}>
-                  <GridFilterCell><FilterInput value={employeeNumber} label={t("vacation.employees.employeeNumberFilter")} maxLength={30} onChange={setEmployeeNumber} /></GridFilterCell>
-                  <GridFilterCell><FilterInput value={name} label={t("vacation.employees.nameFilter")} maxLength={201} onChange={setName} /></GridFilterCell>
+                  <GridFilterCell />
+                  <GridFilterCell />
                   <GridFilterCell />
                   <GridFilterCell>
                     <label>
@@ -436,9 +418,9 @@ export default function EmployeesPage() {
                     </label>
                   </GridFilterCell>
                   <GridFilterCell><label><span className="sr-only">{t("vacation.employees.statusFilter")}</span><select value={status} onChange={(event) => setStatus(event.target.value as EmployeeStatusFilter)} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allStatuses")}</option><option value="active">{t("vacation.employees.active")}</option><option value="inactive">{t("vacation.employees.inactive")}</option></select></label></GridFilterCell>
-                  <GridFilterCell><DateFilterInput value={employmentStartDateFrom} label={t("vacation.employees.employmentStartDateFrom")} onChange={setEmploymentStartDateFrom} /><DateFilterInput value={employmentStartDateTo} label={t("vacation.employees.employmentStartDateTo")} onChange={setEmploymentStartDateTo} /></GridFilterCell>
-                  <GridFilterCell><DateFilterInput value={employmentEndDateFrom} label={t("vacation.employees.employmentEndDateFrom")} onChange={setEmploymentEndDateFrom} /><DateFilterInput value={employmentEndDateTo} label={t("vacation.employees.employmentEndDateTo")} onChange={setEmploymentEndDateTo} /><label className="mt-1 block"><span className="sr-only">{t("vacation.employees.employmentEndDateState")}</span><select value={employmentEndDateState} onChange={(event) => setEmploymentEndDateState(event.target.value as "all" | "missing" | "present")} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allEndDateStates")}</option><option value="missing">{t("vacation.employees.withoutEmploymentEndDate")}</option><option value="present">{t("vacation.employees.withEmploymentEndDate")}</option></select></label></GridFilterCell>
-                  <GridFilterCell><FilterInput value={email} label={t("vacation.employees.emailFilter")} maxLength={254} onChange={setEmail} /></GridFilterCell>
+                  <GridFilterCell />
+                  <GridFilterCell><label><span className="sr-only">{t("vacation.employees.employmentEndDateState")}</span><select value={employmentEndDateState} onChange={(event) => setEmploymentEndDateState(event.target.value as "all" | "missing" | "present")} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allEndDateStates")}</option><option value="missing">{t("vacation.employees.withoutEmploymentEndDate")}</option><option value="present">{t("vacation.employees.withEmploymentEndDate")}</option></select></label></GridFilterCell>
+                  <GridFilterCell />
                 </GridFilterRow>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -446,7 +428,7 @@ export default function EmployeesPage() {
 
                 {!isLoading &&
                   !hasError &&
-                  employees.map((employee) => {
+                  visibleEmployees.map((employee) => {
                     const isSelected =
                       employee.publicId === selectedEmployeePublicId;
                     const fullName = [employee.firstName, employee.lastName].join(" ");
@@ -489,6 +471,7 @@ export default function EmployeesPage() {
             </table>
           </div>
 
+          <GridPagination page={page} pageSize={pageSize} totalCount={employees.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />
           <GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: [selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ") }) : t("vacation.employees.selectionHint")} />
         </section>
         <aside aria-label={t("vacation.employees.details")} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
@@ -615,39 +598,19 @@ function EmploymentStatus({
   );
 }
 
-function FilterInput({ value, label, maxLength, onChange }: {
-  value: string; label: string; maxLength: number; onChange: (value: string) => void;
-}) {
-  return <label><span className="sr-only">{label}</span><input value={value}
-    maxLength={maxLength} onChange={(event) => onChange(event.target.value)}
-    className="min-h-9 w-full min-w-28 rounded-md border border-slate-300 px-2 text-sm"
-  /></label>;
-}
-
-function DateFilterInput({ value, label, onChange }: {
-  value: string; label: string; onChange: (value: string) => void;
-}) {
-  return <label className="mb-1 block last:mb-0"><span className="mb-0.5 block text-[11px] font-medium text-slate-600">{label}</span><input type="date" value={value}
-    onChange={(event) => onChange(event.target.value)} aria-label={label}
-    className="min-h-9 w-full rounded-md border border-slate-300 px-2 text-sm" /></label>;
-}
-
-function matchesDateFilters(employee: Employee, filters: {
-  employmentStartDateFrom: string;
-  employmentStartDateTo: string;
-  employmentEndDateFrom: string;
-  employmentEndDateTo: string;
-  employmentEndDateState: "all" | "missing" | "present";
-}) {
-  return matchesDateRange(employee.employmentStartDate, filters.employmentStartDateFrom, filters.employmentStartDateTo)
-    && matchesDateRange(employee.employmentEndDate, filters.employmentEndDateFrom, filters.employmentEndDateTo)
-    && (filters.employmentEndDateState === "all"
-      || (filters.employmentEndDateState === "missing") === (employee.employmentEndDate === null));
-}
-
-function matchesDateRange(value: string | null, from: string, to: string) {
-  if (!value) return !from && !to;
-  return (!from || value >= from) && (!to || value <= to);
+function deleteConflictMessage(dependencies: string[] | undefined, t: (key: never) => string) {
+  const names: Record<string, string> = {
+    "Identity user link": t("vacation.employees.dependencyUserLink" as never),
+    "Vacation leave request": t("vacation.employees.dependencyLeaveRequests" as never),
+    "Vacation leave balance": t("vacation.employees.dependencyLeaveBalance" as never),
+    "Vacation leave policy": t("vacation.employees.dependencyLeavePolicy" as never),
+    "Vacation leave balance history": t("vacation.employees.dependencyLeaveBalanceHistory" as never),
+    "Employee audit history": t("vacation.employees.dependencyAuditHistory" as never),
+  };
+  const safeNames = dependencies?.map((dependency) => names[dependency]).filter(Boolean) ?? [];
+  return safeNames.length
+    ? `${t("vacation.employees.deleteConflictHeading" as never)}\n\n${t("vacation.employees.deleteConflictUses" as never)}\n${safeNames.map((name) => `• ${name}`).join("\n")}\n\n${t("vacation.employees.deleteConflictGuidance" as never)}`
+    : `${t("vacation.employees.deleteReferenced" as never)} ${t("vacation.employees.deleteConflictGuidance" as never)}`;
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

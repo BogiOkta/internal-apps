@@ -148,17 +148,20 @@ public sealed class OrganizationEmployeeDeletionTests
     }
 
     [Fact]
-    public void PortalContract_HasResponsiveDatesAndConfirmedDelete()
+    public void PortalContract_HasCompactGridSafeDependenciesAndConfirmedDelete()
     {
         var page = Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx");
         var service = Read("apps", "portal", "src", "services", "organization.ts");
         Assert.Contains("employmentStartDate", page);
         Assert.Contains("employmentEndDate", page);
-        Assert.Contains("xl:table-cell", page);
+        Assert.Contains("overflow-x-auto", page);
+        Assert.Contains("min-w-[1160px]", page);
         Assert.Contains("isConfirmingDelete", page);
         Assert.Contains("isDeleting", page);
         Assert.Contains("disabled={isDeleting}", page);
         Assert.Contains("employee_delete_conflict", page);
+        Assert.Contains("\"Employee audit history\"", page);
+        Assert.Contains("dependencies?.map((dependency) => names[dependency]).filter(Boolean)", page);
         Assert.Contains("method: \"DELETE\"", service);
     }
 

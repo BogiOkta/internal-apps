@@ -26,11 +26,13 @@
   calculations with weekends inherently excluded. Vacation delegates all
   working-day calculations to this shared service. A permission-aware Portal
   route provides localized year-filtered CRUD administration of those dates.
-- Shared Portal UI: administrative grid, form field conventions, global
-  appearance, `AppCalendar`, `DateRangePicker`, and the mandatory shared
-  Serbian Latin date-display formatter are available. Organization Employees
-  uses compact expandable date-range filters and an internally scrolling wide
-  grid.
+- Shared Portal UI: administrative grid pagination (20 default; 20/50/100),
+  form field conventions, global appearance, `AppCalendar`, `DateRangePicker`,
+  `PortalDateInput`, and the mandatory shared Serbian Latin date-display
+  formatter are available. `PortalDateInput` uses segmented `dd.MM.yyyy.`
+  keyboard entry, a Serbian Latin calendar, and ISO transport. Organization Employees uses compact search,
+  department/status/end-date-state filters, client-side pagination over the
+  bounded existing API result, and an internally scrolling wide grid.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Vacation
   navigation is limited to leave-request, Leave Type, Leave Policy, and Leave
@@ -121,26 +123,24 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - Vacation administration temporarily reuses `identity.users.manage`; a
   dedicated Vacation administrator permission is not yet introduced.
 - No frontend automated-test framework is currently present.
-- Employee start/end-date ranges are Portal-side filters after the existing
-  server-filtered employee result because the current API contract intentionally
-  has no date-range query parameters.
+- Employee pagination is client-side because the current API contract intentionally
+  returns a bounded unpaged result. Larger datasets require documented API
+  pagination before this remains appropriate.
 - Some controlled smoke scenarios require safe configured fixtures.
 
 ## Current task
 
-Organization employee safe deletion is complete. Migrations 023–025 introduce
-the controlled deletion path, revoke direct runtime table deletion, make every
-employee foreign key restrictive, and permanently remember the first protected
-dependency. Migration 026 forward-upgrades the already-journaled anonymous
-marker to declarative dependency names. Migration 027 repairs already-upgraded
-databases forward so those names flow through the unchanged generic API and
-Portal contract. Controlled deletion removes only a completely unreferenced
-employee row; referenced employees remain available for deactivation.
+The Organization Employees Portal UX increment is complete: filters prioritize
+global search, organization unit, employment status, and compact end-date
+state; the bounded API result receives shared client-side pagination; employee
+date editing uses `PortalDateInput`; and deletion conflicts render only safe
+business dependency labels with deactivation guidance. Backend deletion rules,
+transport contracts, and employee safety semantics are unchanged.
 
 ## Next task
 
-No post-hardening task is approved. Begin the next independently documented
-scope in a fresh session.
+No follow-on scope is approved. Begin the next independently documented scope
+in a fresh session.
 
 ## Session instruction
 

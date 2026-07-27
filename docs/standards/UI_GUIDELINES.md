@@ -336,14 +336,21 @@ Validation or server error
 
 Placeholder text is not a label.
 
-### 6.2 Date presentation and date-range filters
+### 6.2 Date presentation and editable input
 
 All current and future Portal applications MUST use the shared
 `src/utils/portal-date-format.ts` utility for user-visible API dates and
 timestamps. Serbian Latin display is fixed across the Portal: a date is
 `dd.MM.yyyy.` and a date-time is `dd.MM.yyyy. HH:mm`. API and form transport
 values remain ISO; pages must not reimplement display formatting with local
-`Intl` or string-formatting code.
+`Intl` or string-formatting code. Editable date fields use the shared
+`PortalDateInput`: both visible display and editable keyboard input are
+`dd.MM.yyyy.`. Users type digits only; the component advances day/month/year
+segments and renders separators automatically. The calendar picker and keyboard
+entry are equivalent paths, with Serbian Latin labels and Monday as the first
+day. Invalid calendar dates are rejected adjacent to the field and nullable
+values remain empty. API date-only transport remains ISO `yyyy-MM-dd`;
+date-time display is `dd.MM.yyyy. HH:mm`.
 
 When a list filters a date field by range, use date-picker inputs in its
 expandable grid filter area, with explicit From and To labels. Preserve the
@@ -401,7 +408,22 @@ Each table defines:
 - responsive column behavior;
 - permission-aware actions.
 
-### 7.1 Server-side data
+### 7.1 Administrative-grid pagination
+
+Administrative grids default to client-visible pages of **20** rows and offer
+only **20**, **50**, and **100** rows per page. They show the visible range and
+total (for example `1–20 od 29`) and provide previous/next plus first/last
+controls. Filtering, sorting, and a page-size change reset to page 1; sorting
+and filtering always apply before pagination. The page layout must not gain
+horizontal overflow: only the grid surface may scroll horizontally, and a
+selected row's details remain usable when the row is on another page.
+
+Server pagination remains required for large or unbounded API collections.
+Where an existing endpoint returns a bounded unpaged array, the shared grid
+may page it client-side as a temporary limitation; it must be documented on
+the consuming screen's platform state until the API supports paging.
+
+### 7.2 Server-side data
 
 Large or unbounded datasets use server-side pagination, filtering, and sorting. Table state maps directly to the API contract:
 
@@ -411,7 +433,7 @@ page=1&pageSize=25&status=pending&sort=-createdAt
 
 Do not fetch all records to sort or filter in the browser.
 
-### 7.2 Table actions
+### 7.3 Table actions
 
 - Use a clearly labeled primary row action when one dominates.
 - Put secondary actions in a dropdown menu.

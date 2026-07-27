@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { FormField, formControlClassName } from "@/components/form-field";
+import { PortalDateInput } from "@/components/portal-date-input";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
 import type { CreateEmployeeRequest, Department, Employee, UpdateEmployeeRequest } from "@/types/organization";
@@ -25,11 +26,17 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [startDateValid, setStartDateValid] = useState(true);
+  const [endDateValid, setEndDateValid] = useState(true);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setError(null);
     if (!employeeNumber.trim() || !firstName.trim() || !lastName.trim() || !departmentPublicId) {
       setError(t("vacation.employees.validationRequired")); return;
+    }
+    if (!startDateValid || !endDateValid) { setError(t("dateInput.invalid")); return; }
+    if (employmentStartDate && employmentEndDate && employmentEndDate < employmentStartDate) {
+      setError(t("dateInput.endBeforeStart")); return;
     }
     setSaving(true);
     try {
@@ -67,8 +74,12 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
     {input("employee-middle-name", t("vacation.employees.middleName"), middleName, setMiddleName, 100, { required: false })}
     {input("employee-last-name", t("vacation.employees.lastName"), lastName, setLastName, 100)}
     {input("employee-email", t("vacation.employees.email"), email, setEmail, 254, { type: "email", required: false })}
-    {input("employee-employment-start-date", t("vacation.employees.employmentStartDate"), employmentStartDate, setEmploymentStartDate, 10, { type: "date", required: false })}
-    {input("employee-employment-end-date", t("vacation.employees.employmentEndDate"), employmentEndDate, setEmploymentEndDate, 10, { type: "date", required: false })}
+    <FormField id="employee-employment-start-date" label={t("vacation.employees.employmentStartDate")} required={false} hint={t("dateInput.hint")}>
+      <PortalDateInput id="employee-employment-start-date" value={employmentStartDate || null} onChange={(value) => setEmploymentStartDate(value ?? "")} onValidityChange={setStartDateValid} ariaDescribedBy="employee-employment-start-date-hint" invalidLabel={t("dateInput.invalid")} incompleteLabel={t("dateInput.incomplete")} todayLabel={t("dateInput.today")} clearLabel={t("dateInput.clear")} openCalendarLabel={t("dateInput.openCalendar")} previousMonthLabel={t("dateInput.previousMonth")} nextMonthLabel={t("dateInput.nextMonth")} />
+    </FormField>
+    <FormField id="employee-employment-end-date" label={t("vacation.employees.employmentEndDate")} required={false} hint={t("dateInput.hint")}>
+      <PortalDateInput id="employee-employment-end-date" value={employmentEndDate || null} onChange={(value) => setEmploymentEndDate(value ?? "")} onValidityChange={setEndDateValid} ariaDescribedBy="employee-employment-end-date-hint" invalidLabel={t("dateInput.invalid")} incompleteLabel={t("dateInput.incomplete")} todayLabel={t("dateInput.today")} clearLabel={t("dateInput.clear")} openCalendarLabel={t("dateInput.openCalendar")} previousMonthLabel={t("dateInput.previousMonth")} nextMonthLabel={t("dateInput.nextMonth")} />
+    </FormField>
     <FormField id="employee-department" label={t("vacation.employees.department")} required>
       <select id="employee-department"
         value={departmentPublicId} onChange={(event) => setDepartmentPublicId(event.target.value)}

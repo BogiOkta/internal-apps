@@ -213,15 +213,14 @@ From the repository root, the API and Portal can be managed with:
 .\internal.ps1 restart
 ```
 
-`start` uses the canonical development commands above in separate visible
-PowerShell windows and verifies both local HTTP endpoints. Responsive existing
-services are reused. An occupied port with no responsive expected service is
-reported and left untouched.
+`start` and `restart` stop the stored API and Portal process trees and start
+fresh services. `stop` terminates the stored processes, while `status` reports
+each service as running or stopped. The ignored `.internal/runner.json` stores
+only each launched process ID and start time so stale state cannot target a
+reused, unrelated process ID; stale state is cleaned automatically.
 
-`stop` affects only process trees started by `internal.ps1`. It does not stop
-unrelated processes merely because they use the configured ports. Minimal
-repository-local PID state is kept under the ignored `.internal/` directory;
-stale PIDs are detected and skipped safely.
+Logs are written to `.internal/logs/api.log`, `.internal/logs/api.err.log`,
+`.internal/logs/portal.log`, and `.internal/logs/portal.err.log`.
 
 ## Local URLs
 
