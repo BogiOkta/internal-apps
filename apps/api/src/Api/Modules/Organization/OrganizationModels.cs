@@ -9,8 +9,11 @@ internal sealed record EmployeeResponse(
     Guid PublicId,
     string EmployeeNumber,
     string FirstName,
+    string? MiddleName,
     string LastName,
-    string Email,
+    string? Email,
+    DateOnly? EmploymentStartDate,
+    DateOnly? EmploymentEndDate,
     Guid DepartmentPublicId,
     string DepartmentCode,
     string DepartmentName,
@@ -19,28 +22,40 @@ internal sealed record EmployeeResponse(
 internal sealed record CreateEmployeeRequest(
     string? EmployeeNumber,
     string? FirstName,
+    string? MiddleName,
     string? LastName,
     string? Email,
+    DateOnly? EmploymentStartDate,
+    DateOnly? EmploymentEndDate,
     Guid? DepartmentPublicId,
     bool? IsActive);
 
 internal sealed record UpdateEmployeeRequest(
     string? FirstName,
+    string? MiddleName,
     string? LastName,
     string? Email,
+    DateOnly? EmploymentStartDate,
+    DateOnly? EmploymentEndDate,
     Guid? DepartmentPublicId);
 
 internal sealed record EmployeeCommand(
     string FirstName,
+    string? MiddleName,
     string LastName,
-    string Email,
+    string? Email,
+    DateOnly? EmploymentStartDate,
+    DateOnly? EmploymentEndDate,
     Guid DepartmentPublicId);
 
 internal sealed record CreateEmployeeCommand(
     string EmployeeNumber,
     string FirstName,
+    string? MiddleName,
     string LastName,
-    string Email,
+    string? Email,
+    DateOnly? EmploymentStartDate,
+    DateOnly? EmploymentEndDate,
     Guid DepartmentPublicId,
     bool IsActive);
 

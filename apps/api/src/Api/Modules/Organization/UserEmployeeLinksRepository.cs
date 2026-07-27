@@ -15,8 +15,11 @@ internal sealed class UserEmployeeLinksRepository(NpgsqlDataSource dataSource)
             employees.public_id AS EmployeePublicId,
             employees.employee_number AS EmployeeNumber,
             employees.first_name AS FirstName,
+            employees.middle_name AS MiddleName,
             employees.last_name AS LastName,
             employees.email AS Email,
+            employees.employment_start_date AS EmploymentStartDate,
+            employees.employment_end_date AS EmploymentEndDate,
             departments.public_id AS DepartmentPublicId,
             departments.code AS DepartmentCode,
             departments.name AS DepartmentName,
@@ -151,8 +154,11 @@ internal sealed class UserEmployeeLinksRepository(NpgsqlDataSource dataSource)
             SELECT employees.public_id AS PublicId,
                    employees.employee_number AS EmployeeNumber,
                    employees.first_name AS FirstName,
+                   employees.middle_name AS MiddleName,
                    employees.last_name AS LastName,
                    employees.email AS Email,
+                   employees.employment_start_date AS EmploymentStartDate,
+                   employees.employment_end_date AS EmploymentEndDate,
                    departments.public_id AS DepartmentPublicId,
                    departments.code AS DepartmentCode,
                    departments.name AS DepartmentName,
@@ -172,7 +178,8 @@ internal sealed class UserEmployeeLinksRepository(NpgsqlDataSource dataSource)
     private static UserEmployeeLinkResponse Map(LinkRow row) =>
         new(row.PublicId, row.UserPublicId, row.Username, row.UserDisplayName,
             row.UserIsActive, new(row.EmployeePublicId, row.EmployeeNumber,
-                row.FirstName, row.LastName, row.Email, row.DepartmentPublicId,
+                row.FirstName, row.MiddleName, row.LastName, row.Email,
+                row.EmploymentStartDate, row.EmploymentEndDate, row.DepartmentPublicId,
                 row.DepartmentCode, row.DepartmentName, row.EmploymentStatus));
 
     internal sealed record LinkEntityState(long Id, bool IsActive);
@@ -187,8 +194,11 @@ internal sealed class UserEmployeeLinksRepository(NpgsqlDataSource dataSource)
         public Guid EmployeePublicId { get; set; }
         public string EmployeeNumber { get; set; } = "";
         public string FirstName { get; set; } = "";
+        public string? MiddleName { get; set; }
         public string LastName { get; set; } = "";
-        public string Email { get; set; } = "";
+        public string? Email { get; set; }
+        public DateOnly? EmploymentStartDate { get; set; }
+        public DateOnly? EmploymentEndDate { get; set; }
         public Guid DepartmentPublicId { get; set; }
         public string DepartmentCode { get; set; } = "";
         public string DepartmentName { get; set; } = "";

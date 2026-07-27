@@ -9,8 +9,11 @@ export type Employee = {
   publicId: string;
   employeeNumber: string;
   firstName: string;
+  middleName: string | null;
   lastName: string;
-  email: string;
+  email: string | null;
+  employmentStartDate: string | null;
+  employmentEndDate: string | null;
   departmentPublicId: string;
   departmentCode: string;
   departmentName: string;
@@ -40,8 +43,11 @@ export type EmployeeStatusFilter = "all" | "active" | "inactive";
 export type CreateEmployeeRequest = {
   employeeNumber: string;
   firstName: string;
+  middleName?: string | null;
   lastName: string;
-  email: string;
+  email?: string | null;
+  employmentStartDate?: string | null;
+  employmentEndDate?: string | null;
   departmentPublicId: string;
   isActive: boolean;
 };

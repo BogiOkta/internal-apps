@@ -1,5 +1,18 @@
 # Internal Apps Platform change history
 
+## 2026-07-27 — Organization historical employment data
+
+- Added migration 022 to extend Organization employees with nullable middle
+  name and employment start/end dates, and made email nullable while retaining
+  the existing case-insensitive unique index when an email is present.
+- Extended employee API contracts, repository mappings, validation, and Portal
+  forms/details for the historical fields. Employee number remains immutable,
+  department remains required, and explicit `employment_status` remains the
+  only active/inactive authority; end dates do not deactivate employees.
+- Preserved read access to inactive employees and added focused migration and
+  API/Portal contract tests. No employment-history tables, multiple periods,
+  deletion, or broader HR features were introduced.
+
 ## 2026-07-27 — LV.2 final review and validation
 
 - Reviewed the complete uncommitted vertical slice against the LV.2 amendments

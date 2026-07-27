@@ -8,7 +8,7 @@ Organization owns the small set of shared organizational master data needed acro
 
 | Entity | Ownership and use |
 |---|---|
-| Employee | Organization-owned employee identity for internal business workflows. The current model contains employee number, name, email, department, employment status, public ID, and timestamps. |
+| Employee | Organization-owned employee identity for internal business workflows. The current model contains an immutable employee number; first, optional middle, and last names; optional email; optional employment start and end dates; department; explicit employment status; public ID; and timestamps. |
 | Department | Organization-owned organizational unit with code, name, active status, public ID, and timestamps. |
 
 Employees belong to departments inside the Organization domain. Consumers read Organization data through Organization API contracts and do not update its tables directly. Numeric database IDs remain internal.
@@ -37,7 +37,7 @@ by migration 008 only to the existing `Administrator` role. Existing
 Administrator tokens must be refreshed or reissued after that migration.
 
 Employee number is supplied on creation and is immutable thereafter. Normal
-edits cover name, email, and department; status changes use explicit activate
+edits cover name, optional email, optional employment dates, and department; status changes use explicit activate
 and deactivate commands. There is no physical delete contract or runtime
 delete privilege. Every successful mutation and its shared audit event commit
 in one transaction. Repeating a state command for the current state returns
@@ -47,6 +47,13 @@ The employee list combines global search with server-side employee-number,
 full-name, exact-department-public-ID, email, and active-status filters.
 Employee number, name, department, email, and status sorts are fixed,
 allowlisted contracts with deterministic tie-breakers.
+
+`employment_status` is the sole authoritative active/inactive state. An
+employment end date is historical information only and does not deactivate an
+employee; inactive employees, including those with no end date, remain
+queryable for historical use. Optional email addresses are unique
+case-insensitively when present. When both employment dates are supplied, the
+end date cannot precede the start date.
 
 ## User–employee relationship
 

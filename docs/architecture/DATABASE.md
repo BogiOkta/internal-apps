@@ -493,7 +493,7 @@ erDiagram
 | `departments` | Defines the current organizational units used to classify employees. | Has many employees. | Organization owns its meaning and lifecycle. |
 | `employees` | Provides the minimal shared employee directory. | Belongs to one department. | Organization owns the record; internal bigint keys are never exposed. |
 
-`departments` uses a stable code, display name, active flag, public UUID, and timestamps. `employees` uses an employee number, name, email, department reference, employment status, public UUID, and timestamps. The employee-to-department foreign key stays inside the Organization boundary.
+`departments` uses a stable code, display name, active flag, public UUID, and timestamps. `employees` uses an immutable employee number; first, optional middle, and last names; an optional case-insensitively unique email; optional employment start and end dates; a required department reference; explicit employment status; public UUID; and timestamps. Employment status is not derived from an end date. The employee-to-department foreign key stays inside the Organization boundary.
 
 Migration `008_employee_administration.sql` seeds
 `organization.employees.manage` for the existing Administrator role and grants

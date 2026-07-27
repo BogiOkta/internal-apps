@@ -54,8 +54,11 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
                 employees.public_id AS PublicId,
                 employees.employee_number AS EmployeeNumber,
                 employees.first_name AS FirstName,
+                employees.middle_name AS MiddleName,
                 employees.last_name AS LastName,
                 employees.email AS Email,
+                employees.employment_start_date AS EmploymentStartDate,
+                employees.employment_end_date AS EmploymentEndDate,
                 departments.public_id AS DepartmentPublicId,
                 departments.code AS DepartmentCode,
                 departments.name AS DepartmentName,
@@ -113,8 +116,11 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
                 row.PublicId,
                 row.EmployeeNumber,
                 row.FirstName,
+                row.MiddleName,
                 row.LastName,
                 row.Email,
+                row.EmploymentStartDate,
+                row.EmploymentEndDate,
                 row.DepartmentPublicId,
                 row.DepartmentCode,
                 row.DepartmentName,
@@ -159,11 +165,12 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
     {
         const string sql = """
             INSERT INTO organization.employees (
-                public_id, employee_number, first_name, last_name, email,
-                department_id, employment_status
+                public_id, employee_number, first_name, middle_name, last_name, email,
+                employment_start_date, employment_end_date, department_id, employment_status
             )
-            SELECT gen_random_uuid(), @EmployeeNumber, @FirstName, @LastName, @Email,
-                   departments.id, CASE WHEN @IsActive THEN 'Active' ELSE 'Inactive' END
+            SELECT gen_random_uuid(), @EmployeeNumber, @FirstName, @MiddleName, @LastName, @Email,
+                   @EmploymentStartDate, @EmploymentEndDate, departments.id,
+                   CASE WHEN @IsActive THEN 'Active' ELSE 'Inactive' END
             FROM organization.departments
             WHERE departments.public_id = @DepartmentPublicId
             RETURNING public_id
@@ -184,8 +191,11 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
         const string sql = """
             UPDATE organization.employees
             SET first_name = @FirstName,
+                middle_name = @MiddleName,
                 last_name = @LastName,
                 email = @Email,
+                employment_start_date = @EmploymentStartDate,
+                employment_end_date = @EmploymentEndDate,
                 department_id = departments.id,
                 updated_at = now()
             FROM organization.departments
@@ -193,8 +203,9 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
               AND departments.public_id = @DepartmentPublicId
             """;
         await connection.ExecuteAsync(new CommandDefinition(
-            sql, new { PublicId = publicId, command.FirstName, command.LastName,
-                command.Email, command.DepartmentPublicId },
+            sql, new { PublicId = publicId, command.FirstName, command.MiddleName,
+                command.LastName, command.Email, command.EmploymentStartDate,
+                command.EmploymentEndDate, command.DepartmentPublicId },
             transaction, cancellationToken: cancellationToken));
         return (await GetEmployeeForUpdateAsync(
             connection, transaction, publicId, cancellationToken))!;
@@ -225,8 +236,11 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
             employees.public_id AS PublicId,
             employees.employee_number AS EmployeeNumber,
             employees.first_name AS FirstName,
+            employees.middle_name AS MiddleName,
             employees.last_name AS LastName,
             employees.email AS Email,
+            employees.employment_start_date AS EmploymentStartDate,
+            employees.employment_end_date AS EmploymentEndDate,
             departments.public_id AS DepartmentPublicId,
             departments.code AS DepartmentCode,
             departments.name AS DepartmentName,
@@ -292,9 +306,15 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
 
         public string FirstName { get; set; } = string.Empty;
 
+        public string? MiddleName { get; set; }
+
         public string LastName { get; set; } = string.Empty;
 
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
+
+        public DateOnly? EmploymentStartDate { get; set; }
+
+        public DateOnly? EmploymentEndDate { get; set; }
 
         public Guid DepartmentPublicId { get; set; }
 

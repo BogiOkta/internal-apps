@@ -16,8 +16,11 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
   const { t } = useTranslations();
   const [employeeNumber, setEmployeeNumber] = useState(employee?.employeeNumber ?? "");
   const [firstName, setFirstName] = useState(employee?.firstName ?? "");
+  const [middleName, setMiddleName] = useState(employee?.middleName ?? "");
   const [lastName, setLastName] = useState(employee?.lastName ?? "");
   const [email, setEmail] = useState(employee?.email ?? "");
+  const [employmentStartDate, setEmploymentStartDate] = useState(employee?.employmentStartDate ?? "");
+  const [employmentEndDate, setEmploymentEndDate] = useState(employee?.employmentEndDate ?? "");
   const [departmentPublicId, setDepartmentPublicId] = useState(employee?.departmentPublicId ?? "");
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,12 +28,17 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setError(null);
-    if (!employeeNumber.trim() || !firstName.trim() || !lastName.trim() || !email.trim() || !departmentPublicId) {
+    if (!employeeNumber.trim() || !firstName.trim() || !lastName.trim() || !departmentPublicId) {
       setError(t("vacation.employees.validationRequired")); return;
     }
     setSaving(true);
     try {
-      const common = { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), departmentPublicId };
+      const common = {
+        firstName: firstName.trim(), middleName: middleName.trim() || null,
+        lastName: lastName.trim(), email: email.trim() || null,
+        employmentStartDate: employmentStartDate || null,
+        employmentEndDate: employmentEndDate || null, departmentPublicId,
+      };
       if (mode === "create") await onCreate({ ...common, employeeNumber: employeeNumber.trim(), isActive });
       else await onUpdate(common);
     } catch (cause) {
@@ -43,8 +51,8 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
   }
 
   const input = (id: string, label: string, value: string, setValue: (value: string) => void,
-    maxLength: number, options?: { type?: string; readOnly?: boolean; hint?: string }) =>
-    <FormField id={id} label={label} required hint={options?.hint}>
+    maxLength: number, options?: { type?: string; readOnly?: boolean; hint?: string; required?: boolean }) =>
+    <FormField id={id} label={label} required={options?.required ?? true} hint={options?.hint}>
       <input id={id} aria-describedby={options?.hint ? `${id}-hint` : undefined}
         type={options?.type} value={value} readOnly={options?.readOnly} maxLength={maxLength}
         onChange={(event) => setValue(event.target.value)}
@@ -56,8 +64,11 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
     {input("employee-number", t("vacation.employees.employeeNumber"), employeeNumber, setEmployeeNumber, 30,
       { readOnly: mode === "edit", hint: mode === "edit" ? t("vacation.employees.codeReadOnly") : undefined })}
     {input("employee-first-name", t("vacation.employees.firstName"), firstName, setFirstName, 100)}
+    {input("employee-middle-name", t("vacation.employees.middleName"), middleName, setMiddleName, 100, { required: false })}
     {input("employee-last-name", t("vacation.employees.lastName"), lastName, setLastName, 100)}
-    {input("employee-email", t("vacation.employees.email"), email, setEmail, 254, { type: "email" })}
+    {input("employee-email", t("vacation.employees.email"), email, setEmail, 254, { type: "email", required: false })}
+    {input("employee-employment-start-date", t("vacation.employees.employmentStartDate"), employmentStartDate, setEmploymentStartDate, 10, { type: "date", required: false })}
+    {input("employee-employment-end-date", t("vacation.employees.employmentEndDate"), employmentEndDate, setEmploymentEndDate, 10, { type: "date", required: false })}
     <FormField id="employee-department" label={t("vacation.employees.department")} required>
       <select id="employee-department"
         value={departmentPublicId} onChange={(event) => setDepartmentPublicId(event.target.value)}

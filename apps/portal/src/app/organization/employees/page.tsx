@@ -210,9 +210,9 @@ export default function EmployeesPage() {
 
   const exportColumns: ExportColumn<Employee>[] = [
     { heading: t("vacation.employees.employeeNumber"), value: (row) => row.employeeNumber, width: 18 },
-    { heading: t("vacation.employees.name"), value: (row) => `${row.firstName} ${row.lastName}`, width: 28 },
+    { heading: t("vacation.employees.name"), value: (row) => [row.firstName, row.middleName, row.lastName].filter(Boolean).join(" "), width: 28 },
     { heading: t("vacation.employees.department"), value: (row) => row.departmentName, width: 24 },
-    { heading: t("vacation.employees.email"), value: (row) => row.email, width: 32 },
+    { heading: t("vacation.employees.email"), value: (row) => row.email ?? "", width: 32 },
     {
       heading: t("vacation.employees.status"),
       value: (row) =>
@@ -389,7 +389,7 @@ export default function EmployeesPage() {
                   employees.map((employee) => {
                     const isSelected =
                       employee.publicId === selectedEmployeePublicId;
-                    const fullName = `${employee.firstName} ${employee.lastName}`;
+                    const fullName = [employee.firstName, employee.middleName, employee.lastName].filter(Boolean).join(" ");
 
                     return (
                       <tr
@@ -414,7 +414,7 @@ export default function EmployeesPage() {
                           {employee.departmentName}
                         </td>
                         <td className="px-4 py-3 text-slate-700">
-                          {employee.email}
+                          {employee.email ?? t("vacation.employees.notProvided")}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
                           <EmploymentStatus status={employee.employmentStatus} />
@@ -426,7 +426,7 @@ export default function EmployeesPage() {
             </table>
           </div>
 
-          <GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}` }) : t("vacation.employees.selectionHint")} />
+          <GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: [selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ") }) : t("vacation.employees.selectionHint")} />
         </section>
         <aside aria-label={t("vacation.employees.details")} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-slate-950">{panelMode === "create" ? t("vacation.employees.new") : panelMode === "edit" ? t("vacation.employees.edit") : t("vacation.employees.details")}</h2>
@@ -437,9 +437,11 @@ export default function EmployeesPage() {
           ) : selectedEmployee ? (
             <div className="space-y-3 text-sm">
               <Detail label={t("vacation.employees.employeeNumber")} value={selectedEmployee.employeeNumber} />
-              <Detail label={t("vacation.employees.name")} value={`${selectedEmployee.firstName} ${selectedEmployee.lastName}`} />
+              <Detail label={t("vacation.employees.name")} value={[selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ")} />
+              <Detail label={t("vacation.employees.employmentStartDate")} value={selectedEmployee.employmentStartDate ?? t("vacation.employees.notProvided")} />
+              <Detail label={t("vacation.employees.employmentEndDate")} value={selectedEmployee.employmentEndDate ?? t("vacation.employees.notProvided")} />
               <Detail label={t("vacation.employees.department")} value={selectedEmployee.departmentName} />
-              <Detail label={t("vacation.employees.email")} value={selectedEmployee.email} />
+              <Detail label={t("vacation.employees.email")} value={selectedEmployee.email ?? t("vacation.employees.notProvided")} />
               <Detail label={t("vacation.employees.status")} value={selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.active") : t("vacation.employees.inactive")} />
               {canManage && <div className="space-y-2 pt-2"><div className="flex gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivate") : t("vacation.employees.activate")}</button></div>{isConfirmingStatus && <div className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="text-sm text-amber-900">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivateConfirmation") : t("vacation.employees.activateConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" onClick={() => void changeStatus()} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.confirm")}</button><button type="button" onClick={() => setIsConfirmingStatus(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm">{t("vacation.employees.cancel")}</button></div></div>}</div>}
             </div>

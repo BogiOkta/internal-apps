@@ -160,11 +160,14 @@ internal sealed class EmployeesService(
         var errors = new Dictionary<string, string[]>();
         var employeeNumber = Required(request.EmployeeNumber, "employeeNumber", 30, errors);
         var firstName = Required(request.FirstName, "firstName", 100, errors);
+        var middleName = Optional(request.MiddleName, "middleName", 100, errors);
         var lastName = Required(request.LastName, "lastName", 100, errors);
         var email = Email(request.Email, errors);
+        ValidateEmploymentDates(request.EmploymentStartDate, request.EmploymentEndDate, errors);
         ValidateDepartment(request.DepartmentPublicId, errors);
         if (request.IsActive is null) errors["isActive"] = ["The field is required."];
-        command = new(employeeNumber, firstName, lastName, email,
+        command = new(employeeNumber, firstName, middleName, lastName, email,
+            request.EmploymentStartDate, request.EmploymentEndDate,
             request.DepartmentPublicId.GetValueOrDefault(), request.IsActive.GetValueOrDefault());
         return errors;
     }
@@ -175,10 +178,13 @@ internal sealed class EmployeesService(
     {
         var errors = new Dictionary<string, string[]>();
         var firstName = Required(request.FirstName, "firstName", 100, errors);
+        var middleName = Optional(request.MiddleName, "middleName", 100, errors);
         var lastName = Required(request.LastName, "lastName", 100, errors);
         var email = Email(request.Email, errors);
+        ValidateEmploymentDates(request.EmploymentStartDate, request.EmploymentEndDate, errors);
         ValidateDepartment(request.DepartmentPublicId, errors);
-        command = new(firstName, lastName, email,
+        command = new(firstName, middleName, lastName, email,
+            request.EmploymentStartDate, request.EmploymentEndDate,
             request.DepartmentPublicId.GetValueOrDefault());
         return errors;
     }
@@ -192,16 +198,32 @@ internal sealed class EmployeesService(
         return result;
     }
 
-    private static string Email(string? value, Dictionary<string, string[]> errors)
+    private static string? Optional(string? value, string field, int max,
+        Dictionary<string, string[]> errors)
     {
-        var result = Required(value, "email", 254, errors);
-        if (result.Length > 0 &&
+        var result = value?.Trim();
+        if (string.IsNullOrEmpty(result)) return null;
+        if (result.Length > max) errors[field] = [$"The field must not exceed {max} characters."];
+        return result;
+    }
+
+    private static string? Email(string? value, Dictionary<string, string[]> errors)
+    {
+        var result = Optional(value, "email", 254, errors);
+        if (result is not null &&
             (!MailAddress.TryCreate(result, out var parsed) ||
              !string.Equals(parsed.Address, result, StringComparison.OrdinalIgnoreCase)))
         {
             errors["email"] = ["Email must be a valid address."];
         }
         return result;
+    }
+
+    private static void ValidateEmploymentDates(DateOnly? startDate, DateOnly? endDate,
+        Dictionary<string, string[]> errors)
+    {
+        if (startDate is not null && endDate is not null && endDate < startDate)
+            errors["employmentEndDate"] = ["Employment end date cannot precede employment start date."];
     }
 
     private static void ValidateDepartment(Guid? value, Dictionary<string, string[]> errors)
@@ -214,18 +236,24 @@ internal sealed class EmployeesService(
     {
         var changes = new List<AuditChange>();
         Add(changes, "first_name", before.FirstName, after.FirstName);
+        Add(changes, "middle_name", before.MiddleName, after.MiddleName);
         Add(changes, "last_name", before.LastName, after.LastName);
         Add(changes, "email", before.Email, after.Email);
+        Add(changes, "employment_start_date", before.EmploymentStartDate, after.EmploymentStartDate);
+        Add(changes, "employment_end_date", before.EmploymentEndDate, after.EmploymentEndDate);
         Add(changes, "department_public_id",
             before.DepartmentPublicId.ToString(), after.DepartmentPublicId.ToString());
         return changes;
     }
 
-    private static void Add(List<AuditChange> changes, string field, string before, string after)
+    private static void Add(List<AuditChange> changes, string field, string? before, string? after)
     {
         if (!string.Equals(before, after, StringComparison.Ordinal))
             changes.Add(new(field, before, after));
     }
+
+    private static void Add(List<AuditChange> changes, string field, DateOnly? before, DateOnly? after) =>
+        Add(changes, field, before?.ToString("O"), after?.ToString("O"));
 
     private static AuditEntry Audit(Guid actor, string action, Guid target, string trace,
         IReadOnlyCollection<AuditChange> changes) =>
