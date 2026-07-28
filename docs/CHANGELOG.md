@@ -1,5 +1,29 @@
 # Internal Apps Platform change history
 
+## 2026-07-28 — Portal administration UI foundation stabilization
+
+- Fixed `AdministrativeGridShell` so viewport-fill height collapse (`lg:h-0`)
+  is gated behind an explicit `fillViewport` prop and paired with
+  `AdministrationPageBody`, eliminating the Department regression that
+  collapsed the grid into toolbar-only content when the flex `min-height: 0`
+  chain was missing.
+- Aligned Organization Employees and Departments to the shared administration
+  contracts: page header New/Refresh placement, `AdministrativeGridToolbar`,
+  `AdministrativeGridShell`, `GridPagination` without a redundant record-count
+  footer, and shared form button utilities.
+- Replaced Business Calendar native `type="date"` entry with `PortalDateInput`
+  (`dd.MM.yyyy.`, ISO transport) and adapted Non-working Days to the Company
+  administration visual language (canonical header, list card, right-side form
+  panel).
+- Localized shared `PortalDateInput` month and weekday labels from the current
+  Portal language instead of hardcoded Serbian labels; Serbian Latin and
+  English now render their own calendar labels without changing keyboard
+  entry, visible formatting, or ISO values.
+- Updated `UI_GUIDELINES.md` with the one-control-per-purpose rollout rule,
+  native-date prohibition, administration-page structure, required states, and
+  an inventory of remaining unmigrated Portal areas.
+- Added focused Portal administration UI source/contract tests.
+
 ## 2026-07-28 — Vacation request-administration permission
 
 - Added immutable migration 031 to seed `vacation.requests.manage` and assign

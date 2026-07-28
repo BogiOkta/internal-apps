@@ -27,6 +27,9 @@ public sealed class BusinessCalendarPortalContractTests
         Assert.Contains("if (!form.date)", source);
         Assert.Contains("if (!form.name.trim())", source);
         Assert.Contains("if (isSubmitting", source);
+        Assert.Contains("PortalDateInput", source);
+        Assert.Contains("key={dateInputVersion}", source);
+        Assert.DoesNotContain("type=\"date\"", source);
     }
 
     [Fact]

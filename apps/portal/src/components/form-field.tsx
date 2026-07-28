@@ -62,3 +62,15 @@ export function formControlClassName({
       : "border-slate-300 focus:border-blue-600 focus:ring-blue-100"
   } ${readOnly ? "cursor-not-allowed bg-slate-100 text-slate-600" : "bg-white"}`;
 }
+
+export function formPrimaryButtonClassName() {
+  return "inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+}
+
+export function formSecondaryButtonClassName() {
+  return "inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+}
+
+export function formDangerButtonClassName() {
+  return "inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+}

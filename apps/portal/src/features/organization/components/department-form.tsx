@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { FormField, formControlClassName } from "@/components/form-field";
+import { FormField, formControlClassName, formPrimaryButtonClassName, formSecondaryButtonClassName } from "@/components/form-field";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
 import type {
@@ -106,10 +106,7 @@ export function DepartmentForm({
         </label>
       )}
       <div className="flex gap-2">
-        <button
-          disabled={isSaving}
-          className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white disabled:opacity-50"
-        >
+        <button disabled={isSaving} className={formPrimaryButtonClassName()}>
           {isSaving
             ? t("organization.departments.saving")
             : t("organization.departments.save")}
@@ -118,7 +115,7 @@ export function DepartmentForm({
           type="button"
           disabled={isSaving}
           onClick={onCancel}
-          className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium disabled:opacity-50"
+          className={formSecondaryButtonClassName()}
         >
           {t("organization.departments.cancel")}
         </button>

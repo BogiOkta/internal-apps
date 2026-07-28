@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { FormField, formControlClassName } from "@/components/form-field";
+import { FormField, formControlClassName, formPrimaryButtonClassName, formSecondaryButtonClassName } from "@/components/form-field";
 import { PortalDateInput } from "@/components/portal-date-input";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
@@ -88,6 +88,13 @@ export function EmployeeForm({ mode, employee, departments, onCancel, onCreate, 
     </FormField>
     {mode === "create" && <label className="flex items-center gap-2 text-sm"><input type="checkbox"
       checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />{t("vacation.employees.initiallyActive")}</label>}
-    <div className="flex gap-2"><button disabled={saving} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white disabled:opacity-50">{saving ? t("vacation.employees.saving") : t("vacation.employees.save")}</button><button type="button" onClick={onCancel} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{t("vacation.employees.cancel")}</button></div>
+    <div className="flex gap-2">
+      <button disabled={saving} className={formPrimaryButtonClassName()}>
+        {saving ? t("vacation.employees.saving") : t("vacation.employees.save")}
+      </button>
+      <button type="button" onClick={onCancel} className={formSecondaryButtonClassName()}>
+        {t("vacation.employees.cancel")}
+      </button>
+    </div>
   </form>;
 }

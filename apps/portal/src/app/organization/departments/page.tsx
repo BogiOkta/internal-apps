@@ -11,8 +11,14 @@ import {
   SortableGridHeader,
   type GridSort,
 } from "@/components/admin-data-grid";
+import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import {
+  formDangerButtonClassName,
+  formPrimaryButtonClassName,
+  formSecondaryButtonClassName,
+} from "@/components/form-field";
 import { GridPagination } from "@/components/grid-pagination";
 import { DepartmentForm } from "@/features/organization/components/department-form";
 import { useTranslations } from "@/i18n/use-translations";
@@ -190,54 +196,252 @@ export default function DepartmentsPage() {
     }
   }
 
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      {canManage && (
+        <button
+          type="button"
+          onClick={() => {
+            setFeedback(null);
+            setWriteError(null);
+            setPanelMode("create");
+          }}
+          className={formPrimaryButtonClassName()}
+        >
+          {t("organization.departments.new")}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setRefreshVersion((value) => value + 1)}
+        disabled={isLoading}
+        className={formSecondaryButtonClassName()}
+      >
+        {isLoading
+          ? t("organization.departments.refreshing")
+          : t("organization.departments.refresh")}
+      </button>
+    </div>
+  );
+
   return (
     <CompanyAdministrationWorkspace
       title={t("organization.departments.title")}
       description={t("organization.departments.description")}
-      headerActions={<><>{canManage && <button type="button" onClick={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }} className="min-h-9 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">{t("organization.departments.new")}</button>}</><button type="button" onClick={() => setRefreshVersion((value) => value + 1)} disabled={isLoading} className="min-h-9 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50">{isLoading ? t("organization.departments.refreshing") : t("organization.departments.refresh")}</button></>}
+      headerActions={headerActions}
       contentFillsViewport
     >
-      <div className="space-y-3">
+      <AdministrationPageBody>
         {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
         {writeError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
         {exportError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{departments.length === 0 ? t("grid.noExportRows") : t("grid.exportFailure")}</div>}
-        <AdministrativeGridShell ariaLabel={t("organization.departments.tableLabel")}
-          toolbar={<AdministrativeGridToolbar search={search} searchLabel={t("organization.departments.searchLabel")} searchPlaceholder={t("organization.departments.searchPlaceholder")} onSearchChange={setSearch} activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={departments.length === 0} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={() => setAreFiltersVisible((visible) => !visible)} onClearFilters={() => setStatus("all")} onExportCsv={() => void exportDepartments("csv")} onExportExcel={() => void exportDepartments("xlsx")} />}
-          viewport={<table aria-busy={isLoading} className="w-full min-w-[620px] border-collapse text-left text-sm">
-                <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
+        <AdministrativeGridShell
+          ariaLabel={t("organization.departments.tableLabel")}
+          fillViewport
+          toolbar={
+            <AdministrativeGridToolbar
+              search={search}
+              searchLabel={t("organization.departments.searchLabel")}
+              searchPlaceholder={t("organization.departments.searchPlaceholder")}
+              onSearchChange={setSearch}
+              activeFilterCount={activeFilterCount}
+              areFiltersVisible={areFiltersVisible}
+              exportDisabled={departments.length === 0}
+              filtersLabel={t("grid.filters")}
+              showFiltersLabel={t("grid.showFilters")}
+              hideFiltersLabel={t("grid.hideFilters")}
+              clearFiltersLabel={t("grid.clearFilters")}
+              exportLabel={t("grid.export")}
+              exportCsvLabel={t("grid.exportCsv")}
+              exportExcelLabel={t("grid.exportExcel")}
+              onToggleFilters={() => setAreFiltersVisible((visible) => !visible)}
+              onClearFilters={() => setStatus("all")}
+              onExportCsv={() => void exportDepartments("csv")}
+              onExportExcel={() => void exportDepartments("xlsx")}
+            />
+          }
+          viewport={
+            <table aria-busy={isLoading} className="w-full min-w-[620px] border-collapse text-left text-sm">
+              <thead className="sticky top-0 z-10 border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
+                <tr>
+                  <SortableGridHeader field="code" label={t("organization.departments.code")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.code") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.code") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.code") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                  <SortableGridHeader field="name" label={t("organization.departments.name")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.name") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.name") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.name") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                  <SortableGridHeader field="status" label={t("organization.departments.status")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.status") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.status") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.status") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                </tr>
+                <GridFilterRow visible={areFiltersVisible}>
+                  <GridFilterCell />
+                  <GridFilterCell />
+                  <GridFilterCell>
+                    <label>
+                      <span className="sr-only">{t("organization.departments.statusFilter")}</span>
+                      <select
+                        value={status}
+                        onChange={(event) => setStatus(event.target.value as DepartmentStatusFilter)}
+                        className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"
+                      >
+                        <option value="all">{t("organization.departments.allStatuses")}</option>
+                        <option value="active">{t("organization.departments.active")}</option>
+                        <option value="inactive">{t("organization.departments.inactive")}</option>
+                      </select>
+                    </label>
+                  </GridFilterCell>
+                </GridFilterRow>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {hasError && (
                   <tr>
-                    <SortableGridHeader field="code" label={t("organization.departments.code")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.code") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.code") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.code") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
-                    <SortableGridHeader field="name" label={t("organization.departments.name")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.name") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.name") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.name") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
-                    <SortableGridHeader field="status" label={t("organization.departments.status")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.status") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.status") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.status") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                    <td colSpan={3} className="px-4 py-10 text-center text-red-700">
+                      {t("organization.departments.error")}
+                    </td>
                   </tr>
-                  <GridFilterRow visible={areFiltersVisible}>
-                    <GridFilterCell />
-                    <GridFilterCell />
-                    <GridFilterCell>
-                      <label><span className="sr-only">{t("organization.departments.statusFilter")}</span><select value={status} onChange={(event) => setStatus(event.target.value as DepartmentStatusFilter)} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("organization.departments.allStatuses")}</option><option value="active">{t("organization.departments.active")}</option><option value="inactive">{t("organization.departments.inactive")}</option></select></label>
-                    </GridFilterCell>
-                  </GridFilterRow>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {hasError && <tr><td colSpan={3} className="px-4 py-10 text-center text-red-700">{t("organization.departments.error")}</td></tr>}
-                  <GridStateRows columnCount={3} isLoading={isLoading} hasError={hasError} isEmpty={departments.length === 0} loadingLabel={t("organization.departments.loading")} emptyTitle={t("organization.departments.emptyTitle")} emptyDescription={t("organization.departments.emptyDescription")} />
-                  {!isLoading && !hasError && visibleDepartments.map((department) => {
+                )}
+                <GridStateRows
+                  columnCount={3}
+                  isLoading={isLoading}
+                  hasError={hasError}
+                  isEmpty={departments.length === 0}
+                  loadingLabel={t("organization.departments.loading")}
+                  emptyTitle={t("organization.departments.emptyTitle")}
+                  emptyDescription={t("organization.departments.emptyDescription")}
+                />
+                {!isLoading &&
+                  !hasError &&
+                  visibleDepartments.map((department) => {
                     const isSelected = department.publicId === selectedDepartmentPublicId;
-                    return <tr key={department.publicId} aria-selected={isSelected} onClick={() => { setIsConfirmingStatus(false); setIsConfirmingDelete(false); setWriteError(null); setSelectedDepartmentPublicId(department.publicId); }} className={`cursor-pointer hover:bg-slate-50 ${isSelected ? "bg-blue-50 shadow-[inset_3px_0_0_#1d4ed8]" : "bg-white"}`}>
-                      <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">{department.code}</td>
-                      <td className="px-4 py-3"><button type="button" aria-pressed={isSelected} onClick={(event) => { event.stopPropagation(); setSelectedDepartmentPublicId(department.publicId); }} className="rounded-sm text-left font-semibold text-slate-950 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">{department.name}</button></td>
-                      <td className="whitespace-nowrap px-4 py-3"><DepartmentStatus isActive={department.isActive} /></td>
-                    </tr>;
+                    return (
+                      <tr
+                        key={department.publicId}
+                        aria-selected={isSelected}
+                        onClick={() => {
+                          setIsConfirmingStatus(false);
+                          setIsConfirmingDelete(false);
+                          setWriteError(null);
+                          setPanelMode("details");
+                          setSelectedDepartmentPublicId(department.publicId);
+                        }}
+                        className={`cursor-pointer hover:bg-slate-50 ${isSelected ? "bg-blue-50 shadow-[inset_3px_0_0_#1d4ed8]" : "bg-white"}`}
+                      >
+                        <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">{department.code}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setPanelMode("details");
+                              setSelectedDepartmentPublicId(department.publicId);
+                            }}
+                            className="rounded-sm text-left font-semibold text-slate-950 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                          >
+                            {department.name}
+                          </button>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <DepartmentStatus isActive={department.isActive} />
+                        </td>
+                      </tr>
+                    );
                   })}
-                </tbody>
-              </table>}
-          pagination={<GridPagination page={page} pageSize={pageSize} totalCount={departments.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />}
-          detailsPanel={<div aria-label={t("organization.departments.details")}>
-            <h2 className="mb-4 text-lg font-semibold text-slate-950">{panelMode === "create" ? t("organization.departments.new") : panelMode === "edit" ? t("organization.departments.edit") : t("organization.departments.details")}</h2>
-            {panelMode === "create" ? <DepartmentForm mode="create" onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} /> : panelMode === "edit" && selectedDepartment ? <DepartmentForm mode="edit" department={selectedDepartment} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} /> : selectedDepartment ? <div className="space-y-3 text-sm"><Detail label={t("organization.departments.code")} value={selectedDepartment.code} /><Detail label={t("organization.departments.name")} value={selectedDepartment.name} /><Detail label={t("organization.departments.status")} value={selectedDepartment.isActive ? t("organization.departments.active") : t("organization.departments.inactive")} />{canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("organization.departments.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedDepartment.isActive ? t("organization.departments.deactivate") : t("organization.departments.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className="min-h-9 rounded-md border border-red-300 px-3 text-sm font-medium text-red-700">{t("organization.departments.delete")}</button></div>{isConfirmingStatus && <Confirmation message={selectedDepartment.isActive ? t("organization.departments.deactivateConfirmation") : t("organization.departments.activateConfirmation")} confirmLabel={t("organization.departments.confirm")} cancelLabel={t("organization.departments.cancel")} onConfirm={() => void changeStatus()} onCancel={() => setIsConfirmingStatus(false)} />}{isConfirmingDelete && <Confirmation destructive message={t("organization.departments.deleteConfirmation")} confirmLabel={t("organization.departments.delete")} cancelLabel={t("organization.departments.cancel")} pending={isDeleting} onConfirm={() => void remove()} onCancel={() => setIsConfirmingDelete(false)} />}</div>}</div> : <p className="text-sm text-slate-600">{t("organization.departments.selectForDetails")}</p>}
-          </div>}
+              </tbody>
+            </table>
+          }
+          pagination={
+            <GridPagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={departments.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              labels={{
+                range: (from, to, total) => t("grid.visibleRange", { from, to, total }),
+                pageSize: t("grid.pageSize"),
+                first: t("grid.firstPage"),
+                previous: t("grid.previousPage"),
+                next: t("grid.nextPage"),
+                last: t("grid.lastPage"),
+              }}
+            />
+          }
+          detailsPanel={
+            <div aria-label={t("organization.departments.details")}>
+              <h2 className="mb-4 text-lg font-semibold text-slate-950">
+                {panelMode === "create"
+                  ? t("organization.departments.new")
+                  : panelMode === "edit"
+                    ? t("organization.departments.edit")
+                    : t("organization.departments.details")}
+              </h2>
+              {panelMode === "create" ? (
+                <DepartmentForm mode="create" onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} />
+              ) : panelMode === "edit" && selectedDepartment ? (
+                <DepartmentForm
+                  mode="edit"
+                  department={selectedDepartment}
+                  onCancel={() => setPanelMode("details")}
+                  onCreate={create}
+                  onUpdate={update}
+                />
+              ) : selectedDepartment ? (
+                <div className="space-y-3 text-sm">
+                  <Detail label={t("organization.departments.code")} value={selectedDepartment.code} />
+                  <Detail label={t("organization.departments.name")} value={selectedDepartment.name} />
+                  <Detail
+                    label={t("organization.departments.status")}
+                    value={
+                      selectedDepartment.isActive
+                        ? t("organization.departments.active")
+                        : t("organization.departments.inactive")
+                    }
+                  />
+                  {canManage && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => setPanelMode("edit")} className={formPrimaryButtonClassName()}>
+                          {t("organization.departments.edit")}
+                        </button>
+                        <button type="button" onClick={() => setIsConfirmingStatus(true)} className={formSecondaryButtonClassName()}>
+                          {selectedDepartment.isActive
+                            ? t("organization.departments.deactivate")
+                            : t("organization.departments.activate")}
+                        </button>
+                        <button type="button" onClick={() => setIsConfirmingDelete(true)} className={formDangerButtonClassName()}>
+                          {t("organization.departments.delete")}
+                        </button>
+                      </div>
+                      {isConfirmingStatus && (
+                        <Confirmation
+                          message={
+                            selectedDepartment.isActive
+                              ? t("organization.departments.deactivateConfirmation")
+                              : t("organization.departments.activateConfirmation")
+                          }
+                          confirmLabel={t("organization.departments.confirm")}
+                          cancelLabel={t("organization.departments.cancel")}
+                          onConfirm={() => void changeStatus()}
+                          onCancel={() => setIsConfirmingStatus(false)}
+                        />
+                      )}
+                      {isConfirmingDelete && (
+                        <Confirmation
+                          destructive
+                          message={t("organization.departments.deleteConfirmation")}
+                          confirmLabel={t("organization.departments.delete")}
+                          cancelLabel={t("organization.departments.cancel")}
+                          pending={isDeleting}
+                          onConfirm={() => void remove()}
+                          onCancel={() => setIsConfirmingDelete(false)}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-600">{t("organization.departments.selectForDetails")}</p>
+              )}
+            </div>
+          }
         />
-      </div>
+      </AdministrationPageBody>
     </CompanyAdministrationWorkspace>
   );
 }
@@ -247,8 +451,49 @@ function DepartmentStatus({ isActive }: { isActive: boolean }) {
   return <span className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${isActive ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-300 bg-slate-100 text-slate-700"}`}>{isActive ? t("organization.departments.active") : t("organization.departments.inactive")}</span>;
 }
 
-function Confirmation({ message, confirmLabel, cancelLabel, pending = false, destructive = false, onConfirm, onCancel }: { message: string; confirmLabel: string; cancelLabel: string; pending?: boolean; destructive?: boolean; onConfirm: () => void; onCancel: () => void; }) {
-  return <div role={destructive ? "alertdialog" : "status"} aria-modal={destructive || undefined} className={`rounded-md border p-3 ${destructive ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}><p className={`text-sm ${destructive ? "text-red-900" : "text-amber-900"}`}>{message}</p><div className="mt-2 flex gap-2"><button type="button" disabled={pending} onClick={onConfirm} className={`min-h-9 rounded-md px-3 text-sm font-semibold text-white disabled:opacity-50 ${destructive ? "bg-red-700" : "bg-blue-700"}`}>{confirmLabel}</button><button type="button" disabled={pending} onClick={onCancel} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm disabled:opacity-50">{cancelLabel}</button></div></div>;
+function Confirmation({
+  message,
+  confirmLabel,
+  cancelLabel,
+  pending = false,
+  destructive = false,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  pending?: boolean;
+  destructive?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      role={destructive ? "alertdialog" : "status"}
+      aria-modal={destructive || undefined}
+      className={`rounded-md border p-3 ${destructive ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}
+    >
+      <p className={`text-sm ${destructive ? "text-red-900" : "text-amber-900"}`}>{message}</p>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onConfirm}
+          className={
+            destructive
+              ? "inline-flex min-h-9 items-center rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:opacity-50"
+              : formPrimaryButtonClassName()
+          }
+        >
+          {confirmLabel}
+        </button>
+        <button type="button" disabled={pending} onClick={onCancel} className={formSecondaryButtonClassName()}>
+          {cancelLabel}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

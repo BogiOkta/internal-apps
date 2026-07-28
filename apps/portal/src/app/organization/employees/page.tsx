@@ -10,10 +10,16 @@ import {
   SortableGridHeader,
   type GridSort,
 } from "@/components/admin-data-grid";
+import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { GridPagination } from "@/components/grid-pagination";
 import { useAuth } from "@/components/auth-provider";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import {
+  formDangerButtonClassName,
+  formPrimaryButtonClassName,
+  formSecondaryButtonClassName,
+} from "@/components/form-field";
 import { useTranslations } from "@/i18n/use-translations";
 import {
   activateEmployee,
@@ -282,8 +288,29 @@ export default function EmployeesPage() {
 
   const commandBar = (
     <div className="flex flex-wrap items-center gap-2">
-      {canManage && <button type="button" onClick={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }} className="inline-flex min-h-9 items-center gap-2 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"><PlusIcon />{t("vacation.employees.new")}</button>}
-      <button type="button" onClick={() => setRefreshVersion((version) => version + 1)} disabled={isLoading} className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"><RefreshIcon />{isLoading ? t("vacation.employees.refreshing") : t("vacation.employees.refresh")}</button>
+      {canManage && (
+        <button
+          type="button"
+          onClick={() => {
+            setFeedback(null);
+            setWriteError(null);
+            setPanelMode("create");
+          }}
+          className={formPrimaryButtonClassName()}
+        >
+          <PlusIcon />
+          {t("vacation.employees.new")}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setRefreshVersion((version) => version + 1)}
+        disabled={isLoading}
+        className={formSecondaryButtonClassName()}
+      >
+        <RefreshIcon />
+        {isLoading ? t("vacation.employees.refreshing") : t("vacation.employees.refresh")}
+      </button>
     </div>
   );
 
@@ -310,7 +337,7 @@ export default function EmployeesPage() {
       headerActions={commandBar}
       contentFillsViewport
     >
-      <div className="space-y-3 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+      <AdministrationPageBody>
         {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
         {writeError && <div role="alert" className="whitespace-pre-line rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
         {hasDepartmentError && (
@@ -340,6 +367,7 @@ export default function EmployeesPage() {
 
         <AdministrativeGridShell
           ariaLabel={t("vacation.employees.tableLabel")}
+          fillViewport
           toolbar={gridToolbar}
           viewport={
             <table
@@ -481,13 +509,13 @@ export default function EmployeesPage() {
               <Detail label={t("vacation.employees.department")} value={selectedEmployee.departmentName} />
               <Detail label={t("vacation.employees.email")} value={selectedEmployee.email ?? t("vacation.employees.notProvided")} />
               <Detail label={t("vacation.employees.status")} value={selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.active") : t("vacation.employees.inactive")} />
-              {canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivate") : t("vacation.employees.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className="min-h-9 rounded-md border border-red-300 px-3 text-sm font-medium text-red-700">{t("vacation.employees.delete")}</button></div>{isConfirmingStatus && <div className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="text-sm text-amber-900">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivateConfirmation") : t("vacation.employees.activateConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" onClick={() => void changeStatus()} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.confirm")}</button><button type="button" onClick={() => setIsConfirmingStatus(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm">{t("vacation.employees.cancel")}</button></div></div>}{isConfirmingDelete && <div role="alertdialog" aria-modal="true" className="rounded-md border border-red-200 bg-red-50 p-3"><p className="text-sm text-red-900">{t("vacation.employees.deleteConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" disabled={isDeleting} onClick={() => void remove()} className="min-h-9 rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.delete")}</button><button type="button" disabled={isDeleting} onClick={() => setIsConfirmingDelete(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.cancel")}</button></div></div>}</div>}
+              {canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className={formPrimaryButtonClassName()}>{t("vacation.employees.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className={formSecondaryButtonClassName()}>{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivate") : t("vacation.employees.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className={formDangerButtonClassName()}>{t("vacation.employees.delete")}</button></div>{isConfirmingStatus && <div className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="text-sm text-amber-900">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivateConfirmation") : t("vacation.employees.activateConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" onClick={() => void changeStatus()} className={formPrimaryButtonClassName()}>{t("vacation.employees.confirm")}</button><button type="button" onClick={() => setIsConfirmingStatus(false)} className={formSecondaryButtonClassName()}>{t("vacation.employees.cancel")}</button></div></div>}{isConfirmingDelete && <div role="alertdialog" aria-modal="true" className="rounded-md border border-red-200 bg-red-50 p-3"><p className="text-sm text-red-900">{t("vacation.employees.deleteConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" disabled={isDeleting} onClick={() => void remove()} className="inline-flex min-h-9 items-center rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.delete")}</button><button type="button" disabled={isDeleting} onClick={() => setIsConfirmingDelete(false)} className={formSecondaryButtonClassName()}>{t("vacation.employees.cancel")}</button></div></div>}</div>}
             </div>
           ) : <p className="text-sm text-slate-600">{t("vacation.employees.selectForDetails")}</p>}
             </div>
           }
         />
-      </div>
+      </AdministrationPageBody>
     </CompanyAdministrationWorkspace>
   );
 }

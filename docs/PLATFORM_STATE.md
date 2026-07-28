@@ -4,11 +4,11 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Organization Department administration
-  (backend and Portal) is complete and fully validated, including a
-  controlled browser smoke; migration 030 is applied. This scope was
-  explicitly approved by the platform owner at session start, superseding the
-  prior "do not begin without a separately approved scope" note below.
+- Latest functional milestone: Portal administration UI foundation
+  stabilization for Organization Employees/Departments and Business Calendar
+  Non-working Days. Shared `AdministrativeGridShell` viewport-fill behavior is
+  gated behind `fillViewport` + `AdministrationPageBody`. This scope was
+  explicitly approved by the platform owner at session start.
 
 ## Platform foundation
 
@@ -28,18 +28,19 @@
   administrator-maintained non-working dates and inclusive working-day
   calculations with weekends inherently excluded. Vacation delegates all
   working-day calculations to this shared service. A permission-aware Portal
-  route provides localized year-filtered CRUD administration of those dates.
+  route provides localized year-filtered CRUD administration of those dates
+  using `PortalDateInput` (`dd.MM.yyyy.`) rather than native date inputs.
 - Shared Portal UI: administrative grid pagination (20 default; 20/50/100),
-  form field conventions, global appearance, `AppCalendar`, `DateRangePicker`,
-  `PortalDateInput`, and the mandatory shared Serbian Latin date-display
-  formatter are available. `PortalDateInput` uses segmented `dd.MM.yyyy.`
-  keyboard entry, a Serbian Latin calendar, and ISO transport. Organization Employees uses compact search,
-  department/status/end-date-state filters, client-side pagination over the
-  bounded existing API result, and an internally scrolling wide grid.
-  Organization Departments follows the same management-grid and details-panel
-  pattern, with server-backed search/status filtering, local bounded-result
-  sorting/pagination, localized create/edit forms, and permission-aware
-  lifecycle controls.
+  form field conventions, shared primary/secondary/danger button utilities,
+  global appearance, `AppCalendar`, `DateRangePicker`, `PortalDateInput`,
+  `AdministrationPageBody`, and the mandatory shared Serbian Latin
+  date-display formatter are available. Organization Employees and
+  Departments share the canonical administration header/toolbar/shell/footer
+  /side-panel contract with stable loading, empty, error, and no-selection
+  geometry. Remaining Portal areas (Identity, Leave Types/Policies/Balances,
+  Vacation request UIs, Dashboard, User–Employee links) are inventoried in
+  `docs/standards/UI_GUIDELINES.md` §7.5 and are not migrated in this
+  increment.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Vacation
   navigation is limited to leave-request, Leave Type, Leave Policy, and Leave
@@ -63,6 +64,19 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
+- Portal administration UI foundation: Portal strict TypeScript passed;
+  Portal production build passed; focused source/contract tests passed
+  (`PortalAdministrationUiContractTests`, updated
+  `BusinessCalendarPortalContractTests`, and the Organization employee Portal
+  contract assertion), 10/10. `git diff --check` clean for the changed scope.
+  Controlled browser smoke against fresh `internal.ps1` services passed for
+  Departments (loaded rows, selected details, create panel, empty filter,
+  desktop/mobile geometry, English, dark), Employees (header/toolbar/grid/
+  footer/panel and `PortalDateInput` create fields), and Business Calendar
+  (`PortalDateInput` day→month→year typing, required validation, no native
+  date input, calendar selection, Serbian Latin and English weekday/month
+  labels, light/dark, desktop/mobile, no document horizontal overflow). The
+  browser console was clean; no persistent smoke data was created.
 - Organization Department administration: migration 030 applied successfully
   against the configured database (30 migrations discovered, journaled, no
   pending scripts). API Debug and Release builds: passed with zero warnings
@@ -165,33 +179,19 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Organization Department administration API and Portal are complete. Migration 030
-seeds `organization.departments.manage` for the Administrator role, grants the
-runtime role only the department INSERT/UPDATE columns and sequence usage
-required for audited administration, and adds the owner-controlled
-`organization.delete_unreferenced_department(uuid)` function. Department code
-is immutable after creation like employee number; name is editable; status
-changes use explicit activate/deactivate commands; deletion is restricted to
-unreferenced departments and returns the versioned internal
-`department_delete_conflict:v1:Organization employee` token on conflict,
-mirroring the employee delete-conflict contract. `GET
-/api/v1/organization/departments` gained an optional `status` filter
-(`active`/`inactive`/`all`); an omitted value preserves the existing
-active-only contract so the employee-creation dropdown is unaffected. The
-Portal route `/organization/departments` uses the existing Company
-administration shell, shared administrative grid, localized details panel and
-form conventions, and `organization.departments.manage` permission-aware
-actions.
-It exposes the existing API contract only: create, name update,
-activate/deactivate, and confirmed safe deletion.
+Portal administration UI foundation stabilization for Organization Employees,
+Departments, and Business Calendar Non-working Days. The Department regression
+root cause was unconditional `lg:h-0` on `AdministrativeGridShell` without the
+flex parent chain; `fillViewport` plus `AdministrationPageBody` is now
+required. Business Calendar user-facing date entry uses `PortalDateInput`.
+Native date inputs remain only in unmigrated Vacation admin pages listed in
+the UI guidelines inventory.
 
 ## Next task
 
-No follow-on scope is approved. Department administration is complete and
-fully validated: build and full test suite (including live-database checks),
-Portal strict TypeScript and production builds, and a controlled browser
-smoke all passed. Do not begin further scope without a separately approved
-task.
+No follow-on scope is approved. Do not begin further Portal UI migration
+(Identity, Leave Types/Policies/Balances, Vacation request UIs, Dashboard)
+without a separately approved task.
 
 ## Session instruction
 

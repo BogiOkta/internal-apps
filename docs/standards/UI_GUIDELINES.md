@@ -79,6 +79,8 @@ Implementation rules:
 - on the second real use case, evaluate extraction into a small shared
   control;
 - once a shared standard exists, new screens must use it;
+- new Portal pages MUST reuse the existing canonical shared components for
+  the same purpose rather than introducing parallel primitives;
 - shared controls own presentation, interaction, and accessibility behavior,
   while domain rules and business state remain with the consuming feature;
 - a local alternative requires a concrete business or accessibility reason
@@ -294,10 +296,12 @@ Approved form-control categories:
   for this purpose. It provides text search, keyboard navigation, clear
   selection, disabled/read-only states, and accessible combobox/listbox
   semantics while remaining independent of any business domain.
-- **Date field:** uses one wrapper/control contract platform-wide. A native
-  date input may be the initial implementation; a later date-picker library
-  must remain behind the shared contract. API values use the documented ISO
-  date contract and visible localization is consistent.
+- **Date field:** uses the shared `PortalDateInput` contract platform-wide for
+  every user-facing date entry. Native `input type="date"` is prohibited in
+  Portal forms because browser locale formatting (for example `mm/dd/yyyy`)
+  breaks the platform `dd.MM.yyyy.` contract. API values use the documented
+  ISO date contract; visible localization remains consistent through the
+  shared control.
 - **Checkbox/toggle:** checkboxes represent independent Boolean form values.
   Switch-style controls are reserved for clear immediate state changes. Do not
   alternate visual patterns for the same Boolean purpose.
@@ -343,16 +347,31 @@ All current and future Portal applications MUST use the shared
 timestamps. Serbian Latin display is fixed across the Portal: a date is
 `dd.MM.yyyy.` and a date-time is `dd.MM.yyyy. HH:mm`. API and form transport
 values remain ISO; pages must not reimplement display formatting with local
-`Intl` or string-formatting code. Editable date fields use the shared
-`PortalDateInput`: both visible display and editable keyboard input are
-`dd.MM.yyyy.`. Users type digits only; initial focus selects the day segment,
-and each completed segment advances day/month/year while separators render
+`Intl` or string-formatting code. Editable date fields MUST use the shared
+`PortalDateInput`. Native browser date inputs (`type="date"`) MUST NOT appear
+in user-facing Portal forms.
+
+`PortalDateInput` required contract:
+
+- visible format `dd.MM.yyyy.`;
+- immediate numeric entry from day to month to year with automatic separators;
+- segment selection on focus/click;
+- equivalent calendar selection path;
+- optional clear when the field is nullable;
+- required validation where the consuming form requires a date;
+- ISO `yyyy-MM-dd` values for API communication;
+- Serbian Latin and English calendar month/weekday labels derived from the
+  current Portal locale, with control commands supplied through typed
+  translation keys;
+- light and dark appearance through shared tokens;
+- consistent focus, invalid, disabled, and read-only treatment.
+
+Users type digits only; initial focus selects the day segment, and each
+completed segment advances day/month/year while separators render
 automatically. Arrow keys move predictably between segments, Tab keeps native
-form navigation, and the optional clear command remains available. The calendar picker and keyboard
-entry are equivalent paths, with Serbian Latin labels and Monday as the first
-day. Invalid calendar dates are rejected adjacent to the field and nullable
-values remain empty. API date-only transport remains ISO `yyyy-MM-dd`;
-date-time display is `dd.MM.yyyy. HH:mm`.
+form navigation, and the optional clear command remains available when
+nullable. Invalid calendar dates are rejected adjacent to the field and
+nullable values remain empty. Date-time display remains `dd.MM.yyyy. HH:mm`.
 
 `PortalDateInput` and `DateRangePicker` share the Portal date-control visual
 contract: medium rounded borders, 40px minimum control height, shared padding,
@@ -366,11 +385,15 @@ frame. It provides a bordered, rounded card; an optional toolbar; a
 `min-height: 0` table viewport with internal overflow; a pagination and summary
 footer that remain outside the scrolling region; responsive horizontal table
 scrolling; and an optional independently scrolling details panel. Pages that
-fill the desktop application viewport must opt into the shell's viewport-fill
-layout and preserve the flex `min-height: 0` chain. Loading, empty, and error
-content belongs inside the grid viewport so the surrounding page geometry does
-not change between states. On narrow screens, the grid and details panel stack
-and the table retains horizontal scrolling.
+fill the desktop application viewport must opt into the shell's
+`fillViewport` layout **and** wrap page content in `AdministrationPageBody`
+(or an equivalent flex `min-height: 0` chain under `contentFillsViewport`).
+`fillViewport` applies `lg:h-0` / `lg:flex-1` only when that parent chain
+exists; applying those classes without the chain collapses the grid into
+toolbar-only content. Loading, empty, error, and no-selection content belongs
+inside the grid viewport or side panel so surrounding page geometry remains
+stable. On narrow screens, the grid and details panel stack and the table
+retains horizontal scrolling.
 
 When a list filters a date field by range, use date-picker inputs in its
 expandable grid filter area, with explicit From and To labels. Preserve the
@@ -507,24 +530,72 @@ Prioritize essential columns, allow controlled horizontal scrolling, or provide 
 
 ### 7.4 Administration-page layout contract
 
-Organization administration pages use `AdministrationPageHeader` through the
-Portal shell and `AdministrativeGridShell` for their working area. The header
-keeps the title and description on the left and places the primary New action,
-then Refresh, on the right; actions wrap below the description on narrow
-screens. Search, filter commands, exports, and optional result context belong
-in `AdministrativeGridToolbar` inside the bordered grid card, in that order.
+Organization administration pages and aligned Company administration screens
+use `AdministrationPageHeader` through the Portal shell and
+`AdministrativeGridShell` (or an equivalent bordered list card plus right-side
+form panel when a table shell is not appropriate) for their working area.
+
+Canonical placement:
+
+| Region | Contents |
+|---|---|
+| Page header | Title and description on the left; primary New, then Refresh, on the far right |
+| Grid toolbar | Search, then filter controls, then export |
+| Grid footer | One localized visible-range summary, page-size selector, and pagination only |
+| Side panel | Details, create, or edit content sharing the shell border, radius, and padding |
+
+The header keeps the title and description on the left and places the primary
+New action, then Refresh, on the right; actions wrap below the description on
+narrow screens. Search, filter commands, exports, and optional result context
+belong in `AdministrativeGridToolbar` inside the bordered grid card, in that
+order.
 
 The shell owns the rounded border, elevation, internal table scrolling,
 responsive grid/panel stacking, and desktop side-panel width. Table headers
 remain sticky inside the viewport. `GridPagination` is the sole list footer:
 its range summary is on the left and page size plus navigation are on the
 right. Do not add a second record-count or selection-summary row that repeats
-the total.
+the total (`GridFooter` is not part of the Organization administration
+contract).
 
 Details, create, and edit content use the shell side panel so they share the
 grid card's border, radius, elevation, padding, heading spacing, and responsive
 behavior. Domain pages own their fields, columns, data operations, and
 permission-aware actions, not their structural layout.
+
+Required states for every administration working surface:
+
+| State | Required treatment |
+|---|---|
+| Loading | Progress or skeleton inside the content viewport; shell geometry stable |
+| Empty | Localized empty title/description inside the content viewport |
+| Error | Safe localized error with retry where appropriate |
+| No selection | Side panel explains that a row must be selected |
+| Selected details / create / edit | Side panel retains valid dimensions |
+
+### 7.5 Remaining Portal UI rollout inventory
+
+The following Portal areas still use older or partial administration patterns
+and are **not** migrated in the current Organization / Business Calendar UI
+foundation increment. Do not modify them unless a separately approved task
+requires it:
+
+| Area | Gap relative to the canonical contract |
+|---|---|
+| Identity user administration | Still uses `GridFooter` record-count styling; not on `AdministrativeGridShell` fillViewport contract |
+| Vacation Leave Types | Uses `GridFooter` selection/record summary alongside its grid |
+| Vacation Leave Policies | Native `type="date"` remain; page-local form chrome |
+| Vacation Leave Balances | Native `type="date"` remain; page-local form chrome |
+| Vacation request employee self-service | Outside administration shell rollout |
+| Vacation request administration | Outside this administration UI foundation rollout |
+| Dashboard | Outside scope; launcher surface, not an administration grid |
+| User–Employee links | Company administration route without the shared grid shell |
+
+New pages MUST reuse `AdministrationPageHeader`, `AdministrationPageBody`,
+`AdministrativeGridToolbar`, `AdministrativeGridShell` (when tabular),
+`GridPagination`, `FormField` / `formControlClassName`, shared button class
+helpers, and `PortalDateInput` / `DateRangePicker` instead of inventing
+parallel layout or control variants.
 
 ## 8. Calendar
 

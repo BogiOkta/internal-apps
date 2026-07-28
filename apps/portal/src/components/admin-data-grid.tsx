@@ -14,6 +14,7 @@ export function AdministrativeGridShell({
   pagination,
   footer,
   detailsPanel,
+  fillViewport = false,
 }: {
   ariaLabel: string;
   toolbar?: ReactNode;
@@ -21,30 +22,46 @@ export function AdministrativeGridShell({
   pagination?: ReactNode;
   footer?: ReactNode;
   detailsPanel?: ReactNode;
+  /**
+   * When true, the shell participates in the authenticated viewport-fill flex
+   * chain (`AdministrationPageBody` / `contentFillsViewport`). Height-collapse
+   * classes must not apply without that parent chain or the grid collapses.
+   */
+  fillViewport?: boolean;
 }) {
   return (
     <div
-      className={`grid min-h-0 gap-4 ${
-        detailsPanel
-          ? "lg:h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_22rem]"
-          : "lg:h-0 lg:flex-1"
-      }`}
+      className={[
+        "grid min-h-0 gap-4",
+        fillViewport ? "lg:h-0 lg:flex-1" : "",
+        detailsPanel ? "lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <section
         aria-label={ariaLabel}
-        className="flex min-h-[24rem] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm [contain:paint] lg:min-h-0"
+        className={[
+          "flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm [contain:paint]",
+          fillViewport ? "min-h-[24rem] lg:min-h-0" : "min-h-[24rem]",
+        ].join(" ")}
       >
         {toolbar ? (
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-50 px-4 py-3">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-50 px-4 py-3">
             {toolbar}
           </div>
         ) : null}
         <div className="min-h-0 flex-1 overflow-auto">{viewport}</div>
-        {pagination}
-        {footer}
+        {pagination ? <div className="shrink-0">{pagination}</div> : null}
+        {footer ? <div className="shrink-0">{footer}</div> : null}
       </section>
       {detailsPanel ? (
-        <aside className="min-h-0 overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-sm">
+        <aside
+          className={[
+            "min-h-0 overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-sm",
+            fillViewport ? "lg:min-h-0" : "min-h-[24rem]",
+          ].join(" ")}
+        >
           {detailsPanel}
         </aside>
       ) : null}

@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AppShell } from "@/components/app-shell";
+import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import {
   fieldDescriptionIds,
   FormField,
   formControlClassName,
+  formPrimaryButtonClassName,
+  formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { PortalDateInput } from "@/components/portal-date-input";
 import { useAuth } from "@/components/auth-provider";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate } from "@/utils/portal-date-format";
@@ -39,6 +42,8 @@ export default function NonWorkingDaysPage() {
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateValid, setDateValid] = useState(true);
+  const [dateInputVersion, setDateInputVersion] = useState(0);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!accessToken || !allowed) return;
@@ -63,6 +68,8 @@ export default function NonWorkingDaysPage() {
     setEditingId(null);
     setForm(emptyForm);
     setErrors({});
+    setDateValid(true);
+    setDateInputVersion((version) => version + 1);
   }
 
   async function submit(event: React.FormEvent) {
@@ -70,6 +77,7 @@ export default function NonWorkingDaysPage() {
     if (isSubmitting || !accessToken) return;
     const nextErrors: typeof errors = {};
     if (!form.date) nextErrors.date = t("businessCalendar.validation.date");
+    else if (!dateValid) nextErrors.date = t("dateInput.invalid");
     if (!form.name.trim()) nextErrors.name = t("businessCalendar.validation.name");
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -108,72 +116,220 @@ export default function NonWorkingDaysPage() {
     }
   }
 
-  if (!allowed) return <AppShell title={t("businessCalendar.title")}>
-    <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
-      {t("businessCalendar.forbidden")}
-    </div>
-  </AppShell>;
-
-  return <AppShell title={t("businessCalendar.title")} description={t("businessCalendar.description")}>
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <section>
-        <label className="mb-4 block max-w-44 text-sm font-medium text-slate-800">
-          {t("businessCalendar.year")}
-          <input type="number" min={1} max={9999} value={year}
-            onChange={(event) => {
-              setFeedback(null);
-              setYear(Number(event.target.value));
-            }}
-            className={`mt-1.5 ${formControlClassName()}`} />
-        </label>
-        {feedback && <div role={feedback.kind === "error" ? "alert" : "status"}
-          className={`mb-4 rounded-md border p-3 text-sm ${feedback.kind === "error"
-            ? "border-red-200 bg-red-50 text-red-800"
-            : "border-green-200 bg-green-50 text-green-800"}`}>{feedback.text}</div>}
-        {isLoading ? <p role="status" className="rounded-md border p-6 text-slate-600">{t("common.loading")}</p>
-          : days.length === 0 ? <p className="rounded-md border border-dashed p-6 text-slate-600">{t("businessCalendar.empty")}</p>
-            : <div className="overflow-x-auto rounded-md border border-slate-300 bg-white">
-              <table className="w-full min-w-[650px] text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-600"><tr>
-                  <th className="px-4 py-3">{t("businessCalendar.date")}</th>
-                  <th className="px-4 py-3">{t("businessCalendar.name")}</th>
-                  <th className="px-4 py-3">{t("businessCalendar.descriptionField")}</th>
-                  <th className="px-4 py-3">{t("businessCalendar.actions")}</th>
-                </tr></thead>
-                <tbody className="divide-y divide-slate-200">{days.map((day) => <tr key={day.publicId}>
-                  <td className="px-4 py-3 whitespace-nowrap">{formatPortalDate(day.date)}</td>
-                  <td className="px-4 py-3 font-medium">{day.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{day.description || "—"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap"><button type="button" className="mr-3 text-blue-700 underline"
-                    onClick={() => { setEditingId(day.publicId); setForm({ date: day.date, name: day.name, description: day.description }); setErrors({}); }}>{t("businessCalendar.edit")}</button>
-                    <button type="button" className="text-red-700 underline" onClick={() => void remove(day)}>{t("businessCalendar.delete")}</button></td>
-                </tr>)}</tbody>
-              </table>
-            </div>}
-      </section>
-      <form onSubmit={submit} className="h-fit space-y-4 rounded-md border border-slate-300 bg-white p-5">
-        <h2 className="text-lg font-semibold">{t(editingId ? "businessCalendar.editTitle" : "businessCalendar.createTitle")}</h2>
-        <FormField id="non-working-date" label={t("businessCalendar.date")} required error={errors.date}>
-          <input id="non-working-date" type="date" value={form.date} disabled={isSubmitting}
-            aria-invalid={Boolean(errors.date)} aria-describedby={fieldDescriptionIds("non-working-date", Boolean(errors.date))}
-            onChange={(event) => setForm({ ...form, date: event.target.value })} className={formControlClassName({ invalid: Boolean(errors.date) })} />
-        </FormField>
-        <FormField id="non-working-name" label={t("businessCalendar.name")} required error={errors.name}>
-          <input id="non-working-name" maxLength={200} value={form.name} disabled={isSubmitting}
-            aria-invalid={Boolean(errors.name)} aria-describedby={fieldDescriptionIds("non-working-name", Boolean(errors.name))}
-            onChange={(event) => setForm({ ...form, name: event.target.value })} className={formControlClassName({ invalid: Boolean(errors.name) })} />
-        </FormField>
-        <FormField id="non-working-description" label={t("businessCalendar.descriptionField")}>
-          <textarea id="non-working-description" maxLength={1000} value={form.description ?? ""} disabled={isSubmitting}
-            onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${formControlClassName()} min-h-24 resize-y`} />
-        </FormField>
-        <div className="flex gap-2">
-          <button type="submit" disabled={isSubmitting} className="min-h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white disabled:opacity-60">
-            {isSubmitting ? t("businessCalendar.saving") : t("businessCalendar.save")}
-          </button>
-          {editingId && <button type="button" disabled={isSubmitting} onClick={resetForm} className="min-h-10 rounded-md border border-slate-300 px-4 text-sm">{t("businessCalendar.cancel")}</button>}
+  if (!allowed) {
+    return (
+      <CompanyAdministrationWorkspace title={t("businessCalendar.title")}>
+        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+          {t("businessCalendar.forbidden")}
         </div>
-      </form>
-    </div>
-  </AppShell>;
+      </CompanyAdministrationWorkspace>
+    );
+  }
+
+  return (
+    <CompanyAdministrationWorkspace
+      title={t("businessCalendar.title")}
+      description={t("businessCalendar.description")}
+      headerActions={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setFeedback(null);
+            }}
+            className={formPrimaryButtonClassName()}
+          >
+            {t("businessCalendar.createTitle")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={isLoading}
+            className={formSecondaryButtonClassName()}
+          >
+            {isLoading ? t("businessCalendar.refreshing") : t("businessCalendar.refresh")}
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        {feedback && (
+          <div
+            role={feedback.kind === "error" ? "alert" : "status"}
+            className={`rounded-md border p-3 text-sm ${
+              feedback.kind === "error"
+                ? "border-red-200 bg-red-50 text-red-800"
+                : "border-emerald-200 bg-emerald-50 text-emerald-800"
+            }`}
+          >
+            {feedback.text}
+          </div>
+        )}
+
+        <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+          <section
+            aria-label={t("businessCalendar.title")}
+            className="min-w-0 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm"
+          >
+            <div className="flex flex-wrap items-end gap-3 border-b border-slate-300 bg-slate-50 px-4 py-3">
+              <FormField id="non-working-year" label={t("businessCalendar.year")}>
+                <input
+                  id="non-working-year"
+                  type="number"
+                  min={1}
+                  max={9999}
+                  value={year}
+                  onChange={(event) => {
+                    setFeedback(null);
+                    setYear(Number(event.target.value));
+                  }}
+                  className={`${formControlClassName()} max-w-44`}
+                />
+              </FormField>
+            </div>
+
+            {isLoading ? (
+              <p role="status" className="px-4 py-10 text-center text-slate-600">
+                {t("common.loading")}
+              </p>
+            ) : days.length === 0 ? (
+              <div className="px-4 py-10 text-center">
+                <p className="font-medium text-slate-900">{t("businessCalendar.empty")}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[650px] border-collapse text-left text-sm">
+                  <thead className="sticky top-0 z-10 border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
+                    <tr>
+                      <th className="px-4 py-3">{t("businessCalendar.date")}</th>
+                      <th className="px-4 py-3">{t("businessCalendar.name")}</th>
+                      <th className="px-4 py-3">{t("businessCalendar.descriptionField")}</th>
+                      <th className="px-4 py-3">{t("businessCalendar.actions")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {days.map((day) => {
+                      const isSelected = editingId === day.publicId;
+                      return (
+                        <tr
+                          key={day.publicId}
+                          aria-selected={isSelected}
+                          className={isSelected ? "bg-blue-50 shadow-[inset_3px_0_0_#1d4ed8]" : "bg-white"}
+                        >
+                          <td className="whitespace-nowrap px-4 py-3">{formatPortalDate(day.date)}</td>
+                          <td className="px-4 py-3 font-medium text-slate-950">{day.name}</td>
+                          <td className="px-4 py-3 text-slate-600">{day.description || "—"}</td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="rounded-sm text-sm font-medium text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                onClick={() => {
+                                  setEditingId(day.publicId);
+                                  setForm({
+                                    date: day.date,
+                                    name: day.name,
+                                    description: day.description,
+                                  });
+                                  setErrors({});
+                                  setFeedback(null);
+                                }}
+                              >
+                                {t("businessCalendar.edit")}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-sm text-sm font-medium text-red-700 hover:underline focus:outline-none focus:ring-2 focus:ring-red-600"
+                                onClick={() => void remove(day)}
+                              >
+                                {t("businessCalendar.delete")}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <aside className="min-h-[24rem] rounded-xl border border-slate-300 bg-white p-5 shadow-sm">
+            <form onSubmit={submit} className="space-y-4">
+              <h2 className="text-lg font-semibold text-slate-950">
+                {t(editingId ? "businessCalendar.editTitle" : "businessCalendar.createTitle")}
+              </h2>
+              <FormField
+                id="non-working-date"
+                label={t("businessCalendar.date")}
+                required
+                hint={t("dateInput.hint")}
+                error={errors.date}
+              >
+                <PortalDateInput
+                  key={dateInputVersion}
+                  id="non-working-date"
+                  value={form.date || null}
+                  disabled={isSubmitting}
+                  nullable={false}
+                  onChange={(value) => {
+                    setForm({ ...form, date: value ?? "" });
+                    if (errors.date) setErrors({ ...errors, date: undefined });
+                  }}
+                  onValidityChange={setDateValid}
+                  ariaDescribedBy={fieldDescriptionIds("non-working-date", Boolean(errors.date), true)}
+                  invalidLabel={t("dateInput.invalid")}
+                  incompleteLabel={t("dateInput.incomplete")}
+                  todayLabel={t("dateInput.today")}
+                  clearLabel={t("dateInput.clear")}
+                  openCalendarLabel={t("dateInput.openCalendar")}
+                  previousMonthLabel={t("dateInput.previousMonth")}
+                  nextMonthLabel={t("dateInput.nextMonth")}
+                />
+              </FormField>
+              <FormField id="non-working-name" label={t("businessCalendar.name")} required error={errors.name}>
+                <input
+                  id="non-working-name"
+                  maxLength={200}
+                  value={form.name}
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby={fieldDescriptionIds("non-working-name", Boolean(errors.name))}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  className={formControlClassName({ invalid: Boolean(errors.name) })}
+                />
+              </FormField>
+              <FormField id="non-working-description" label={t("businessCalendar.descriptionField")}>
+                <textarea
+                  id="non-working-description"
+                  maxLength={1000}
+                  value={form.description ?? ""}
+                  disabled={isSubmitting}
+                  onChange={(event) => setForm({ ...form, description: event.target.value })}
+                  className={`${formControlClassName()} min-h-24 resize-y`}
+                />
+              </FormField>
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" disabled={isSubmitting} className={formPrimaryButtonClassName()}>
+                  {isSubmitting ? t("businessCalendar.saving") : t("businessCalendar.save")}
+                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={resetForm}
+                    className={formSecondaryButtonClassName()}
+                  >
+                    {t("businessCalendar.cancel")}
+                  </button>
+                )}
+              </div>
+            </form>
+          </aside>
+        </div>
+      </div>
+    </CompanyAdministrationWorkspace>
+  );
 }
