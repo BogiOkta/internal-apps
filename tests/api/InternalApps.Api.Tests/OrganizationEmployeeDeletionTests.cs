@@ -1,4 +1,5 @@
 using Dapper;
+using InternalApps.Api.Modules.Organization;
 using Npgsql;
 using Xunit;
 
@@ -65,6 +66,94 @@ public sealed class OrganizationEmployeeDeletionTests
         Assert.DoesNotContain("vacation.leave_policies", finalDeleteFunction);
         Assert.DoesNotContain("vacation.leave_balance_entries", finalDeleteFunction);
         Assert.DoesNotContain("audit.audit_events", finalDeleteFunction);
+    }
+
+    [Fact]
+    public void Migration029_OmitsOnlyTheExactLegacySentinelWithoutWeakeningApiValidation()
+    {
+        var migration028 = Read("database", "migrations", "028_employee_delete_conflict_dependency_token.sql");
+        var migration = Read("database", "migrations", "029_omit_legacy_employee_dependency_sentinel.sql");
+        var service = Read("apps", "api", "src", "Api", "Modules", "Organization", "EmployeesService.cs");
+        Assert.Contains("employee_delete_conflict:v1:", migration028);
+        Assert.Contains("employee_delete_conflict:v1:", migration);
+        Assert.Contains("string_agg", migration);
+        Assert.Contains("<> 'Protected employee dependency'", migration);
+        Assert.Contains("exact legacy sentinel", migration);
+        Assert.Contains("MESSAGE = 'employee_delete_conflict'", migration);
+        Assert.DoesNotContain("DETAIL", migration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("DeleteConflictPrefix", service);
+        Assert.Contains("ControlledDependencyNames", service);
+        Assert.Contains("ParseDeleteConflictDependencies", service);
+        Assert.Contains("dependencies.All", service);
+        Assert.Contains("dependency.Length > 0", service);
+        Assert.Contains("ControlledDependencyNames.Contains(dependency)", service);
+        Assert.DoesNotContain("Protected employee dependency", service);
+        Assert.DoesNotContain("exception.Detail", service, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DeleteConflictParser_RejectsMalformedAndUnknownTokensAsAWhole()
+    {
+        var serviceType = typeof(EmployeesService);
+        var parser = serviceType.GetMethod("ParseDeleteConflictDependencies",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        string[] Parse(string message) => (string[])parser.Invoke(null, [message])!;
+
+        Assert.Equal(["Employee audit history"],
+            Parse("employee_delete_conflict:v1:Employee audit history"));
+        Assert.Empty(Parse("employee_delete_conflict:v1:Employee audit history|Uncontrolled internal marker"));
+        Assert.Empty(Parse("employee_delete_conflict:v1:Employee audit history|"));
+        Assert.Empty(Parse("employee_delete_conflict:v2:Employee audit history"));
+        Assert.Empty(Parse("employee_delete_conflict"));
+    }
+
+    [Fact]
+    public async Task EmployeeDeleteFunction_HandlesLegacyAndUnknownMarkers_InConfiguredSchema()
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("RUN_DATABASE_INTEGRATION_TESTS"),
+                "true", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        LoadRepositoryEnvironment();
+        await using var dataSource = NpgsqlDataSource.Create(BuildOwnerConnectionString());
+        await using var connection = await dataSource.OpenConnectionAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        try
+        {
+            var departmentId = await ScalarAsync<long>(connection, transaction, """
+                SELECT id FROM organization.departments ORDER BY id LIMIT 1
+                """);
+            var specificOne = await InsertEmployeeAsync(connection, transaction, departmentId);
+            await AddMarkerAsync(connection, transaction, specificOne.Id, "Protected employee dependency");
+            await AddMarkerAsync(connection, transaction, specificOne.Id, "Employee audit history");
+            Assert.Equal("employee_delete_conflict:v1:Employee audit history",
+                await DeleteConflictAsync(connection, transaction, specificOne.PublicId));
+
+            var specificMany = await InsertEmployeeAsync(connection, transaction, departmentId);
+            await AddMarkerAsync(connection, transaction, specificMany.Id, "User employee link");
+            await AddMarkerAsync(connection, transaction, specificMany.Id, "Protected employee dependency");
+            await AddMarkerAsync(connection, transaction, specificMany.Id, "Employee audit history");
+            Assert.Equal("employee_delete_conflict:v1:Employee audit history|User employee link",
+                await DeleteConflictAsync(connection, transaction, specificMany.PublicId));
+
+            var legacyOnly = await InsertEmployeeAsync(connection, transaction, departmentId);
+            await AddMarkerAsync(connection, transaction, legacyOnly.Id, "Protected employee dependency");
+            Assert.Equal("employee_delete_conflict",
+                await DeleteConflictAsync(connection, transaction, legacyOnly.PublicId));
+
+            var unknown = await InsertEmployeeAsync(connection, transaction, departmentId);
+            await AddMarkerAsync(connection, transaction, unknown.Id, "Employee audit history");
+            await AddMarkerAsync(connection, transaction, unknown.Id, "Uncontrolled internal marker");
+            Assert.Equal("employee_delete_conflict:v1:Employee audit history|Uncontrolled internal marker",
+                await DeleteConflictAsync(connection, transaction, unknown.PublicId));
+
+            var unreferenced = await InsertEmployeeAsync(connection, transaction, departmentId);
+            await using var command = new NpgsqlCommand(
+                "SELECT organization.delete_unreferenced_employee(@publicId)", connection, transaction);
+            command.Parameters.AddWithValue("publicId", unreferenced.PublicId);
+            Assert.True((bool)(await command.ExecuteScalarAsync())!);
+        }
+        finally { await transaction.RollbackAsync(); }
     }
 
     [Fact]
@@ -215,4 +304,65 @@ public sealed class OrganizationEmployeeDeletionTests
             Password = Required("APP_DB_PASSWORD"),
             SslMode = Enum.Parse<SslMode>(Required("DB_SSL_MODE"), true)
         }.ConnectionString;
+
+    private static string BuildOwnerConnectionString() =>
+        new NpgsqlConnectionStringBuilder
+        {
+            Host = Required("DB_HOST"),
+            Port = int.Parse(Required("DB_PORT")),
+            Database = Required("DB_NAME"),
+            Username = Required("DB_OWNER_USER"),
+            Password = Required("DB_OWNER_PASSWORD"),
+            SslMode = Enum.Parse<SslMode>(Required("DB_SSL_MODE"), true)
+        }.ConnectionString;
+
+    private static async Task<T> ScalarAsync<T>(NpgsqlConnection connection,
+        NpgsqlTransaction transaction, string sql)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        return (T)(await command.ExecuteScalarAsync())!;
+    }
+
+    private static async Task<(long Id, Guid PublicId)> InsertEmployeeAsync(
+        NpgsqlConnection connection, NpgsqlTransaction transaction, long departmentId)
+    {
+        await using var command = new NpgsqlCommand("""
+            INSERT INTO organization.employees
+                (employee_number, first_name, last_name, department_id, employment_status)
+            VALUES ('TEST-' || left(gen_random_uuid()::text, 24),
+                'Deletion', 'Fixture', @departmentId, 'Active')
+            RETURNING id, public_id
+            """, connection, transaction);
+        command.Parameters.AddWithValue("departmentId", departmentId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        return (reader.GetInt64(0), reader.GetGuid(1));
+    }
+
+    private static async Task AddMarkerAsync(NpgsqlConnection connection,
+        NpgsqlTransaction transaction, long employeeId, string dependencyName)
+    {
+        await using var command = new NpgsqlCommand("""
+            INSERT INTO organization.employee_protected_dependencies (employee_id, dependency_name)
+            VALUES (@employeeId, @dependencyName)
+            """, connection, transaction);
+        command.Parameters.AddWithValue("employeeId", employeeId);
+        command.Parameters.AddWithValue("dependencyName", dependencyName);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task<string> DeleteConflictAsync(NpgsqlConnection connection,
+        NpgsqlTransaction transaction, Guid publicId)
+    {
+        await using (var savepoint = new NpgsqlCommand("SAVEPOINT delete_conflict", connection, transaction))
+            await savepoint.ExecuteNonQueryAsync();
+        await using var command = new NpgsqlCommand(
+            "SELECT organization.delete_unreferenced_employee(@publicId)", connection, transaction);
+        command.Parameters.AddWithValue("publicId", publicId);
+        var exception = await Assert.ThrowsAsync<PostgresException>(() => command.ExecuteScalarAsync());
+        await using (var rollback = new NpgsqlCommand("ROLLBACK TO SAVEPOINT delete_conflict", connection, transaction))
+            await rollback.ExecuteNonQueryAsync();
+        Assert.Equal("P0001", exception.SqlState);
+        return exception.MessageText;
+    }
 }

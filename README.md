@@ -219,6 +219,9 @@ each service as running or stopped. The ignored `.internal/runner.json` stores
 only each launched process ID and start time so stale state cannot target a
 reused, unrelated process ID; stale state is cleaned automatically.
 
+After both readiness checks succeed, `start` and `restart` open the configured
+Portal URL in the default browser. Use `-NoBrowser` for automated validation.
+
 Logs are written to `.internal/logs/api.log`, `.internal/logs/api.err.log`,
 `.internal/logs/portal.log`, and `.internal/logs/portal.err.log`.
 

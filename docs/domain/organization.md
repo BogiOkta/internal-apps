@@ -62,12 +62,22 @@ any foreign-key conflict is converted to the same deterministic
 
 Migration 025 permanently records the first protected dependency for each
 employee. Migration 026 forward-upgrades that already-journaled marker to keep
-declaratively configured dependency names, and migration 027 forward-upgrades
-the controlled function to return those names. Removing a link or another
-independently managed mutable reference does not make that employee deletable
-later. Runtime roles have no access to the marker table, and the marker's own
-employee foreign key is `NO ACTION`. The shared trigger function records the
-configured dependency name without a module-specific application-code mapping.
+declaratively configured dependency names, migration 027 forward-upgrades the
+controlled function to return those names, migration 028 replaces the
+PostgreSQL detail transport with the versioned internal
+`employee_delete_conflict:v1:<label>(|<label>)*` message token. The API parses
+only that controlled grammar and exposes only its fixed allowlist of business
+labels; missing, malformed, redacted, or unknown values produce the safe
+generic conflict response. Migration 029 retains the exact legacy stored
+sentinel `Protected employee dependency`, but omits it from the token when one
+or more specific labels exist. If it is the only marker, the function emits
+the legacy generic conflict; any other unknown marker remains in the complete
+token so the API rejects the whole token rather than exposing a partial list.
+Removing a link or another independently managed
+mutable reference does not make that employee deletable later. Runtime roles
+have no access to the marker table, and the marker's own employee foreign key
+is `NO ACTION`. The shared trigger function records the configured dependency
+name without a module-specific application-code mapping.
 
 Every new employee-related table is incomplete unless its focused migration:
 

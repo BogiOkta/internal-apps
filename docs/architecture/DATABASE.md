@@ -521,6 +521,20 @@ employee foreign keys remain a defense-in-depth guard against trigger omissions
 and concurrent writes. Later independent removal of a mutable link or policy
 cannot make a formerly referenced employee physically deletable.
 
+Migration `028_employee_delete_conflict_dependency_token.sql` forward-upgrades
+the controlled function to carry dependency labels only in the versioned
+internal `employee_delete_conflict:v1:<label>(|<label>)*` message token. The API
+accepts only the exact prefix and fixed label allowlist. Missing, malformed,
+redacted, or unknown tokens yield the generic safe conflict response; PostgreSQL
+detail, SQLSTATE, object names, identifiers, and exception metadata are never
+part of the Portal contract.
+
+Migration `029_omit_legacy_employee_dependency_sentinel.sql` changes only the
+controlled function. The exact retained legacy marker `Protected employee
+dependency` is omitted from a versioned token when specific markers exist; it
+alone produces the generic conflict. Other unknown marker names remain in the
+complete token, which the strict API rejects as a whole rather than filtering.
+
 Every future table whose rows relate to an employee MUST:
 
 1. define its normal foreign key to `organization.employees`;

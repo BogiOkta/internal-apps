@@ -1,5 +1,26 @@
 # Internal Apps Platform change history
 
+## 2026-07-28 — Employee delete-conflict legacy-marker correction
+
+- Added forward-only migration 029. It leaves canonical marker rows unchanged
+  and omits only the exact stored legacy sentinel `Protected employee
+  dependency` from a versioned delete-conflict token when specific dependency
+  labels exist. Sentinel-only and unknown-marker cases retain the safe generic
+  API fallback; unknown labels are never partially exposed.
+
+## 2026-07-28 — Organization Employees polish completion
+
+- Applied migration 028. The owner-controlled Employee delete function now
+  emits only the versioned internal `employee_delete_conflict:v1:` token;
+  the API accepts only its controlled dependency labels and never forwards
+  PostgreSQL detail or redaction text.
+- Standardized Serbian Employee terminology to `Šifra`, `Odeljenje`, and
+  `E-mail`; ordered the grid and exports accordingly; added compact codes,
+  natural default code sorting, and independent clear controls for the three
+  select filters.
+- The minimal runner opens the configured Portal URL once only after readiness;
+  `-NoBrowser`, `status`, and `stop` avoid browser launch.
+
 ## 2026-07-27 — Organization Employees pagination and date-input standard
 
 - Refined `PortalDateInput` to the platform Serbian segmented date standard:

@@ -1,7 +1,8 @@
 param(
     [Parameter(Position = 0)]
     [ValidateSet("start", "stop", "restart", "status")]
-    [string]$Command = "status"
+    [string]$Command = "status",
+    [switch]$NoBrowser
 )
 
 $ErrorActionPreference = "Stop"
@@ -146,6 +147,10 @@ function Start-Services {
             ConvertTo-Json | Set-Content $statePath -Encoding utf8
         Write-Host "API: running - PID $($apiProcess.Id) - $apiUrl"
         Write-Host "Portal: running - PID $($portalProcess.Id) - $portalUrl"
+        if (-not $NoBrowser) {
+            try { Start-Process $portalUrl }
+            catch { Write-Warning "Portal is ready, but the browser could not be opened." }
+        }
     }
     catch {
         if ($portalProcess) {

@@ -4,9 +4,9 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Organization employee safe-deletion hardening;
-  final validation is recorded below and the commit is authoritative in Git
-  history.
+- Latest functional milestone: Organization Employee administration polish and
+  safe-deletion hardening are complete and validated; migrations 028 and 029
+  are applied.
 
 ## Platform foundation
 
@@ -56,15 +56,14 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
-- Organization safe-deletion migrations: 27 discovered; migration 027 applied
-  successfully over the already-journaled 026 state; immediate rerun had no
-  pending scripts.
+- Organization safe-deletion migrations: 29 discovered; migrations 028 and 029
+  are already journaled, and migrator verification had no pending scripts.
 - Organization safe-deletion database checks: six employee foreign keys, zero
   unsafe delete actions, six shared marker triggers, direct runtime employee
   DELETE denied, marker-table access denied, controlled-function execution
   allowed, and no dependent-row DELETE in the controlled function.
-- API tests with database integration enabled: passed, 51/51. Focused
-  Organization employee-deletion tests: passed, 8/8.
+- API tests with database integration enabled: passed, 52/52, including the
+  configured-schema legacy-sentinel and unknown-marker cases.
 - API Release build: passed with zero warnings and errors.
 - Migrator Release build: passed with zero warnings and errors.
 - Portal strict TypeScript and production build: passed.
@@ -130,17 +129,25 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-The Organization Employees Portal UX increment is complete: filters prioritize
+The Organization Employees Portal polish increment is complete: filters prioritize
 global search, organization unit, employment status, and compact end-date
 state; the bounded API result receives shared client-side pagination; employee
-date editing uses `PortalDateInput`; and deletion conflicts render only safe
-business dependency labels with deactivation guidance. Backend deletion rules,
-transport contracts, and employee safety semantics are unchanged.
+date editing uses `PortalDateInput`; deletion conflicts use a versioned internal
+database token and render only allowlisted business dependency labels with
+deactivation guidance. The bounded Employee result is filtered, naturally
+sorted, and then paginated client-side; each select filter has an independent
+localized clear action. Backend deletion safety semantics are unchanged.
+Migration 029 retains the legacy marker `Protected employee dependency` in
+storage, omits it from the versioned token only when specific labels exist,
+and preserves safe generic fallback for sentinel-only, malformed, and unknown
+cases.
 
 ## Next task
 
-No follow-on scope is approved. Begin the next independently documented scope
-in a fresh session.
+No follow-on scope is approved. The protected-delete Portal behavior was
+statically and automatically validated; no operator browser-confirmation
+artifact was available for this final review. Do not begin Department
+administration without a separately approved scope.
 
 ## Session instruction
 

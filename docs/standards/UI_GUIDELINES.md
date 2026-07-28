@@ -467,12 +467,14 @@ details panels usable beside the grid on desktop and stack them at narrower
 widths. Headers use normal title/sentence casing and must not be forced into
 uppercase or multi-line labels merely to fit more columns.
 
-Filtering and sorting ownership is explicit per list. Employee search,
-department filtering, and sorting remain server-side because the employee
-directory may grow. Small bounded reference lists, such as Vacation Leave
-Types, may apply documented column filters and additional presentation sorts
-client-side after the server has applied global search. Client-side filtering
-must never be described as server-side behavior.
+Filtering and sorting ownership is explicit per list. The currently bounded
+Employee directory applies its end-date presentation filter and natural
+alphanumeric grid sorting client-side before pagination, after server-side
+search, department, and status filtering. Larger Employee datasets require a
+documented paginated API contract before this changes. Small bounded reference
+lists, such as Vacation Leave Types, may apply documented column filters and
+additional presentation sorts client-side after the server has applied global
+search. Client-side filtering must never be described as server-side behavior.
 
 The Vacation employee directory consumes shared Organization data; its
 placement does not imply Vacation ownership. Authenticated users retain the

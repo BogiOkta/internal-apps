@@ -9,6 +9,12 @@ internal sealed class EmployeesService(
     OrganizationRepository repository,
     AuditWriter auditWriter)
 {
+    private const string DeleteConflictPrefix = "employee_delete_conflict:v1:";
+    private static readonly HashSet<string> ControlledDependencyNames =
+    [
+        "Identity user link", "Vacation leave request", "Vacation leave balance",
+        "Vacation leave policy", "Vacation leave balance history", "Employee audit history"
+    ];
     public async Task<EmployeeWriteResult> CreateAsync(
         CreateEmployeeRequest request,
         Guid actorUserPublicId,
@@ -179,16 +185,25 @@ internal sealed class EmployeesService(
         }
         catch (PostgresException exception) when (
             exception.SqlState == "P0001" &&
-            exception.MessageText == "employee_delete_conflict")
+            (exception.MessageText == "employee_delete_conflict" ||
+             exception.MessageText.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal)))
         {
             await transaction.RollbackAsync(cancellationToken);
-            var dependencies = string.IsNullOrWhiteSpace(exception.Detail)
-                ? []
-                : exception.Detail.Split(
-                    ", ", StringSplitOptions.RemoveEmptyEntries |
-                          StringSplitOptions.TrimEntries);
+            var dependencies = ParseDeleteConflictDependencies(exception.MessageText);
             return new(EmployeeWriteStatus.HasDependencies, dependencies);
         }
+    }
+
+    // Only labels emitted by the owner-controlled database function cross this boundary.
+    private static string[] ParseDeleteConflictDependencies(string message)
+    {
+        if (!message.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal)) return [];
+        var dependencies = message[DeleteConflictPrefix.Length..].Split('|');
+        return dependencies.Length > 0 &&
+               dependencies.All(dependency =>
+                   dependency.Length > 0 && ControlledDependencyNames.Contains(dependency))
+            ? dependencies.Distinct(StringComparer.Ordinal).ToArray()
+            : [];
     }
 
     private static Dictionary<string, string[]> Validate(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   GridFilterCell,
   GridFilterRow,
@@ -27,7 +27,6 @@ import {
 import type {
   Department,
   Employee,
-  EmployeeSort,
   EmployeeStatusFilter,
   CreateEmployeeRequest,
   UpdateEmployeeRequest,
@@ -66,7 +65,7 @@ export default function EmployeesPage() {
   const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [sort, setSort] = useState<GridSort<EmployeeSortField>>(null);
+  const [sort, setSort] = useState<GridSort<EmployeeSortField>>({ field: "employeeNumber", direction: "asc" });
   const [areFiltersVisible, setAreFiltersVisible] = useState(false);
   const [exportError, setExportError] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -120,9 +119,7 @@ export default function EmployeesPage() {
         search: debouncedSearch || undefined,
         departmentPublicId: departmentPublicId || undefined,
         status,
-        sort: sort
-          ? ((sort.direction === "desc" ? `-${sort.field}` : sort.field) as EmployeeSort)
-          : undefined,
+        sort: undefined,
       },
       controller.signal,
     )
@@ -155,12 +152,11 @@ export default function EmployeesPage() {
     departmentPublicId,
     status,
     refreshVersion,
-    sort,
   ]);
 
-  const employees = useMemo(() => employeeResult.filter((employee) =>
-    employmentEndDateState === "all" || (employmentEndDateState === "missing") === (employee.employmentEndDate === null),
-  ), [employeeResult, employmentEndDateState]);
+  const employees = useMemo(() => employeeResult
+    .filter((employee) => employmentEndDateState === "all" || (employmentEndDateState === "missing") === (employee.employmentEndDate === null))
+    .sort((left, right) => compareEmployees(left, right, sort)), [employeeResult, employmentEndDateState, sort]);
   const totalPages = Math.max(1, Math.ceil(employees.length / pageSize));
   const visibleEmployees = useMemo(() => employees.slice((page - 1) * pageSize, page * pageSize), [employees, page, pageSize]);
   const selectedEmployee = useMemo(
@@ -247,6 +243,7 @@ export default function EmployeesPage() {
     { heading: t("vacation.employees.name"), value: (row) => [row.firstName, row.lastName].join(" "), width: 28 },
     { heading: t("vacation.employees.middleName"), value: (row) => row.middleName ?? "", width: 20 },
     { heading: t("vacation.employees.department"), value: (row) => row.departmentName, width: 24 },
+    { heading: t("vacation.employees.email"), value: (row) => row.email ?? "", width: 32 },
     {
       heading: t("vacation.employees.status"),
       value: (row) =>
@@ -257,7 +254,6 @@ export default function EmployeesPage() {
     },
     { heading: t("vacation.employees.employmentStartDate"), value: (row) => row.employmentStartDate ? formatPortalDate(row.employmentStartDate) : t("vacation.employees.notProvided"), width: 16 },
     { heading: t("vacation.employees.employmentEndDate"), value: (row) => row.employmentEndDate ? formatPortalDate(row.employmentEndDate) : t("vacation.employees.notProvided"), width: 16 },
-    { heading: t("vacation.employees.email"), value: (row) => row.email ?? "", width: 32 },
   ];
 
   async function exportEmployees(format: "csv" | "xlsx") {
@@ -377,6 +373,15 @@ export default function EmployeesPage() {
                     onSort={(field) => setSort((current) => nextGridSort(current, field))}
                   />
                   <SortableGridHeader
+                    field="email"
+                    label={t("vacation.employees.email")}
+                    sort={sort}
+                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.email") })}
+                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.email") })}
+                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.email") })}
+                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
+                  />
+                  <SortableGridHeader
                     field="status"
                     label={t("vacation.employees.status")}
                     sort={sort}
@@ -387,39 +392,23 @@ export default function EmployeesPage() {
                   />
                   <th scope="col" className="w-36 px-4 py-2">{t("vacation.employees.employmentStartDate")}</th>
                   <th scope="col" className="w-36 px-4 py-2">{t("vacation.employees.employmentEndDate")}</th>
-                  <SortableGridHeader
-                    field="email"
-                    label={t("vacation.employees.email")}
-                    sort={sort}
-                    sortAscendingLabel={t("grid.sortAscending", { column: t("vacation.employees.email") })}
-                    sortDescendingLabel={t("grid.sortDescending", { column: t("vacation.employees.email") })}
-                    clearSortingLabel={t("grid.clearSorting", { column: t("vacation.employees.email") })}
-                    onSort={(field) => setSort((current) => nextGridSort(current, field))}
-                  />
                 </tr>
                 <GridFilterRow visible={areFiltersVisible}>
                   <GridFilterCell />
                   <GridFilterCell />
                   <GridFilterCell />
                   <GridFilterCell>
-                    <label>
-                      <span className="sr-only">{t("vacation.employees.departmentFilter")}</span>
-                      <select
-                        value={departmentPublicId}
-                        disabled={hasDepartmentError}
-                        onChange={(event) => setDepartmentPublicId(event.target.value)}
-                        className="min-h-9 w-full min-w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                      >
+                    <ClearableSelect value={departmentPublicId} defaultValue="" disabled={hasDepartmentError} label={t("vacation.employees.departmentFilter")} clearLabel={t("vacation.employees.clearDepartmentFilter")} onChange={setDepartmentPublicId}>
                         <option value="">{t("vacation.employees.allDepartments")}</option>
                         {departments.map((department) => (
                           <option key={department.publicId} value={department.publicId}>{department.name}</option>
                         ))}
-                      </select>
-                    </label>
+                    </ClearableSelect>
                   </GridFilterCell>
-                  <GridFilterCell><label><span className="sr-only">{t("vacation.employees.statusFilter")}</span><select value={status} onChange={(event) => setStatus(event.target.value as EmployeeStatusFilter)} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allStatuses")}</option><option value="active">{t("vacation.employees.active")}</option><option value="inactive">{t("vacation.employees.inactive")}</option></select></label></GridFilterCell>
                   <GridFilterCell />
-                  <GridFilterCell><label><span className="sr-only">{t("vacation.employees.employmentEndDateState")}</span><select value={employmentEndDateState} onChange={(event) => setEmploymentEndDateState(event.target.value as "all" | "missing" | "present")} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("vacation.employees.allEndDateStates")}</option><option value="missing">{t("vacation.employees.withoutEmploymentEndDate")}</option><option value="present">{t("vacation.employees.withEmploymentEndDate")}</option></select></label></GridFilterCell>
+                  <GridFilterCell><ClearableSelect value={status} defaultValue="all" label={t("vacation.employees.statusFilter")} clearLabel={t("vacation.employees.clearStatusFilter")} onChange={(value) => setStatus(value as EmployeeStatusFilter)}><option value="all">{t("vacation.employees.allStatuses")}</option><option value="active">{t("vacation.employees.active")}</option><option value="inactive">{t("vacation.employees.inactive")}</option></ClearableSelect></GridFilterCell>
+                  <GridFilterCell />
+                  <GridFilterCell><ClearableSelect value={employmentEndDateState} defaultValue="all" label={t("vacation.employees.employmentEndDateState")} clearLabel={t("vacation.employees.clearEmploymentEndDateFilter")} onChange={(value) => setEmploymentEndDateState(value as "all" | "missing" | "present")}><option value="all">{t("vacation.employees.allEndDateStates")}</option><option value="missing">{t("vacation.employees.withoutEmploymentEndDate")}</option><option value="present">{t("vacation.employees.withEmploymentEndDate")}</option></ClearableSelect></GridFilterCell>
                   <GridFilterCell />
                 </GridFilterRow>
               </thead>
@@ -444,7 +433,7 @@ export default function EmployeesPage() {
                             : "bg-white"
                         }`}
                       >
-                        <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
+                        <td title={employee.employeeNumber} className="max-w-28 truncate whitespace-nowrap px-3 py-3 font-medium text-slate-700">
                           {employee.employeeNumber}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
@@ -456,14 +445,14 @@ export default function EmployeesPage() {
                         <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                           {employee.departmentName}
                         </td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {employee.email ?? t("vacation.employees.notProvided")}
+                        </td>
                         <td className="whitespace-nowrap px-4 py-3">
                           <EmploymentStatus status={employee.employmentStatus} />
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-slate-700">{employee.employmentStartDate ? formatPortalDate(employee.employmentStartDate) : t("vacation.employees.notProvided")}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-slate-700">{employee.employmentEndDate ? formatPortalDate(employee.employmentEndDate) : t("vacation.employees.notProvided")}</td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {employee.email ?? t("vacation.employees.notProvided")}
-                        </td>
                       </tr>
                     );
                   })}
@@ -611,6 +600,27 @@ function deleteConflictMessage(dependencies: string[] | undefined, t: (key: neve
   return safeNames.length
     ? `${t("vacation.employees.deleteConflictHeading" as never)}\n\n${t("vacation.employees.deleteConflictUses" as never)}\n${safeNames.map((name) => `• ${name}`).join("\n")}\n\n${t("vacation.employees.deleteConflictGuidance" as never)}`
     : `${t("vacation.employees.deleteReferenced" as never)} ${t("vacation.employees.deleteConflictGuidance" as never)}`;
+}
+
+function compareEmployees(left: Employee, right: Employee, sort: GridSort<EmployeeSortField> | null) {
+  const activeSort = sort ?? { field: "employeeNumber" as const, direction: "asc" as const };
+  const value = (employee: Employee) => ({
+    employeeNumber: employee.employeeNumber,
+    name: `${employee.firstName} ${employee.lastName}`,
+    department: employee.departmentName,
+    email: employee.email ?? "",
+    status: employee.employmentStatus,
+  })[activeSort.field];
+  const comparison = value(left).localeCompare(value(right), undefined, { numeric: true, sensitivity: "base" });
+  const ordered = activeSort.direction === "desc" ? -comparison : comparison;
+  return ordered || left.employeeNumber.localeCompare(right.employeeNumber, undefined, { numeric: true, sensitivity: "base" }) || left.publicId.localeCompare(right.publicId);
+}
+
+function ClearableSelect({ value, defaultValue, disabled, label, clearLabel, onChange, children }: {
+  value: string; defaultValue: string; disabled?: boolean; label: string; clearLabel: string;
+  onChange: (value: string) => void; children: ReactNode;
+}) {
+  return <div className="flex min-w-0 items-center gap-1"><label className="min-w-0 flex-1"><span className="sr-only">{label}</span><select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="min-h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm">{children}</select></label>{value !== defaultValue && <button type="button" disabled={disabled} onClick={() => onChange(defaultValue)} aria-label={clearLabel} className="inline-flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-sm hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50">×</button>}</div>;
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
