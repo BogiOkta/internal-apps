@@ -18,7 +18,7 @@ The current implemented capabilities are:
 - authenticated employee request creation, own list/detail, cancellation,
   active Leave Type options, and balance reads;
 - Administrator request listing, detail/history, approval, rejection, and
-  cancellation;
+  cancellation, protected by `vacation.requests.manage`;
 - inclusive Business Calendar calculation and transactional balance use and
   restoration.
 - employee Portal dashboard, request list, creation, details/history,
@@ -70,6 +70,14 @@ approved requests can be cancelled. Each action requires confirmation and
 refreshes the details and transition history after success. The shared
 Business Calendar supplies Vacation working-day calculations; notifications
 and configurable approval workflows are not implemented.
+
+Migration 031 introduces `vacation.requests.manage` and assigns it to the
+Administrator role. It protects only Vacation request administration (list,
+detail, history, approval, rejection, and cancellation). Existing
+Administrator access tokens must be refreshed after the migration to receive
+the new permission claim. Employee self-service and the temporary
+`identity.users.manage` authorization of Leave Policies and Leave Balances are
+unchanged.
 
 Controlled Administrator browser smoke validated authorized navigation,
 localized direct-route denial and API `403` responses for an unauthorized user,

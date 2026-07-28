@@ -41,9 +41,9 @@ working-day counting implementation of its own.
 ## Access
 
 Authenticated users may call the calculation endpoints. Administrator CRUD
-temporarily uses `identity.users.manage`, matching current Vacation request
-administration until a dedicated permission is approved. All successful
-creates, updates, and deletes write platform audit events atomically.
+uses `identity.users.manage`; Vacation request administration separately uses
+`vacation.requests.manage`. All successful creates, updates, and deletes write
+platform audit events atomically.
 
 ## Portal administration
 

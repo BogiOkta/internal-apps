@@ -154,8 +154,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 - Business Calendar has no working-Saturday, collective-vacation, regional,
   recurrence, multi-country, or multi-calendar support.
-- Vacation administration temporarily reuses `identity.users.manage`; a
-  dedicated Vacation administrator permission is not yet introduced.
+- Vacation request administration uses `vacation.requests.manage`; refreshed
+  Administrator tokens are required after migration 031. Leave Policies and
+  Leave Balances continue to use `identity.users.manage`.
 - No frontend automated-test framework is currently present.
 - Employee pagination is client-side because the current API contract intentionally
   returns a bounded unpaged result. Larger datasets require documented API

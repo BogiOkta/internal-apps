@@ -1,5 +1,6 @@
 using Dapper;
 using Npgsql;
+using System.Data;
 
 namespace InternalApps.Api.Modules.Vacation;
 
@@ -171,19 +172,17 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
                    OR employees.last_name ILIKE @SearchPattern
                    OR employees.email ILIKE @SearchPattern)
             """;
-        var parameters = new
-        {
-            query.EmployeeId,
-            query.DepartmentId,
-            query.LeaveTypeId,
-            query.Status,
-            query.DateFrom,
-            query.DateTo,
-            SearchPattern = string.IsNullOrWhiteSpace(query.Search)
-                ? null : $"%{query.Search.Trim()}%",
-            Offset = (query.Page - 1) * query.PageSize,
-            query.PageSize
-        };
+        var parameters = new DynamicParameters();
+        parameters.Add("EmployeeId", query.EmployeeId, DbType.Guid);
+        parameters.Add("DepartmentId", query.DepartmentId, DbType.Guid);
+        parameters.Add("LeaveTypeId", query.LeaveTypeId, DbType.Guid);
+        parameters.Add("Status", query.Status, DbType.String);
+        parameters.Add("DateFrom", query.DateFrom, DbType.Date);
+        parameters.Add("DateTo", query.DateTo, DbType.Date);
+        parameters.Add("SearchPattern", string.IsNullOrWhiteSpace(query.Search)
+            ? null : $"%{query.Search.Trim()}%", DbType.String);
+        parameters.Add("Offset", (query.Page - 1) * query.PageSize, DbType.Int32);
+        parameters.Add("PageSize", query.PageSize, DbType.Int32);
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var count = await connection.ExecuteScalarAsync<long>(
             new CommandDefinition($"SELECT count(*) {RequestJoins} {where}",

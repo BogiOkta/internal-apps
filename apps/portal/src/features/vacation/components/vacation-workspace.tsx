@@ -9,6 +9,7 @@ import {
 import { useTranslations } from "@/i18n/use-translations";
 import { useAuth } from "@/components/auth-provider";
 import { usersManagePermission } from "@/types/auth";
+import { vacationRequestsManagePermission } from "@/types/vacation";
 
 type VacationWorkspaceProps = {
   title: string;
@@ -35,11 +36,14 @@ export function VacationWorkspace({
       label: t("vacation.workspace.leaveTypes"),
       href: "/vacation/leave-types",
     },
-    ...(user?.permissions.includes(usersManagePermission)
+    ...(user?.permissions.includes(vacationRequestsManagePermission)
       ? [{
           label: t("vacation.admin.navigation"),
           href: "/vacation/admin/requests",
-        }, {
+        }]
+      : []),
+    ...(user?.permissions.includes(usersManagePermission)
+      ? [{
           label: t("leavePolicy.navigation"),
           href: "/vacation/admin/policies",
         }, {

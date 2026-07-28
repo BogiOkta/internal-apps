@@ -1,5 +1,19 @@
 # Internal Apps Platform change history
 
+## 2026-07-28 — Vacation request-administration permission
+
+- Added immutable migration 031 to seed `vacation.requests.manage` and assign
+  it to the Administrator role. Vacation request list, detail, history,
+  approval, rejection, and cancellation now require that dedicated policy;
+  existing Administrator tokens require refresh after the migration.
+- Updated the Portal request-administration route, navigation, and action
+  guards to use the same permission. Employee self-service, Leave Policies,
+  Leave Balances, Business Calendar, workflow behavior, and `403` handling
+  remain unchanged.
+- Corrected the pre-existing unfiltered request-administration list query to
+  bind nullable PostgreSQL filter parameters with explicit types; no request
+  contract or workflow behavior changed.
+
 ## 2026-07-28 — Organization Department administration final review and validation
 
 - Reviewed the complete uncommitted Department Administration increment

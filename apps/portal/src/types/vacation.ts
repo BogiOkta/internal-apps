@@ -152,4 +152,4 @@ export type PagedVacationRequests = {
   totalCount: number;
 };
 
-export const vacationRequestsManagePermission = "identity.users.manage";
+export const vacationRequestsManagePermission = "vacation.requests.manage";

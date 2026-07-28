@@ -1,5 +1,3 @@
-using InternalApps.Api.Modules.Identity;
-
 namespace InternalApps.Api.Modules.Vacation;
 
 internal static class LeaveRequestEndpoints
@@ -20,7 +18,7 @@ internal static class LeaveRequestEndpoints
         group.MapGet("/me/balances", ListBalancesAsync);
 
         var admin = group.MapGroup("")
-            .RequireAuthorization(IdentityPermissions.ManageUsers);
+            .RequireAuthorization(VacationPermissions.ManageRequests);
         admin.MapGet("/requests", ListAdminAsync);
         admin.MapGet("/requests/{requestId:guid}", GetAdminAsync);
         admin.MapGet("/requests/{requestId:guid}/history", ListHistoryAsync);

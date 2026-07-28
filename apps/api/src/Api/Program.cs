@@ -79,6 +79,11 @@ builder.Services.AddAuthorization(options =>
             "permission",
             VacationPermissions.ManageLeaveTypes));
     options.AddPolicy(
+        VacationPermissions.ManageRequests,
+        policy => policy.RequireClaim(
+            "permission",
+            VacationPermissions.ManageRequests));
+    options.AddPolicy(
         OrganizationPermissions.ManageEmployees,
         policy => policy.RequireClaim(
             "permission",

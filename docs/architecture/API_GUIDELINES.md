@@ -398,12 +398,12 @@ Current Vacation Leave Request endpoints:
 | `POST /api/v1/vacation/me/requests` | Linked active employee | Creates a submitted request and initial history. |
 | `POST /api/v1/vacation/me/requests/{requestId}/cancel` | Linked active employee | Cancels an own submitted or approved request. |
 | `GET /api/v1/vacation/me/balances` | Linked active employee | Lists only the current employee's persisted balances. |
-| `GET /api/v1/vacation/requests` | Administrator policy | Lists all requests with typed filters and pagination. |
-| `GET /api/v1/vacation/requests/{requestId}` | Administrator policy | Returns request details. |
-| `GET /api/v1/vacation/requests/{requestId}/history` | Administrator policy | Returns ordered transition history. |
-| `POST /api/v1/vacation/requests/{requestId}/approve` | Administrator policy | Approves a submitted request and consumes required balance. |
-| `POST /api/v1/vacation/requests/{requestId}/reject` | Administrator policy | Rejects a submitted request without changing balance. |
-| `POST /api/v1/vacation/requests/{requestId}/cancel` | Administrator policy | Cancels a submitted or approved request and restores approved balance use. |
+| `GET /api/v1/vacation/requests` | `vacation.requests.manage` | Lists all requests with typed filters and pagination. |
+| `GET /api/v1/vacation/requests/{requestId}` | `vacation.requests.manage` | Returns request details. |
+| `GET /api/v1/vacation/requests/{requestId}/history` | `vacation.requests.manage` | Returns ordered transition history. |
+| `POST /api/v1/vacation/requests/{requestId}/approve` | `vacation.requests.manage` | Approves a submitted request and consumes required balance. |
+| `POST /api/v1/vacation/requests/{requestId}/reject` | `vacation.requests.manage` | Rejects a submitted request without changing balance. |
+| `POST /api/v1/vacation/requests/{requestId}/cancel` | `vacation.requests.manage` | Cancels a submitted or approved request and restores approved balance use. |
 
 The administrative list supports employee, department, Leave Type, status,
 inclusive date-intersection, and search filters plus `page` and `pageSize`

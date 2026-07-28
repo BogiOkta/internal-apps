@@ -111,6 +111,7 @@ Current module permission:
 | `organization.employees.manage` | Employee directory reads remain available to authenticated users | Seeded only to the existing `Administrator` role by migration 008 |
 | `organization.user-employee-links.manage` | A user may read only their own employee relationship without this permission | Seeded only to the existing `Administrator` role by migration 009 |
 | `identity.users.manage` | Users cannot list or manage other accounts without this permission | Seeded only to the existing `Administrator` role by migration 010 |
+| `vacation.requests.manage` | Vacation request administration is unavailable without this permission; employee self-service remains linked-active-employee scoped | Seeded only to the existing `Administrator` role by migration 031 |
 
 After migration 008, existing Administrator access tokens must be refreshed or
 reissued before the new employee-management permission claim is available.
@@ -118,14 +119,16 @@ The same refresh or reissue requirement applies after migration 009 for
 user–employee link management.
 After migration 010, Administrator tokens likewise require refresh or reissue
 before the user-management permission is present.
+After migration 031, Administrator tokens likewise require refresh or reissue
+before the Vacation request-administration permission is present.
 
 Vacation employee self-service requires an authenticated user explicitly
 linked to an active Organization employee. The employee is never accepted from
-the request body. Current Vacation request administration reuses the existing
-Administrator-only `identity.users.manage` policy; this is a temporary reuse
-of the platform-level Administrator permission until a dedicated Vacation
-request-management permission is approved. It remains a permission-claim check
-and does not hard-code a role name or username at runtime.
+the request body. Vacation request administration requires the dedicated
+`vacation.requests.manage` policy. It remains a permission-claim check and
+does not hard-code a role name or username at runtime. Leave Policies, Leave
+Balances, and Business Calendar administration continue to use
+`identity.users.manage`.
 
 Request creation and each status transition write the business record,
 required balance mutation, append-only transition history, and platform audit

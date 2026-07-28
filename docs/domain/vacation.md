@@ -321,9 +321,9 @@ day. The persisted Business Calendar result is the value used by later balance
 deduction and restoration. The database exclusion constraint remains the final
 race-safe overlap protection for submitted and approved requests.
 
-Administrator operations temporarily reuse the existing Administrator-only
-platform permission `identity.users.manage`, without username or role-name
-checks, until a dedicated Vacation request-management permission is approved.
+Administrator operations require the dedicated
+`vacation.requests.manage` permission, without username or role-name checks.
+Leave Policies and Leave Balances continue to use `identity.users.manage`.
 Approval locks the request and any required employee/Leave Type/year balance.
 It increments `used_days` only when sufficient balance exists. Cancelling an
 approved request reverses that use; cancelling a submitted request and
