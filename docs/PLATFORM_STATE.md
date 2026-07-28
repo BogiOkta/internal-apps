@@ -4,11 +4,11 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Portal administration UI foundation
-  stabilization for Organization Employees/Departments and Business Calendar
-  Non-working Days. Shared `AdministrativeGridShell` viewport-fill behavior is
-  gated behind `fillViewport` + `AdministrationPageBody`. This scope was
-  explicitly approved by the platform owner at session start.
+- Latest functional milestone: Portal Settings page and authenticated shell
+  simplification. Language and appearance preferences moved to `/settings`;
+  page headers no longer repeat user identity; sidebar footer keeps Logout
+  only. This Portal shell and settings scope was explicitly approved by the
+  platform owner at session start.
 
 ## Platform foundation
 
@@ -32,19 +32,24 @@
   using `PortalDateInput` (`dd.MM.yyyy.`) rather than native date inputs.
 - Shared Portal UI: administrative grid pagination (20 default; 20/50/100),
   form field conventions, shared primary/secondary/danger button utilities,
-  global appearance, `AppCalendar`, `DateRangePicker`, `PortalDateInput`,
-  `AdministrationPageBody`, and the mandatory shared Serbian Latin
-  date-display formatter are available. Organization Employees and
-  Departments share the canonical administration header/toolbar/shell/footer
-  /side-panel contract with stable loading, empty, error, and no-selection
-  geometry. Remaining Portal areas (Identity, Leave Types/Policies/Balances,
-  Vacation request UIs, Dashboard, User–Employee links) are inventoried in
-  `docs/standards/UI_GUIDELINES.md` §7.5 and are not migrated in this
-  increment.
+  global appearance and locale providers, `AppCalendar`, `DateRangePicker`,
+  `PortalDateInput`, `AdministrationPageBody`, and the mandatory shared
+  Serbian Latin date-display formatter are available. Language and appearance
+  preferences are edited on `/settings` and reuse the canonical
+  `LocaleProvider` / `AppearanceProvider` storage keys. Organization
+  Employees and Departments share the canonical administration
+  header/toolbar/shell/footer/side-panel contract with stable loading, empty,
+  error, and no-selection geometry. Remaining Portal areas (Identity, Leave
+  Types/Policies/Balances, Vacation request UIs, Dashboard, User–Employee
+  links) are inventoried in `docs/standards/UI_GUIDELINES.md` §7.5 and are
+  not migrated in this increment.
 - Portal navigation keeps Organization master data and Business Calendar
-  administration in a shared Company administration section. Vacation
-  navigation is limited to leave-request, Leave Type, Leave Policy, and Leave
-  Balance work.
+  administration in a shared Company administration section. Settings is a
+  dedicated authenticated navigation item at `/settings`. Vacation navigation
+  is limited to leave-request, Leave Type, Leave Policy, and Leave Balance
+  work. Logout remains the persistent sidebar footer action; language,
+  appearance, and informational user/role cards are not permanently rendered
+  in the sidebar. Page headers do not repeat the current user identity.
 
 ## Vacation module
 
@@ -64,6 +69,23 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
+- Portal Settings and shell simplification: Portal strict TypeScript passed;
+  Portal production build passed (`/settings` route included); focused Portal
+  source/contract tests passed
+  (`PortalNavigationContractTests`, `PortalAdministrationUiContractTests`,
+  `BusinessCalendarPortalContractTests`), 15/15. `git diff --check` clean for
+  the changed scope. Controlled browser smoke against fresh `internal.ps1`
+  services passed 21/21 for: no page-header Administrator/admin identity,
+  no permanent sidebar language/appearance selects, Settings navigation
+  visible and active on `/settings`, Logout retained at the sidebar footer,
+  Serbian Latin and English switching, System/Light/Dark switching,
+  preference survival across navigation and reload, business-page language
+  and appearance reflection, desktop sidebar and mobile navigation, no
+  document-level horizontal overflow, keyboard focus movement, and a clean
+  browser console (excluding pre-existing favicon/`401` silent-refresh
+  noise). Preference state reused `LocaleProvider` /
+  `AppearanceProvider` and `internal-apps.locale` /
+  `internal-apps.appearance` storage keys.
 - Portal administration UI foundation: Portal strict TypeScript passed;
   Portal production build passed; focused source/contract tests passed
   (`PortalAdministrationUiContractTests`, updated
@@ -179,13 +201,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Portal administration UI foundation stabilization for Organization Employees,
-Departments, and Business Calendar Non-working Days. The Department regression
-root cause was unconditional `lg:h-0` on `AdministrativeGridShell` without the
-flex parent chain; `fillViewport` plus `AdministrationPageBody` is now
-required. Business Calendar user-facing date entry uses `PortalDateInput`.
-Native date inputs remain only in unmigrated Vacation admin pages listed in
-the UI guidelines inventory.
+Portal Settings page and authenticated shell simplification: preferences on
+`/settings`, no permanent sidebar language/appearance controls, no page-header
+user identity repetition, Logout retained as the sidebar footer action.
 
 ## Next task
 

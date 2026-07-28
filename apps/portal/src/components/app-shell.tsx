@@ -8,18 +8,8 @@ import {
   type ReactNode,
   type SVGProps,
 } from "react";
-import {
-  appearances,
-  useAppearance,
-  type Appearance,
-} from "@/components/appearance-provider";
 import { useAuth } from "@/components/auth-provider";
-import {
-  localeDisplayNames,
-  localizeApplication,
-  supportedLocales,
-  type SupportedLocale,
-} from "@/i18n/translations";
+import { localizeApplication } from "@/i18n/translations";
 import { useTranslations } from "@/i18n/use-translations";
 import { getAssignedApplications } from "@/services/applications";
 import type { AssignedApplication } from "@/types/application";
@@ -213,13 +203,14 @@ export function AppShell({
         )}
 
         <header className="border-b border-slate-200 bg-white">
-          {headerActions ? <AdministrationPageHeader title={title} description={description} actions={headerActions} identity={<div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-900">
-                {user.displayName}
-                </p>
-                <p className="truncate text-xs text-slate-500">{user.username}</p>
-              </div>} /> : <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-7">
-            <div>
+          {headerActions ? (
+            <AdministrationPageHeader
+              title={title}
+              description={description}
+              actions={headerActions}
+            />
+          ) : (
+            <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6 lg:px-7">
               <h1 className="text-xl font-semibold tracking-tight text-slate-950">
                 {title}
               </h1>
@@ -229,15 +220,7 @@ export function AppShell({
                 </p>
               )}
             </div>
-            <div className="hidden min-w-0 text-right xl:block">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-900">
-                {user.displayName}
-                </p>
-                <p className="truncate text-xs text-slate-500">{user.username}</p>
-              </div>
-            </div>
-          </div>}
+          )}
         </header>
 
         {commandBar && (
@@ -280,9 +263,7 @@ function Navigation({
   onLogout,
   user,
 }: NavigationProps) {
-  const { locale, setLocale, t } = useTranslations();
-  const { appearance, setAppearance } = useAppearance();
-  const primaryRole = user.roles[0] ?? t("shell.noRole");
+  const { t } = useTranslations();
   const showDevelopmentNavigation =
     process.env.NODE_ENV !== "production" ||
     user.permissions.includes(usersManagePermission);
@@ -415,65 +396,34 @@ function Navigation({
             <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {t("navigation.development")}
             </p>
-            <NavLink href="/demo/calendar"
+            <NavLink
+              href="/demo/calendar"
               isActive={isRouteActive(currentPath, "/demo/calendar")}
               label={t("navigation.calendarDemo")}
               icon={<CalendarIcon />}
-              onNavigate={onNavigate} />
+              onNavigate={onNavigate}
+            />
           </>
         )}
+
+        <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          {t("navigation.settings")}
+        </p>
+        <NavLink
+          href="/settings"
+          isActive={isRouteActive(currentPath, "/settings")}
+          label={t("navigation.settings")}
+          icon={<SettingsIcon />}
+          onNavigate={onNavigate}
+        />
       </nav>
 
       <div className="border-t border-slate-300 p-3">
-        <label className="mb-2 block">
-          <span className="mb-1 block text-[11px] font-medium text-slate-600">
-            {t("appearance.label")}
-          </span>
-          <select aria-label={t("appearance.label")} value={appearance}
-            onChange={(event) => setAppearance(event.target.value as Appearance)}
-            className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
-            {appearances.map((value) => (
-              <option key={value} value={value}>
-                {t(`appearance.${value}` as
-                  | "appearance.light"
-                  | "appearance.dark"
-                  | "appearance.system")}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="mb-2 block">
-          <span className="mb-1 block text-[11px] font-medium text-slate-600">
-            {t("language.label")}
-          </span>
-          <select
-            aria-label={t("language.label")}
-            value={locale}
-            onChange={(event) =>
-              setLocale(event.target.value as SupportedLocale)
-            }
-            className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-          >
-            {supportedLocales.map((supportedLocale) => (
-              <option key={supportedLocale} value={supportedLocale}>
-                {localeDisplayNames[supportedLocale]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
-          <p className="truncate text-sm font-medium text-slate-900">
-            {user.displayName}
-          </p>
-          <p className="mt-0.5 truncate text-xs text-slate-500">
-            {user.username} · {primaryRole}
-          </p>
-        </div>
         <button
           type="button"
           onClick={onLogout}
           disabled={isLoggingOut}
-          className="mt-2 flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <LogoutIcon />
           {isLoggingOut ? t("shell.loggingOut") : t("shell.logout")}
@@ -642,6 +592,15 @@ function LogoutIcon() {
   return (
     <IconBase>
       <path d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" />
+    </IconBase>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <IconBase>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.2.7.8 1.1 1.5 1.1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </IconBase>
   );
 }

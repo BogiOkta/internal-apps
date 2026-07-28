@@ -17,6 +17,33 @@ public sealed class PortalNavigationContractTests
     }
 
     [Fact]
+    public void Shell_ExposesSettingsWithoutPermanentPreferenceControls()
+    {
+        var shell = ReadRepositoryFile("apps", "portal", "src", "components", "app-shell.tsx");
+        var settings = ReadRepositoryFile("apps", "portal", "src", "app", "settings", "page.tsx");
+        var translations = ReadRepositoryFile("apps", "portal", "src", "i18n", "translations.ts");
+        var appearanceProvider = ReadRepositoryFile(
+            "apps", "portal", "src", "components", "appearance-provider.tsx");
+
+        Assert.Contains("href=\"/settings\"", shell);
+        Assert.Contains("navigation.settings", shell);
+        Assert.Contains("shell.logout", shell);
+        Assert.DoesNotContain("useAppearance()", shell);
+        Assert.DoesNotContain("setLocale(", shell);
+        Assert.DoesNotContain("user.displayName", shell);
+        Assert.DoesNotContain("user.username", shell);
+
+        Assert.Contains("useAppearance()", settings);
+        Assert.Contains("setLocale(", settings);
+        Assert.Contains("setAppearance(", settings);
+        Assert.Contains("appearanceStorageKey", appearanceProvider);
+        Assert.Contains("\"settings.title\": \"Settings\"", translations);
+        Assert.Contains("\"settings.title\": \"Podešavanja\"", translations);
+        Assert.Contains("\"navigation.settings\": \"Settings\"", translations);
+        Assert.Contains("\"navigation.settings\": \"Podešavanja\"", translations);
+    }
+
+    [Fact]
     public void VacationWorkspace_ContainsOnlyVacationNavigation()
     {
         var workspace = ReadRepositoryFile("apps", "portal", "src", "features", "vacation",

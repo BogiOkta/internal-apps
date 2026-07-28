@@ -56,6 +56,7 @@ Current locale rules:
 - supported locales are Serbian Latin (`sr-Latn`) and English (`en`);
 - Serbian Latin is the default;
 - the selected locale is stored locally in the browser and requires no page reload;
+- language and appearance preferences are changed on `/settings`;
 - language selectors use language names (`Srpski`, `English`), never country flags;
 - known application codes may override only API-provided display name and description;
 - unknown application codes retain their API-provided display values;
@@ -143,15 +144,19 @@ The root authenticated layout owns the shell. Module pages provide page content 
 
 ### 2.1 Current authenticated shell
 
-`src/components/app-shell.tsx` is the shared authenticated shell used by Dashboard and Vacation. It:
+`src/components/app-shell.tsx` is the shared authenticated shell used by Dashboard, Vacation, Company administration, and Settings. It:
 
 - resolves the existing authentication session and redirects unauthenticated users to `/login`;
 - loads assigned applications once from `GET /api/v1/me/applications`;
 - renders desktop sidebar navigation and a mobile navigation drawer from the same data;
-- provides page title, optional description, current-user summary, and logout;
+- provides page title, optional description, optional header actions, and logout;
 - exposes application loading, failure, empty, and loaded states to page content without a global store.
 
-Dashboard is always a platform navigation item. Application links and routes come from the assigned-applications response and are never inferred from username or role. Desktop and mobile navigation use the same active-route rules and close the mobile drawer after navigation.
+Page headers show title, optional description, and optional actions only. They do not repeat the authenticated user's display name or username; identity remains available through auth context for pages that need it (for example dashboard welcome text).
+
+Language and appearance preferences are edited on `/settings`. The sidebar does not permanently render language or appearance selectors, and it does not show an informational user/role card. Logout remains the stable sidebar footer action.
+
+Dashboard is always a platform navigation item. Settings is available to every authenticated Portal user and appears in a dedicated Settings section near the bottom of primary navigation, above Logout. Application links and routes come from the assigned-applications response and are never inferred from username or role. Desktop and mobile navigation use the same active-route rules and close the mobile drawer after navigation.
 
 Business pages follow this hierarchy:
 
@@ -259,10 +264,14 @@ Module-specific components stay under `src/features/<module>/components`.
 ## 5. Light and Dark Modes
 
 Both light and dark modes are supported through semantic design tokens.
-The Portal shell owns the single Light/Dark/System appearance selector. The
-choice is persisted for the entire Portal and System follows the browser
-preference. Feature pages and shared components consume the resolved platform
-appearance; they do not introduce page-local theme state.
+The Portal owns a single Light/Dark/System appearance preference through
+`AppearanceProvider` (`internal-apps.appearance` local storage). Users change
+that preference on `/settings`. The choice is persisted for the entire Portal
+and System follows the browser preference. Feature pages and shared components
+consume the resolved platform appearance; they do not introduce page-local
+theme state. Language preference is owned by `LocaleProvider`
+(`internal-apps.locale`) and is also changed on `/settings`. Do not permanently
+render language or appearance controls in the sidebar.
 
 Rules:
 

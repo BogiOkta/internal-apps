@@ -1,5 +1,16 @@
 # Internal Apps Platform change history
 
+## 2026-07-28 — Portal Settings and shell simplification
+
+- Added authenticated `/settings` for language (Serbian Latin / English) and
+  appearance (System / Light / Dark), reusing the existing `LocaleProvider`
+  and `AppearanceProvider` persistence keys without a second preference state.
+- Simplified the authenticated shell: page headers no longer repeat the
+  current user identity; sidebar language, appearance, and informational
+  user/role controls were removed; Logout remains the stable sidebar footer
+  action; Settings navigation is available to every authenticated user.
+- Updated `UI_GUIDELINES.md` and focused Portal navigation contract tests.
+
 ## 2026-07-28 — Portal administration UI foundation stabilization
 
 - Fixed `AdministrativeGridShell` so viewport-fill height collapse (`lg:h-0`)
@@ -23,6 +34,7 @@
   native-date prohibition, administration-page structure, required states, and
   an inventory of remaining unmigrated Portal areas.
 - Added focused Portal administration UI source/contract tests.
+
 
 ## 2026-07-28 — Vacation request-administration permission
 
