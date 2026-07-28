@@ -345,8 +345,10 @@ timestamps. Serbian Latin display is fixed across the Portal: a date is
 values remain ISO; pages must not reimplement display formatting with local
 `Intl` or string-formatting code. Editable date fields use the shared
 `PortalDateInput`: both visible display and editable keyboard input are
-`dd.MM.yyyy.`. Users type digits only; the component advances day/month/year
-segments and renders separators automatically. The calendar picker and keyboard
+`dd.MM.yyyy.`. Users type digits only; initial focus selects the day segment,
+and each completed segment advances day/month/year while separators render
+automatically. Arrow keys move predictably between segments, Tab keeps native
+form navigation, and the optional clear command remains available. The calendar picker and keyboard
 entry are equivalent paths, with Serbian Latin labels and Monday as the first
 day. Invalid calendar dates are rejected adjacent to the field and nullable
 values remain empty. API date-only transport remains ISO `yyyy-MM-dd`;
@@ -502,6 +504,27 @@ standard right-side details/create/edit panel and remain enforced by the API.
 ### 7.3 Narrow screens
 
 Prioritize essential columns, allow controlled horizontal scrolling, or provide a card/list representation. Do not shrink text to unreadable sizes. Sorting and filters must remain reachable.
+
+### 7.4 Administration-page layout contract
+
+Organization administration pages use `AdministrationPageHeader` through the
+Portal shell and `AdministrativeGridShell` for their working area. The header
+keeps the title and description on the left and places the primary New action,
+then Refresh, on the right; actions wrap below the description on narrow
+screens. Search, filter commands, exports, and optional result context belong
+in `AdministrativeGridToolbar` inside the bordered grid card, in that order.
+
+The shell owns the rounded border, elevation, internal table scrolling,
+responsive grid/panel stacking, and desktop side-panel width. Table headers
+remain sticky inside the viewport. `GridPagination` is the sole list footer:
+its range summary is on the left and page size plus navigation are on the
+right. Do not add a second record-count or selection-summary row that repeats
+the total.
+
+Details, create, and edit content use the shell side panel so they share the
+grid card's border, radius, elevation, padding, heading spacing, and responsive
+behavior. Domain pages own their fields, columns, data operations, and
+permission-aware actions, not their structural layout.
 
 ## 8. Calendar
 

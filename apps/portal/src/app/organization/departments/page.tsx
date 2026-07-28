@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import {
+  AdministrativeGridShell,
   GridFilterCell,
   GridFilterRow,
-  GridFooter,
   GridStateRows,
-  GridToolbarActions,
   nextGridSort,
   SortableGridHeader,
   type GridSort,
 } from "@/components/admin-data-grid";
+import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import { GridPagination } from "@/components/grid-pagination";
 import { DepartmentForm } from "@/features/organization/components/department-form";
@@ -194,32 +194,16 @@ export default function DepartmentsPage() {
     <CompanyAdministrationWorkspace
       title={t("organization.departments.title")}
       description={t("organization.departments.description")}
-      commandBar={
-        <DepartmentCommandBar
-          isRefreshing={isLoading}
-          search={search}
-          canManage={canManage}
-          activeFilterCount={activeFilterCount}
-          areFiltersVisible={areFiltersVisible}
-          exportDisabled={departments.length === 0}
-          onNew={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }}
-          onRefresh={() => setRefreshVersion((value) => value + 1)}
-          onSearchChange={setSearch}
-          onToggleFilters={() => setAreFiltersVisible((visible) => !visible)}
-          onClearFilters={() => setStatus("all")}
-          onExportCsv={() => void exportDepartments("csv")}
-          onExportExcel={() => void exportDepartments("xlsx")}
-        />
-      }
+      headerActions={<><>{canManage && <button type="button" onClick={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }} className="min-h-9 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">{t("organization.departments.new")}</button>}</><button type="button" onClick={() => setRefreshVersion((value) => value + 1)} disabled={isLoading} className="min-h-9 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50">{isLoading ? t("organization.departments.refreshing") : t("organization.departments.refresh")}</button></>}
+      contentFillsViewport
     >
       <div className="space-y-3">
         {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
         {writeError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
         {exportError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{departments.length === 0 ? t("grid.noExportRows") : t("grid.exportFailure")}</div>}
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <section aria-label={t("organization.departments.tableLabel")} className="min-w-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm [contain:paint]">
-            <div className="overflow-x-auto">
-              <table aria-busy={isLoading} className="w-full min-w-[620px] border-collapse text-left text-sm">
+        <AdministrativeGridShell ariaLabel={t("organization.departments.tableLabel")}
+          toolbar={<AdministrativeGridToolbar search={search} searchLabel={t("organization.departments.searchLabel")} searchPlaceholder={t("organization.departments.searchPlaceholder")} onSearchChange={setSearch} activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={departments.length === 0} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={() => setAreFiltersVisible((visible) => !visible)} onClearFilters={() => setStatus("all")} onExportCsv={() => void exportDepartments("csv")} onExportExcel={() => void exportDepartments("xlsx")} />}
+          viewport={<table aria-busy={isLoading} className="w-full min-w-[620px] border-collapse text-left text-sm">
                 <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
                   <tr>
                     <SortableGridHeader field="code" label={t("organization.departments.code")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.code") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.code") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.code") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
@@ -246,24 +230,16 @@ export default function DepartmentsPage() {
                     </tr>;
                   })}
                 </tbody>
-              </table>
-            </div>
-            <GridPagination page={page} pageSize={pageSize} totalCount={departments.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />
-            <GridFooter countLabel={t("organization.departments.records", { count: departments.length })} selectionLabel={selectedDepartment ? t("organization.departments.selected", { name: selectedDepartment.name }) : t("organization.departments.selectionHint")} />
-          </section>
-          <aside aria-label={t("organization.departments.details")} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+              </table>}
+          pagination={<GridPagination page={page} pageSize={pageSize} totalCount={departments.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />}
+          detailsPanel={<div aria-label={t("organization.departments.details")}>
             <h2 className="mb-4 text-lg font-semibold text-slate-950">{panelMode === "create" ? t("organization.departments.new") : panelMode === "edit" ? t("organization.departments.edit") : t("organization.departments.details")}</h2>
             {panelMode === "create" ? <DepartmentForm mode="create" onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} /> : panelMode === "edit" && selectedDepartment ? <DepartmentForm mode="edit" department={selectedDepartment} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} /> : selectedDepartment ? <div className="space-y-3 text-sm"><Detail label={t("organization.departments.code")} value={selectedDepartment.code} /><Detail label={t("organization.departments.name")} value={selectedDepartment.name} /><Detail label={t("organization.departments.status")} value={selectedDepartment.isActive ? t("organization.departments.active") : t("organization.departments.inactive")} />{canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("organization.departments.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedDepartment.isActive ? t("organization.departments.deactivate") : t("organization.departments.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className="min-h-9 rounded-md border border-red-300 px-3 text-sm font-medium text-red-700">{t("organization.departments.delete")}</button></div>{isConfirmingStatus && <Confirmation message={selectedDepartment.isActive ? t("organization.departments.deactivateConfirmation") : t("organization.departments.activateConfirmation")} confirmLabel={t("organization.departments.confirm")} cancelLabel={t("organization.departments.cancel")} onConfirm={() => void changeStatus()} onCancel={() => setIsConfirmingStatus(false)} />}{isConfirmingDelete && <Confirmation destructive message={t("organization.departments.deleteConfirmation")} confirmLabel={t("organization.departments.delete")} cancelLabel={t("organization.departments.cancel")} pending={isDeleting} onConfirm={() => void remove()} onCancel={() => setIsConfirmingDelete(false)} />}</div>}</div> : <p className="text-sm text-slate-600">{t("organization.departments.selectForDetails")}</p>}
-          </aside>
-        </div>
+          </div>}
+        />
       </div>
     </CompanyAdministrationWorkspace>
   );
-}
-
-function DepartmentCommandBar({ isRefreshing, search, canManage, activeFilterCount, areFiltersVisible, exportDisabled, onNew, onRefresh, onSearchChange, onToggleFilters, onClearFilters, onExportCsv, onExportExcel }: { isRefreshing: boolean; search: string; canManage: boolean; activeFilterCount: number; areFiltersVisible: boolean; exportDisabled: boolean; onNew: () => void; onRefresh: () => void; onSearchChange: (value: string) => void; onToggleFilters: () => void; onClearFilters: () => void; onExportCsv: () => void; onExportExcel: () => void; }) {
-  const { t } = useTranslations();
-  return <div className="flex w-full flex-wrap items-center gap-2">{canManage && <button type="button" onClick={onNew} className="min-h-9 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white">{t("organization.departments.new")}</button>}<button type="button" onClick={onRefresh} disabled={isRefreshing} className="min-h-9 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 disabled:opacity-50">{isRefreshing ? t("organization.departments.refreshing") : t("organization.departments.refresh")}</button><div className="ml-0 flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:ml-auto lg:justify-end"><label className="w-full min-w-0 flex-1 sm:min-w-[210px] lg:max-w-xs"><span className="sr-only">{t("organization.departments.searchLabel")}</span><input type="search" maxLength={100} value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("organization.departments.searchPlaceholder")} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100" /></label><GridToolbarActions activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={exportDisabled} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={onToggleFilters} onClearFilters={onClearFilters} onExportCsv={onExportCsv} onExportExcel={onExportExcel} /></div></div>;
 }
 
 function DepartmentStatus({ isActive }: { isActive: boolean }) {

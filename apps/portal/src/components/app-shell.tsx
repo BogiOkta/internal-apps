@@ -26,6 +26,7 @@ import type { AssignedApplication } from "@/types/application";
 import type { CurrentUser } from "@/types/auth";
 import { usersManagePermission } from "@/types/auth";
 import { userEmployeeLinksManagePermission } from "@/types/organization";
+import { AdministrationPageHeader } from "@/components/administration-page-header";
 
 type AppShellContext = {
   applications: AssignedApplication[];
@@ -38,6 +39,7 @@ type AppShellProps = {
   title: string;
   description?: string;
   commandBar?: ReactNode;
+  headerActions?: ReactNode;
   secondaryNavigation?: ReactNode;
   contentFillsViewport?: boolean;
   children: ReactNode | ((context: AppShellContext) => ReactNode);
@@ -58,6 +60,7 @@ export function AppShell({
   title,
   description,
   commandBar,
+  headerActions,
   secondaryNavigation,
   contentFillsViewport = false,
   children,
@@ -210,7 +213,12 @@ export function AppShell({
         )}
 
         <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-7">
+          {headerActions ? <AdministrationPageHeader title={title} description={description} actions={headerActions} identity={<div className="min-w-0">
+                <p className="truncate text-sm font-medium text-slate-900">
+                {user.displayName}
+                </p>
+                <p className="truncate text-xs text-slate-500">{user.username}</p>
+              </div>} /> : <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-7">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-950">
                 {title}
@@ -229,7 +237,7 @@ export function AppShell({
                 <p className="truncate text-xs text-slate-500">{user.username}</p>
               </div>
             </div>
-          </div>
+          </div>}
         </header>
 
         {commandBar && (

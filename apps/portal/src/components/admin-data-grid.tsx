@@ -44,7 +44,7 @@ export function AdministrativeGridShell({
         {footer}
       </section>
       {detailsPanel ? (
-        <aside className="min-h-0 overflow-y-auto rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
+        <aside className="min-h-0 overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-sm">
           {detailsPanel}
         </aside>
       ) : null}

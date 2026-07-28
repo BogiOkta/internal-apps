@@ -5,13 +5,12 @@ import {
   AdministrativeGridShell,
   GridFilterCell,
   GridFilterRow,
-  GridFooter,
   GridStateRows,
-  GridToolbarActions,
   nextGridSort,
   SortableGridHeader,
   type GridSort,
 } from "@/components/admin-data-grid";
+import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { GridPagination } from "@/components/grid-pagination";
 import { useAuth } from "@/components/auth-provider";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
@@ -308,7 +307,7 @@ export default function EmployeesPage() {
     <CompanyAdministrationWorkspace
       title={t("vacation.employees.title")}
       description={t("vacation.employees.description")}
-      commandBar={commandBar}
+      headerActions={commandBar}
       contentFillsViewport
     >
       <div className="space-y-3 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
@@ -465,7 +464,6 @@ export default function EmployeesPage() {
             </table>
           }
           pagination={<GridPagination page={page} pageSize={pageSize} totalCount={employees.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />}
-          footer={<GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: [selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ") }) : t("vacation.employees.selectionHint")} />}
           detailsPanel={
             <div aria-label={t("vacation.employees.details")}>
           <h2 className="mb-4 text-lg font-semibold text-slate-950">{panelMode === "create" ? t("vacation.employees.new") : panelMode === "edit" ? t("vacation.employees.edit") : t("vacation.employees.details")}</h2>
@@ -517,27 +515,7 @@ function EmployeeGridToolbar({
 }) {
   const { t } = useTranslations();
 
-  return (
-    <div className="flex w-full flex-wrap items-center gap-2">
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        <label className="w-full min-w-0 flex-1 sm:min-w-[210px] lg:max-w-xs">
-          <span className="sr-only">
-            {t("vacation.employees.searchLabel")}
-          </span>
-          <input
-            type="search"
-            maxLength={100}
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={t("vacation.employees.searchPlaceholder")}
-            className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-
-        <GridToolbarActions activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={exportDisabled} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={onToggleFilters} onClearFilters={onClearFilters} onExportCsv={onExportCsv} onExportExcel={onExportExcel} />
-      </div>
-    </div>
-  );
+  return <AdministrativeGridToolbar search={search} searchLabel={t("vacation.employees.searchLabel")} searchPlaceholder={t("vacation.employees.searchPlaceholder")} onSearchChange={onSearchChange} activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={exportDisabled} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={onToggleFilters} onClearFilters={onClearFilters} onExportCsv={onExportCsv} onExportExcel={onExportExcel} />;
 }
 
 function EmploymentStatus({
