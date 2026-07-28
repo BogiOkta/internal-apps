@@ -4,10 +4,13 @@ import type { ProblemDetails } from "@/types/auth";
 import type {
   Department,
   DepartmentSort,
+  DepartmentStatusFilter,
   Employee,
   EmployeeSort,
   EmployeeStatusFilter,
+  CreateDepartmentRequest,
   CreateEmployeeRequest,
+  UpdateDepartmentRequest,
   UpdateEmployeeRequest,
   UserEmployeeLink,
   UserEmployeeLinkOptions,
@@ -17,6 +20,7 @@ const apiBaseUrl = getApiBaseUrl();
 
 type DepartmentQuery = {
   search?: string;
+  status?: DepartmentStatusFilter;
   sort?: DepartmentSort;
 };
 
@@ -40,6 +44,93 @@ export async function getDepartments(
     accessToken,
     query,
     signal,
+  );
+}
+
+export async function createDepartment(
+  accessToken: string,
+  request: CreateDepartmentRequest,
+): Promise<Department> {
+  return writeDepartment("/api/v1/organization/departments", accessToken, "POST", request);
+}
+
+export async function updateDepartment(
+  accessToken: string,
+  publicId: string,
+  request: UpdateDepartmentRequest,
+): Promise<Department> {
+  return writeDepartment(
+    `/api/v1/organization/departments/${encodeURIComponent(publicId)}`,
+    accessToken,
+    "PUT",
+    request,
+  );
+}
+
+export async function activateDepartment(
+  accessToken: string,
+  publicId: string,
+): Promise<Department> {
+  return writeDepartment(
+    `/api/v1/organization/departments/${encodeURIComponent(publicId)}/activate`,
+    accessToken,
+    "POST",
+  );
+}
+
+export async function deactivateDepartment(
+  accessToken: string,
+  publicId: string,
+): Promise<Department> {
+  return writeDepartment(
+    `/api/v1/organization/departments/${encodeURIComponent(publicId)}/deactivate`,
+    accessToken,
+    "POST",
+  );
+}
+
+export async function deleteDepartment(
+  accessToken: string,
+  publicId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/organization/departments/${encodeURIComponent(publicId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      credentials: "include",
+    },
+  );
+  if (response.ok) return;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(
+    problem?.detail ?? problem?.title ?? "The department could not be deleted.",
+    problem ?? undefined,
+    response.status,
+  );
+}
+
+async function writeDepartment(
+  path: string,
+  accessToken: string,
+  method: "POST" | "PUT",
+  body?: CreateDepartmentRequest | UpdateDepartmentRequest,
+): Promise<Department> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    credentials: "include",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (response.ok) return (await response.json()) as Department;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(
+    problem?.detail ?? problem?.title ?? "The department could not be saved.",
+    problem ?? undefined,
+    response.status,
   );
 }
 

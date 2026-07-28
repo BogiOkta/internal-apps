@@ -102,6 +102,44 @@ queryable for historical use. Optional email addresses are unique
 case-insensitively when present. When both employment dates are supplied, the
 end date cannot precede the start date.
 
+## Department administration
+
+Department administration follows the Employee administration pattern.
+Creation, editing, activation, deactivation, and controlled deletion require
+`organization.departments.manage`, seeded by migration 030 only to the
+existing `Administrator` role. Existing Administrator tokens must be
+refreshed or reissued after that migration.
+
+Department code is supplied on creation and is immutable thereafter, mirroring
+employee number. Name is editable; status changes use explicit activate and
+deactivate commands. `GET /api/v1/organization/departments` accepts an
+optional `status` filter (`active`, `inactive`, `all`); an omitted value
+preserves the pre-administration contract and returns only active
+departments, so the existing employee directory and employee-creation
+dropdown are unaffected. Department code, name, and status sorts are fixed,
+allowlisted contracts with deterministic tie-breakers, matching the employee
+list. Repeating a state command for the current state returns the current
+record without an update or a new audit event.
+
+Administrators may delete only an unreferenced department. Departments have a
+single same-module dependency, `organization.employees.department_id`, so the
+owner-controlled `organization.delete_unreferenced_department(uuid)` function
+checks that dependency directly instead of using the cross-schema permanent
+marker mechanism built for employee deletion; that mechanism exists because
+employee dependents span multiple module schemas that Organization does not
+own, which is not the case for departments. A dependency returns `409
+department_delete_conflict` with the versioned internal
+`department_delete_conflict:v1:Organization employee` message token; the API
+parses only that controlled grammar and exposes only its fixed allowlist of
+business labels, matching the employee delete-conflict contract. The
+department must be deactivated instead. The employee-to-department foreign key
+remains `ON DELETE NO ACTION`, unchanged by this migration.
+
+Every successful mutation and its shared audit event commit in one
+transaction. Every create, update, activate, deactivate, and delete produces
+an `organization.departments.*` audit event with `department` as the target
+type.
+
 ## User–employee relationship
 
 Identity owns users and Organization owns employees. Core owns the optional

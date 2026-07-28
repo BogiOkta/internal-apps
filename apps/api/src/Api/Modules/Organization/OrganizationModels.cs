@@ -3,7 +3,42 @@ namespace InternalApps.Api.Modules.Organization;
 internal sealed record DepartmentResponse(
     Guid PublicId,
     string Code,
+    string Name,
+    bool IsActive);
+
+internal sealed record CreateDepartmentRequest(
+    string? Code,
+    string? Name,
+    bool? IsActive);
+
+internal sealed record UpdateDepartmentRequest(
+    string? Name);
+
+internal sealed record DepartmentCommand(
     string Name);
+
+internal sealed record CreateDepartmentCommand(
+    string Code,
+    string Name,
+    bool IsActive);
+
+internal enum DepartmentWriteStatus
+{
+    Success,
+    ValidationFailed,
+    NotFound,
+    DuplicateCode,
+    HasDependencies
+}
+
+internal sealed record DepartmentWriteResult(
+    DepartmentWriteStatus Status,
+    DepartmentResponse? Department = null,
+    Dictionary<string, string[]>? Errors = null);
+
+internal sealed record DepartmentDeleteResult(
+    DepartmentWriteStatus Status,
+    IReadOnlyList<string>? Dependencies = null);
 
 internal sealed record EmployeeResponse(
     Guid PublicId,

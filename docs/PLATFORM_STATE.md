@@ -4,9 +4,11 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Organization Employee administration polish and
-  safe-deletion hardening are complete and validated; migrations 028 and 029
-  are applied.
+- Latest functional milestone: Organization Department administration
+  (backend and Portal) is complete and fully validated, including a
+  controlled browser smoke; migration 030 is applied. This scope was
+  explicitly approved by the platform owner at session start, superseding the
+  prior "do not begin without a separately approved scope" note below.
 
 ## Platform foundation
 
@@ -14,9 +16,10 @@
   are implemented.
 - Identity: minimal user administration is complete.
 - Organization: employee and department ownership and administration are
-  complete. Employee hard deletion is restricted to permanently unreferenced
-  records through an owner-controlled function; employee-related data never
-  cascades.
+  complete, including Department CRUD, activation/deactivation, and safe
+  deletion. Employee and department hard deletion are each restricted to
+  permanently unreferenced records through an owner-controlled function;
+  employee-related and department-related data never cascades.
 - User–Employee linking: explicit optional one-to-one links and current-user
   employee resolution are complete.
 - RBAC and audit: permission policies and shared atomic audit infrastructure
@@ -33,6 +36,10 @@
   keyboard entry, a Serbian Latin calendar, and ISO transport. Organization Employees uses compact search,
   department/status/end-date-state filters, client-side pagination over the
   bounded existing API result, and an internally scrolling wide grid.
+  Organization Departments follows the same management-grid and details-panel
+  pattern, with server-backed search/status filtering, local bounded-result
+  sorting/pagination, localized create/edit forms, and permission-aware
+  lifecycle controls.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Vacation
   navigation is limited to leave-request, Leave Type, Leave Policy, and Leave
@@ -56,6 +63,17 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
+- Organization Department administration: migration 030 applied successfully
+  against the configured database (30 migrations discovered, journaled, no
+  pending scripts). API Debug and Release builds: passed with zero warnings
+  and errors. Full API test suite with database integration enabled: passed,
+  61/61, including seven new focused Department tests covering the endpoint
+  and repository contract, migration grant/function shape, immutable code on
+  update, delete-conflict token parsing, and live-database checks for the
+  controlled delete function (conflict when referenced, success when
+  unreferenced, not-found for an unknown department) and the exact granted
+  INSERT/UPDATE columns, absent direct DELETE, and function EXECUTE grant.
+  `git diff --check` and `git status` were reviewed; no unrelated changes.
 - Organization safe-deletion migrations: 29 discovered; migrations 028 and 029
   are already journaled, and migrator verification had no pending scripts.
 - Organization safe-deletion database checks: six employee foreign keys, zero
@@ -67,6 +85,23 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - API Release build: passed with zero warnings and errors.
 - Migrator Release build: passed with zero warnings and errors.
 - Portal strict TypeScript and production build: passed.
+- Organization Department Portal: strict TypeScript and production build passed.
+  The management list, details panel, create/edit forms, activation,
+  deactivation, and safe-delete conflict presentation are localized in Serbian
+  Latin and English.
+- Organization Department administration controlled browser smoke: passed for
+  login, list loading, search, status filter and reset, sorting, pagination
+  controls, create, details, name edit with immutable code, deactivate,
+  activate, delete of an unreferenced department, and a referenced-department
+  delete conflict with the localized deactivation guidance. The Employee list
+  and its department-selection dropdown were confirmed unaffected, matching
+  the preserved active-only omitted-status contract. Desktop and mobile
+  responsive layouts and Serbian Latin and English rendering passed. Console
+  findings were a pre-existing missing-favicon `404`, a pre-existing
+  unauthenticated silent-refresh `401` at initial load, and the expected `409`
+  from the forced delete-conflict scenario; none originate from this
+  increment. All temporary smoke data was created and removed within the
+  smoke run, leaving the original six active departments.
 - Development reconciler PowerShell parser validation and repository
   whitespace validation: passed.
 - LV.2 Leave Balance Portal controlled browser smoke: passed for authorized
@@ -129,25 +164,33 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-The Organization Employees Portal polish increment is complete: filters prioritize
-global search, organization unit, employment status, and compact end-date
-state; the bounded API result receives shared client-side pagination; employee
-date editing uses `PortalDateInput`; deletion conflicts use a versioned internal
-database token and render only allowlisted business dependency labels with
-deactivation guidance. The bounded Employee result is filtered, naturally
-sorted, and then paginated client-side; each select filter has an independent
-localized clear action. Backend deletion safety semantics are unchanged.
-Migration 029 retains the legacy marker `Protected employee dependency` in
-storage, omits it from the versioned token only when specific labels exist,
-and preserves safe generic fallback for sentinel-only, malformed, and unknown
-cases.
+Organization Department administration API and Portal are complete. Migration 030
+seeds `organization.departments.manage` for the Administrator role, grants the
+runtime role only the department INSERT/UPDATE columns and sequence usage
+required for audited administration, and adds the owner-controlled
+`organization.delete_unreferenced_department(uuid)` function. Department code
+is immutable after creation like employee number; name is editable; status
+changes use explicit activate/deactivate commands; deletion is restricted to
+unreferenced departments and returns the versioned internal
+`department_delete_conflict:v1:Organization employee` token on conflict,
+mirroring the employee delete-conflict contract. `GET
+/api/v1/organization/departments` gained an optional `status` filter
+(`active`/`inactive`/`all`); an omitted value preserves the existing
+active-only contract so the employee-creation dropdown is unaffected. The
+Portal route `/organization/departments` uses the existing Company
+administration shell, shared administrative grid, localized details panel and
+form conventions, and `organization.departments.manage` permission-aware
+actions.
+It exposes the existing API contract only: create, name update,
+activate/deactivate, and confirmed safe deletion.
 
 ## Next task
 
-No follow-on scope is approved. The protected-delete Portal behavior was
-statically and automatically validated; no operator browser-confirmation
-artifact was available for this final review. Do not begin Department
-administration without a separately approved scope.
+No follow-on scope is approved. Department administration is complete and
+fully validated: build and full test suite (including live-database checks),
+Portal strict TypeScript and production builds, and a controlled browser
+smoke all passed. Do not begin further scope without a separately approved
+task.
 
 ## Session instruction
 

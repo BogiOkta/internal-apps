@@ -3,6 +3,7 @@ export type Department = {
   publicId: string;
   code: string;
   name: string;
+  isActive: boolean;
 };
 
 export type Employee = {
@@ -20,7 +21,13 @@ export type Employee = {
   employmentStatus: "Active" | "Inactive";
 };
 
-export type DepartmentSort = "name" | "-name" | "code" | "-code";
+export type DepartmentSort =
+  | "name"
+  | "-name"
+  | "code"
+  | "-code"
+  | "status"
+  | "-status";
 
 export type EmployeeSort =
   | "name"
@@ -35,8 +42,21 @@ export type EmployeeSort =
   | "-status";
 
 export const employeesManagePermission = "organization.employees.manage";
+export const departmentsManagePermission = "organization.departments.manage";
 export const userEmployeeLinksManagePermission =
   "organization.user-employee-links.manage";
+
+export type DepartmentStatusFilter = "all" | "active" | "inactive";
+
+export type CreateDepartmentRequest = {
+  code: string;
+  name: string;
+  isActive: boolean;
+};
+
+export type UpdateDepartmentRequest = {
+  name: string;
+};
 
 export type EmployeeStatusFilter = "all" | "active" | "inactive";
 

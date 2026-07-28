@@ -9,7 +9,9 @@ internal static class OrganizationEndpoints
         "name",
         "-name",
         "code",
-        "-code"
+        "-code",
+        "status",
+        "-status"
     ];
 
     private static readonly HashSet<string> EmployeeSorts =
@@ -35,6 +37,22 @@ internal static class OrganizationEndpoints
             .WithTags("Organization");
 
         organization.MapGet("/departments", ListDepartmentsAsync);
+        organization.MapPost("/departments", CreateDepartmentAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageDepartments);
+        organization.MapPut("/departments/{publicId:guid}", UpdateDepartmentAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageDepartments);
+        organization.MapDelete("/departments/{publicId:guid}", DeleteDepartmentAsync)
+            .RequireAuthorization(OrganizationPermissions.ManageDepartments);
+        organization.MapPost("/departments/{publicId:guid}/activate",
+                (Guid publicId, HttpContext context, DepartmentsService service,
+                    CancellationToken token) =>
+                    SetDepartmentActiveAsync(publicId, true, context, service, token))
+            .RequireAuthorization(OrganizationPermissions.ManageDepartments);
+        organization.MapPost("/departments/{publicId:guid}/deactivate",
+                (Guid publicId, HttpContext context, DepartmentsService service,
+                    CancellationToken token) =>
+                    SetDepartmentActiveAsync(publicId, false, context, service, token))
+            .RequireAuthorization(OrganizationPermissions.ManageDepartments);
         organization.MapGet("/employees", ListEmployeesAsync);
         organization.MapPost("/employees", CreateEmployeeAsync)
             .RequireAuthorization(OrganizationPermissions.ManageEmployees);
@@ -148,6 +166,7 @@ internal static class OrganizationEndpoints
 
     private static async Task<IResult> ListDepartmentsAsync(
         string? search,
+        string? status,
         string? sort,
         HttpContext context,
         OrganizationRepository repository,
@@ -159,13 +178,99 @@ internal static class OrganizationEndpoints
             return validationResult;
         }
 
+        if (status is not null and not "" and not "all" and not "active" and not "inactive")
+        {
+            return ValidationProblem(context, new Dictionary<string, string[]>
+            {
+                ["status"] = ["Status must be active, inactive, or all."]
+            });
+        }
+
+        // Preserves the pre-administration contract: an omitted status returns only
+        // active departments, matching existing employee-form and directory consumers.
+        var isActiveFilter = status switch
+        {
+            "inactive" => false,
+            "all" => (bool?)null,
+            _ => true
+        };
+
         var departments = await repository.ListDepartmentsAsync(
             search,
+            isActiveFilter,
             sort,
             cancellationToken);
 
         return Results.Ok(departments);
     }
+
+    private static async Task<IResult> CreateDepartmentAsync(
+        CreateDepartmentRequest request, HttpContext context, DepartmentsService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.CreateAsync(
+            request, actor, context.TraceIdentifier, cancellationToken);
+        return result.Status == DepartmentWriteStatus.Success
+            ? Results.Created($"/api/v1/organization/departments/{result.Department!.PublicId}",
+                result.Department)
+            : DepartmentWriteProblem(context, result);
+    }
+
+    private static async Task<IResult> UpdateDepartmentAsync(
+        Guid publicId, UpdateDepartmentRequest request, HttpContext context,
+        DepartmentsService service, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        return DepartmentWriteProblem(context, await service.UpdateAsync(
+            publicId, request, actor, context.TraceIdentifier, cancellationToken));
+    }
+
+    private static async Task<IResult> SetDepartmentActiveAsync(
+        Guid publicId, bool active, HttpContext context, DepartmentsService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        return DepartmentWriteProblem(context, await service.SetActiveAsync(
+            publicId, active, actor, context.TraceIdentifier, cancellationToken));
+    }
+
+    private static async Task<IResult> DeleteDepartmentAsync(Guid publicId,
+        HttpContext context, DepartmentsService service, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(context, out var actor)) return Results.Unauthorized();
+        var result = await service.DeleteAsync(publicId, actor, context.TraceIdentifier, cancellationToken);
+        return result.Status switch
+        {
+            DepartmentWriteStatus.Success => Results.NoContent(),
+            DepartmentWriteStatus.NotFound => Problem(context, 404, "Department not found",
+                "department_not_found", "The requested department does not exist."),
+            DepartmentWriteStatus.HasDependencies => Results.Problem(statusCode: 409,
+                title: "Department is referenced",
+                detail: "Referenced departments cannot be deleted and must be deactivated instead.",
+                instance: context.Request.Path,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "department_delete_conflict",
+                    ["traceId"] = context.TraceIdentifier,
+                    ["dependencies"] = result.Dependencies ?? []
+                }),
+            _ => Results.Problem(statusCode: 500)
+        };
+    }
+
+    private static IResult DepartmentWriteProblem(HttpContext context, DepartmentWriteResult result) =>
+        result.Status switch
+        {
+            DepartmentWriteStatus.Success => Results.Ok(result.Department),
+            DepartmentWriteStatus.ValidationFailed => ValidationProblem(context, result.Errors!),
+            DepartmentWriteStatus.NotFound => Problem(context, 404, "Department not found",
+                "department_not_found", "The requested department does not exist."),
+            DepartmentWriteStatus.DuplicateCode => Problem(context, 409,
+                "Department code already exists", "department_code_conflict",
+                "A department with the requested code already exists."),
+            _ => Results.Problem(statusCode: 500)
+        };
 
     private static async Task<IResult> ListEmployeesAsync(
         string? search,

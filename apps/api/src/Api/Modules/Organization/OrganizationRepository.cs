@@ -7,6 +7,7 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
 {
     public async Task<IReadOnlyList<DepartmentResponse>> ListDepartmentsAsync(
         string? search,
+        bool? isActiveFilter,
         string? sort,
         CancellationToken cancellationToken)
     {
@@ -14,14 +15,15 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
             SELECT
                 departments.public_id AS PublicId,
                 departments.code AS Code,
-                departments.name AS Name
+                departments.name AS Name,
+                departments.is_active AS IsActive
             FROM organization.departments AS departments
-            WHERE departments.is_active = true
-              AND (
-                  @SearchPattern IS NULL
-                  OR departments.code ILIKE @SearchPattern
-                  OR departments.name ILIKE @SearchPattern
-              )
+            WHERE (
+                    @SearchPattern IS NULL
+                    OR departments.code ILIKE @SearchPattern
+                    OR departments.name ILIKE @SearchPattern
+                  )
+              AND (@IsActiveFilter IS NULL OR departments.is_active = @IsActiveFilter)
             """;
 
         var sql = query + GetDepartmentOrderBy(sort);
@@ -31,13 +33,95 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
         var rows = await connection.QueryAsync<DepartmentRow>(
             new CommandDefinition(
                 sql,
-                new { SearchPattern = searchPattern },
+                new { SearchPattern = searchPattern, IsActiveFilter = isActiveFilter },
                 cancellationToken: cancellationToken));
 
         return rows
-            .Select(row => new DepartmentResponse(row.PublicId, row.Code, row.Name))
+            .Select(row => new DepartmentResponse(row.PublicId, row.Code, row.Name, row.IsActive))
             .ToArray();
     }
+
+    public async Task<DepartmentResponse?> GetDepartmentForUpdateAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        CancellationToken cancellationToken) =>
+        await connection.QuerySingleOrDefaultAsync<DepartmentResponse>(
+            new CommandDefinition(
+                DepartmentSelect + " WHERE departments.public_id = @PublicId FOR UPDATE OF departments",
+                new { PublicId = publicId },
+                transaction,
+                cancellationToken: cancellationToken));
+
+    public async Task<DepartmentResponse> CreateDepartmentAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CreateDepartmentCommand command,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            INSERT INTO organization.departments (public_id, code, name, is_active)
+            VALUES (gen_random_uuid(), @Code, @Name, @IsActive)
+            RETURNING public_id
+            """;
+        var publicId = await connection.ExecuteScalarAsync<Guid>(
+            new CommandDefinition(sql, command, transaction, cancellationToken: cancellationToken));
+        return (await GetDepartmentForUpdateAsync(
+            connection, transaction, publicId, cancellationToken))!;
+    }
+
+    public async Task<DepartmentResponse> UpdateDepartmentAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        DepartmentCommand command,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE organization.departments
+            SET name = @Name,
+                updated_at = now()
+            WHERE public_id = @PublicId
+            """;
+        await connection.ExecuteAsync(new CommandDefinition(
+            sql, new { PublicId = publicId, command.Name },
+            transaction, cancellationToken: cancellationToken));
+        return (await GetDepartmentForUpdateAsync(
+            connection, transaction, publicId, cancellationToken))!;
+    }
+
+    public async Task<DepartmentResponse> SetDepartmentActiveAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        bool isActive,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE organization.departments
+            SET is_active = @IsActive,
+                updated_at = now()
+            WHERE public_id = @PublicId
+            """;
+        await connection.ExecuteAsync(new CommandDefinition(
+            sql, new { PublicId = publicId, IsActive = isActive },
+            transaction, cancellationToken: cancellationToken));
+        return (await GetDepartmentForUpdateAsync(
+            connection, transaction, publicId, cancellationToken))!;
+    }
+
+    public Task<bool> DeleteUnreferencedDepartmentAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        CancellationToken cancellationToken) =>
+        connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+            """
+            SELECT organization.delete_unreferenced_department(@PublicId)
+            """,
+            new { PublicId = publicId },
+            transaction,
+            cancellationToken: cancellationToken));
 
     public async Task<IReadOnlyList<EmployeeResponse>> ListEmployeesAsync(
         string? search,
@@ -244,6 +328,15 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
             transaction,
             cancellationToken: cancellationToken));
 
+    private const string DepartmentSelect = """
+        SELECT
+            departments.public_id AS PublicId,
+            departments.code AS Code,
+            departments.name AS Name,
+            departments.is_active AS IsActive
+        FROM organization.departments
+        """;
+
     private const string EmployeeSelect = """
         SELECT
             employees.public_id AS PublicId,
@@ -274,6 +367,8 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
             "code" => " ORDER BY departments.code, departments.name",
             "-code" => " ORDER BY departments.code DESC, departments.name",
             "-name" => " ORDER BY departments.name DESC, departments.code",
+            "status" => " ORDER BY departments.is_active, departments.name, departments.code",
+            "-status" => " ORDER BY departments.is_active DESC, departments.name, departments.code",
             _ => " ORDER BY departments.name, departments.code"
         };
 
@@ -309,6 +404,8 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
         public string Code { get; set; } = string.Empty;
 
         public string Name { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
     }
 
     private sealed class EmployeeRow

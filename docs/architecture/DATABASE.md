@@ -564,6 +564,23 @@ and manager hierarchy remain outside the current model.
 
 Migration `004_vacation_employees.sql` originally introduced both tables in the `vacation` schema. Because applied migrations are immutable historical records, migration `005_organization_domain.sql` moves the same table objects into `organization`. The final schema state is authoritative; migration 004 is not rewritten or removed.
 
+Migration `030_department_administration.sql` seeds
+`organization.departments.manage` for the existing Administrator role and
+grants the runtime role only the department INSERT columns, mutable UPDATE
+columns, and identity-sequence usage required by audited administration. It
+grants no department DELETE capability. Runtime department deletion is
+available only through the owner-controlled
+`organization.delete_unreferenced_department(uuid)` function, `SECURITY
+DEFINER` and owned by `internal_apps_owner`. Because a department's only
+current dependency, `organization.employees.department_id`, is owned by the
+same Organization schema, the function checks that dependency with a direct
+`EXISTS` query rather than the cross-schema permanent-marker mechanism built
+for employee deletion; that mechanism exists specifically to let Organization
+learn about dependents it does not own. The function emits the versioned
+internal `department_delete_conflict:v1:Organization employee` token, using
+the same controlled-grammar contract as the employee delete-conflict token.
+The department table shape is unchanged.
+
 ### 7.2 Vacation schema
 
 The `vacation` schema is owned exclusively by the Vacation Management module. Employees and departments are Organization references and are not Vacation-owned data.

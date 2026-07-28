@@ -32,6 +32,7 @@ builder.Services.AddScoped<ApplicationRepository>();
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<OrganizationRepository>();
 builder.Services.AddScoped<EmployeesService>();
+builder.Services.AddScoped<DepartmentsService>();
 builder.Services.AddScoped<UserEmployeeLinksRepository>();
 builder.Services.AddScoped<UserEmployeeLinksService>();
 builder.Services.AddScoped<CurrentEmployeeResolver>();
@@ -82,6 +83,11 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireClaim(
             "permission",
             OrganizationPermissions.ManageEmployees));
+    options.AddPolicy(
+        OrganizationPermissions.ManageDepartments,
+        policy => policy.RequireClaim(
+            "permission",
+            OrganizationPermissions.ManageDepartments));
     options.AddPolicy(
         OrganizationPermissions.ManageUserEmployeeLinks,
         policy => policy.RequireClaim(

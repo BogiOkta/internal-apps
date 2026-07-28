@@ -1,45 +1,288 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import {
+  GridFilterCell,
+  GridFilterRow,
+  GridFooter,
+  GridStateRows,
+  GridToolbarActions,
+  nextGridSort,
+  SortableGridHeader,
+  type GridSort,
+} from "@/components/admin-data-grid";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { GridPagination } from "@/components/grid-pagination";
+import { DepartmentForm } from "@/features/organization/components/department-form";
 import { useTranslations } from "@/i18n/use-translations";
-import { getDepartments } from "@/services/organization";
-import type { Department } from "@/types/organization";
+import {
+  activateDepartment,
+  createDepartment,
+  deactivateDepartment,
+  deleteDepartment,
+  getDepartments,
+  updateDepartment,
+} from "@/services/organization";
+import type {
+  CreateDepartmentRequest,
+  Department,
+  DepartmentStatusFilter,
+  UpdateDepartmentRequest,
+} from "@/types/organization";
+import { departmentsManagePermission } from "@/types/organization";
+import { exportGridCsv, exportGridXlsx, type ExportColumn } from "@/utils/admin-grid-export";
+
+type DepartmentSortField = "code" | "name" | "status";
 
 export default function DepartmentsPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const { t } = useTranslations();
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [departmentResult, setDepartments] = useState<Department[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [status, setStatus] = useState<DepartmentStatusFilter>("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sort, setSort] = useState<GridSort<DepartmentSortField>>({ field: "code", direction: "asc" });
+  const [areFiltersVisible, setAreFiltersVisible] = useState(false);
+  const [panelMode, setPanelMode] = useState<"details" | "create" | "edit">("details");
+  const [selectedDepartmentPublicId, setSelectedDepartmentPublicId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [exportError, setExportError] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+
   useEffect(() => {
     if (!accessToken) return;
     const controller = new AbortController();
-    setLoading(true); setError(false);
-    getDepartments(accessToken, { sort: "name" }, controller.signal)
-      .then(setDepartments).catch(() => { if (!controller.signal.aborted) setError(true); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    setIsLoading(true);
+    setHasError(false);
+    getDepartments(accessToken, { search: debouncedSearch || undefined, status }, controller.signal)
+      .then((result) => {
+        setDepartments(result);
+        setSelectedDepartmentPublicId((currentSelection) =>
+          currentSelection && result.some((department) => department.publicId === currentSelection)
+            ? currentSelection
+            : null,
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setDepartments([]);
+          setSelectedDepartmentPublicId(null);
+          setHasError(true);
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setIsLoading(false); });
     return () => controller.abort();
-  }, [accessToken]);
+  }, [accessToken, debouncedSearch, status, refreshVersion]);
 
-  return <CompanyAdministrationWorkspace title={t("organization.departments.title")}
-    description={t("organization.departments.description")}>
-    <section className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-300 bg-slate-100 text-xs uppercase text-slate-600">
-          <tr><th className="px-4 py-3">{t("organization.departments.code")}</th>
-            <th className="px-4 py-3">{t("organization.departments.name")}</th></tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {loading && <tr><td colSpan={2} className="px-4 py-8 text-center">{t("common.loading")}</td></tr>}
-          {error && <tr><td colSpan={2} className="px-4 py-8 text-center text-red-700">{t("organization.departments.error")}</td></tr>}
-          {!loading && !error && departments.length === 0 && <tr><td colSpan={2} className="px-4 py-8 text-center text-slate-500">{t("organization.departments.empty")}</td></tr>}
-          {!loading && !error && departments.map((department) =>
-            <tr key={department.publicId}><td className="px-4 py-3 font-medium">{department.code}</td>
-              <td className="px-4 py-3">{department.name}</td></tr>)}
-        </tbody>
-      </table>
-    </section>
-  </CompanyAdministrationWorkspace>;
+  const departments = useMemo(
+    () => [...departmentResult].sort((left, right) => compareDepartments(left, right, sort)),
+    [departmentResult, sort],
+  );
+  const totalPages = Math.max(1, Math.ceil(departments.length / pageSize));
+  const visibleDepartments = useMemo(
+    () => departments.slice((page - 1) * pageSize, page * pageSize),
+    [departments, page, pageSize],
+  );
+  const selectedDepartment = useMemo(
+    () => departments.find((department) => department.publicId === selectedDepartmentPublicId) ?? null,
+    [departments, selectedDepartmentPublicId],
+  );
+  const canManage = user?.permissions.includes(departmentsManagePermission) ?? false;
+  const activeFilterCount = status === "all" ? 0 : 1;
+
+  useEffect(() => setPage(1), [debouncedSearch, status, sort, pageSize]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+
+  async function create(request: CreateDepartmentRequest) {
+    if (!accessToken) return;
+    const department = await createDepartment(accessToken, request);
+    setSelectedDepartmentPublicId(department.publicId);
+    setPanelMode("details");
+    setFeedback(t("organization.departments.createSuccess"));
+    setRefreshVersion((value) => value + 1);
+  }
+
+  async function update(request: UpdateDepartmentRequest) {
+    if (!accessToken || !selectedDepartment) return;
+    await updateDepartment(accessToken, selectedDepartment.publicId, request);
+    setPanelMode("details");
+    setFeedback(t("organization.departments.updateSuccess"));
+    setRefreshVersion((value) => value + 1);
+  }
+
+  async function changeStatus() {
+    if (!accessToken || !selectedDepartment) return;
+    setWriteError(null);
+    try {
+      if (selectedDepartment.isActive) {
+        await deactivateDepartment(accessToken, selectedDepartment.publicId);
+      } else {
+        await activateDepartment(accessToken, selectedDepartment.publicId);
+      }
+      setFeedback(selectedDepartment.isActive
+        ? t("organization.departments.deactivateSuccess")
+        : t("organization.departments.activateSuccess"));
+      setIsConfirmingStatus(false);
+      setRefreshVersion((value) => value + 1);
+    } catch {
+      setWriteError(t("organization.departments.saveFailed"));
+    }
+  }
+
+  async function remove() {
+    if (!accessToken || !selectedDepartment || isDeleting) return;
+    setWriteError(null);
+    setIsDeleting(true);
+    try {
+      await deleteDepartment(accessToken, selectedDepartment.publicId);
+      setSelectedDepartmentPublicId(null);
+      setPanelMode("details");
+      setIsConfirmingDelete(false);
+      setFeedback(t("organization.departments.deleteSuccess"));
+      setRefreshVersion((value) => value + 1);
+    } catch (error) {
+      const code = error instanceof Error && "problem" in error
+        ? (error as { problem?: { code?: string } }).problem?.code
+        : undefined;
+      setWriteError(
+        code === "department_delete_conflict"
+          ? t("organization.departments.deleteReferenced")
+          : t("organization.departments.deleteFailed"),
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  async function exportDepartments(format: "csv" | "xlsx") {
+    setExportError(false);
+    if (departments.length === 0) {
+      setExportError(true);
+      return;
+    }
+    const columns: ExportColumn<Department>[] = [
+      { heading: t("organization.departments.code"), value: (row) => row.code, width: 18 },
+      { heading: t("organization.departments.name"), value: (row) => row.name, width: 32 },
+      { heading: t("organization.departments.status"), value: (row) => row.isActive ? t("organization.departments.active") : t("organization.departments.inactive"), width: 14 },
+    ];
+    try {
+      if (format === "csv") {
+        exportGridCsv(departments, columns, "departments.csv");
+      } else {
+        await exportGridXlsx(departments, columns, "departments.xlsx", t("organization.departments.exportSheet"));
+      }
+    } catch {
+      setExportError(true);
+    }
+  }
+
+  return (
+    <CompanyAdministrationWorkspace
+      title={t("organization.departments.title")}
+      description={t("organization.departments.description")}
+      commandBar={
+        <DepartmentCommandBar
+          isRefreshing={isLoading}
+          search={search}
+          canManage={canManage}
+          activeFilterCount={activeFilterCount}
+          areFiltersVisible={areFiltersVisible}
+          exportDisabled={departments.length === 0}
+          onNew={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }}
+          onRefresh={() => setRefreshVersion((value) => value + 1)}
+          onSearchChange={setSearch}
+          onToggleFilters={() => setAreFiltersVisible((visible) => !visible)}
+          onClearFilters={() => setStatus("all")}
+          onExportCsv={() => void exportDepartments("csv")}
+          onExportExcel={() => void exportDepartments("xlsx")}
+        />
+      }
+    >
+      <div className="space-y-3">
+        {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
+        {writeError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
+        {exportError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{departments.length === 0 ? t("grid.noExportRows") : t("grid.exportFailure")}</div>}
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <section aria-label={t("organization.departments.tableLabel")} className="min-w-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm [contain:paint]">
+            <div className="overflow-x-auto">
+              <table aria-busy={isLoading} className="w-full min-w-[620px] border-collapse text-left text-sm">
+                <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
+                  <tr>
+                    <SortableGridHeader field="code" label={t("organization.departments.code")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.code") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.code") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.code") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                    <SortableGridHeader field="name" label={t("organization.departments.name")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.name") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.name") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.name") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                    <SortableGridHeader field="status" label={t("organization.departments.status")} sort={sort} sortAscendingLabel={t("grid.sortAscending", { column: t("organization.departments.status") })} sortDescendingLabel={t("grid.sortDescending", { column: t("organization.departments.status") })} clearSortingLabel={t("grid.clearSorting", { column: t("organization.departments.status") })} onSort={(field) => setSort((current) => nextGridSort(current, field))} />
+                  </tr>
+                  <GridFilterRow visible={areFiltersVisible}>
+                    <GridFilterCell />
+                    <GridFilterCell />
+                    <GridFilterCell>
+                      <label><span className="sr-only">{t("organization.departments.statusFilter")}</span><select value={status} onChange={(event) => setStatus(event.target.value as DepartmentStatusFilter)} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"><option value="all">{t("organization.departments.allStatuses")}</option><option value="active">{t("organization.departments.active")}</option><option value="inactive">{t("organization.departments.inactive")}</option></select></label>
+                    </GridFilterCell>
+                  </GridFilterRow>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {hasError && <tr><td colSpan={3} className="px-4 py-10 text-center text-red-700">{t("organization.departments.error")}</td></tr>}
+                  <GridStateRows columnCount={3} isLoading={isLoading} hasError={hasError} isEmpty={departments.length === 0} loadingLabel={t("organization.departments.loading")} emptyTitle={t("organization.departments.emptyTitle")} emptyDescription={t("organization.departments.emptyDescription")} />
+                  {!isLoading && !hasError && visibleDepartments.map((department) => {
+                    const isSelected = department.publicId === selectedDepartmentPublicId;
+                    return <tr key={department.publicId} aria-selected={isSelected} onClick={() => { setIsConfirmingStatus(false); setIsConfirmingDelete(false); setWriteError(null); setSelectedDepartmentPublicId(department.publicId); }} className={`cursor-pointer hover:bg-slate-50 ${isSelected ? "bg-blue-50 shadow-[inset_3px_0_0_#1d4ed8]" : "bg-white"}`}>
+                      <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">{department.code}</td>
+                      <td className="px-4 py-3"><button type="button" aria-pressed={isSelected} onClick={(event) => { event.stopPropagation(); setSelectedDepartmentPublicId(department.publicId); }} className="rounded-sm text-left font-semibold text-slate-950 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">{department.name}</button></td>
+                      <td className="whitespace-nowrap px-4 py-3"><DepartmentStatus isActive={department.isActive} /></td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <GridPagination page={page} pageSize={pageSize} totalCount={departments.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />
+            <GridFooter countLabel={t("organization.departments.records", { count: departments.length })} selectionLabel={selectedDepartment ? t("organization.departments.selected", { name: selectedDepartment.name }) : t("organization.departments.selectionHint")} />
+          </section>
+          <aside aria-label={t("organization.departments.details")} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-slate-950">{panelMode === "create" ? t("organization.departments.new") : panelMode === "edit" ? t("organization.departments.edit") : t("organization.departments.details")}</h2>
+            {panelMode === "create" ? <DepartmentForm mode="create" onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} /> : panelMode === "edit" && selectedDepartment ? <DepartmentForm mode="edit" department={selectedDepartment} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} /> : selectedDepartment ? <div className="space-y-3 text-sm"><Detail label={t("organization.departments.code")} value={selectedDepartment.code} /><Detail label={t("organization.departments.name")} value={selectedDepartment.name} /><Detail label={t("organization.departments.status")} value={selectedDepartment.isActive ? t("organization.departments.active") : t("organization.departments.inactive")} />{canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("organization.departments.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedDepartment.isActive ? t("organization.departments.deactivate") : t("organization.departments.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className="min-h-9 rounded-md border border-red-300 px-3 text-sm font-medium text-red-700">{t("organization.departments.delete")}</button></div>{isConfirmingStatus && <Confirmation message={selectedDepartment.isActive ? t("organization.departments.deactivateConfirmation") : t("organization.departments.activateConfirmation")} confirmLabel={t("organization.departments.confirm")} cancelLabel={t("organization.departments.cancel")} onConfirm={() => void changeStatus()} onCancel={() => setIsConfirmingStatus(false)} />}{isConfirmingDelete && <Confirmation destructive message={t("organization.departments.deleteConfirmation")} confirmLabel={t("organization.departments.delete")} cancelLabel={t("organization.departments.cancel")} pending={isDeleting} onConfirm={() => void remove()} onCancel={() => setIsConfirmingDelete(false)} />}</div>}</div> : <p className="text-sm text-slate-600">{t("organization.departments.selectForDetails")}</p>}
+          </aside>
+        </div>
+      </div>
+    </CompanyAdministrationWorkspace>
+  );
+}
+
+function DepartmentCommandBar({ isRefreshing, search, canManage, activeFilterCount, areFiltersVisible, exportDisabled, onNew, onRefresh, onSearchChange, onToggleFilters, onClearFilters, onExportCsv, onExportExcel }: { isRefreshing: boolean; search: string; canManage: boolean; activeFilterCount: number; areFiltersVisible: boolean; exportDisabled: boolean; onNew: () => void; onRefresh: () => void; onSearchChange: (value: string) => void; onToggleFilters: () => void; onClearFilters: () => void; onExportCsv: () => void; onExportExcel: () => void; }) {
+  const { t } = useTranslations();
+  return <div className="flex w-full flex-wrap items-center gap-2">{canManage && <button type="button" onClick={onNew} className="min-h-9 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white">{t("organization.departments.new")}</button>}<button type="button" onClick={onRefresh} disabled={isRefreshing} className="min-h-9 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 disabled:opacity-50">{isRefreshing ? t("organization.departments.refreshing") : t("organization.departments.refresh")}</button><div className="ml-0 flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:ml-auto lg:justify-end"><label className="w-full min-w-0 flex-1 sm:min-w-[210px] lg:max-w-xs"><span className="sr-only">{t("organization.departments.searchLabel")}</span><input type="search" maxLength={100} value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("organization.departments.searchPlaceholder")} className="min-h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100" /></label><GridToolbarActions activeFilterCount={activeFilterCount} areFiltersVisible={areFiltersVisible} exportDisabled={exportDisabled} filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={onToggleFilters} onClearFilters={onClearFilters} onExportCsv={onExportCsv} onExportExcel={onExportExcel} /></div></div>;
+}
+
+function DepartmentStatus({ isActive }: { isActive: boolean }) {
+  const { t } = useTranslations();
+  return <span className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${isActive ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-300 bg-slate-100 text-slate-700"}`}>{isActive ? t("organization.departments.active") : t("organization.departments.inactive")}</span>;
+}
+
+function Confirmation({ message, confirmLabel, cancelLabel, pending = false, destructive = false, onConfirm, onCancel }: { message: string; confirmLabel: string; cancelLabel: string; pending?: boolean; destructive?: boolean; onConfirm: () => void; onCancel: () => void; }) {
+  return <div role={destructive ? "alertdialog" : "status"} aria-modal={destructive || undefined} className={`rounded-md border p-3 ${destructive ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}><p className={`text-sm ${destructive ? "text-red-900" : "text-amber-900"}`}>{message}</p><div className="mt-2 flex gap-2"><button type="button" disabled={pending} onClick={onConfirm} className={`min-h-9 rounded-md px-3 text-sm font-semibold text-white disabled:opacity-50 ${destructive ? "bg-red-700" : "bg-blue-700"}`}>{confirmLabel}</button><button type="button" disabled={pending} onClick={onCancel} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm disabled:opacity-50">{cancelLabel}</button></div></div>;
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return <dl><dt className="font-medium text-slate-500">{label}</dt><dd className="mt-0.5 text-slate-950">{value}</dd></dl>;
+}
+
+function compareDepartments(left: Department, right: Department, sort: GridSort<DepartmentSortField>) {
+  const activeSort = sort ?? { field: "code" as const, direction: "asc" as const };
+  const value = (department: Department) => ({ code: department.code, name: department.name, status: department.isActive ? "Active" : "Inactive" })[activeSort.field];
+  const comparison = value(left).localeCompare(value(right), undefined, { numeric: true, sensitivity: "base" });
+  const ordered = activeSort.direction === "desc" ? -comparison : comparison;
+  return ordered || left.code.localeCompare(right.code, undefined, { numeric: true, sensitivity: "base" }) || left.publicId.localeCompare(right.publicId);
 }

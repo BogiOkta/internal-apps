@@ -1,5 +1,70 @@
 # Internal Apps Platform change history
 
+## 2026-07-28 — Organization Department administration final review and validation
+
+- Reviewed the complete uncommitted Department Administration increment
+  (migration, API, tests, Portal, localization, and documentation) against
+  the Employee administration conventions, confirming immutable department
+  code, the preserved active-only omitted-status contract for the employee
+  directory and creation dropdown, correct `organization.departments.manage`
+  enforcement, no database internals reaching API clients, controlled and
+  localized safe-delete conflict behavior, and no unrelated changes.
+- Re-verified the full validation sequence: Migrator and API Release builds
+  (zero warnings/errors), migration application (30 discovered, all
+  previously journaled, no pending scripts), the full API test suite with
+  database integration enabled (61/61), Portal strict TypeScript, and the
+  Portal production build. A stray auto-generated `next-env.d.ts` route-path
+  change produced by running the build was reverted as unrelated to this
+  increment.
+- Completed the controlled browser smoke that earlier sessions could not run:
+  login, department list load, search, status filter and reset, sorting,
+  pagination, create, details, name edit with immutable code, deactivate,
+  activate, delete of an unreferenced department, a referenced-department
+  delete conflict with localized deactivation guidance, unaffected Employee
+  list and department-selection dropdown, desktop and mobile responsive
+  layouts, and Serbian Latin and English rendering. Temporary smoke data was
+  fully created and removed within the run. Console findings (a missing
+  favicon `404`, a pre-existing unauthenticated silent-refresh `401`, and the
+  expected `409` from the forced conflict scenario) predate this increment
+  and were not introduced by it.
+- No implementation defect was found; no code changes were required.
+
+## 2026-07-28 — Organization Department administration Portal
+
+- Replaced the read-only Department directory with a permission-aware
+  administration workspace at `/organization/departments`: localized list,
+  search and active/inactive filtering, bounded-result sorting and pagination,
+  details panel, and CSV/Excel export reuse the existing administrative-grid
+  pattern.
+- Added localized create and name-edit forms; department code remains visibly
+  read-only after creation. The existing Department API is used unchanged for
+  create, update, activate, deactivate, and confirmed safe deletion.
+- A referenced-department delete conflict presents the safe deactivation
+  guidance from the backend contract. Strict TypeScript and the production
+  Portal build passed. No frontend test runner or supported local browser was
+  available for focused UI or browser smoke validation.
+
+## 2026-07-28 — Organization Department administration backend
+
+- Added migration 030: seeds `organization.departments.manage` for the
+  Administrator role, grants the runtime role only the department
+  INSERT/UPDATE columns and sequence usage required for audited
+  administration, and adds the owner-controlled
+  `organization.delete_unreferenced_department(uuid)` function. The function
+  checks the same-module `organization.employees.department_id` dependency
+  directly rather than reusing the cross-schema employee marker mechanism.
+- Added Department create, update, activate, deactivate, and safe-delete API
+  endpoints under `/api/v1/organization/departments`, following the Employee
+  administration pattern: immutable code, editable name, explicit
+  activate/deactivate commands, and a versioned
+  `department_delete_conflict:v1:Organization employee` delete-conflict token
+  parsed against a fixed allowlist. `GET /api/v1/organization/departments`
+  gained an optional `status` filter; an omitted value preserves the existing
+  active-only contract for untouched Portal consumers.
+- Backend-only increment; no Portal, Employee, or unrelated Organization
+  behavior changed. Validated with the full API test suite (61/61, database
+  integration enabled), API Debug and Release builds, and `git diff --check`.
+
 ## 2026-07-28 — Employee delete-conflict legacy-marker correction
 
 - Added forward-only migration 029. It leaves canonical marker rows unchanged
