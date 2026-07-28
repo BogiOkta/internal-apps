@@ -1,5 +1,24 @@
 export const portalDatePlaceholder = "dd.MM.yyyy.";
 
+export function dateControlClassName({
+  invalid = false,
+  active = false,
+  focusWithin = false,
+}: {
+  invalid?: boolean;
+  active?: boolean;
+  focusWithin?: boolean;
+} = {}) {
+  const focus = focusWithin ? "focus-within" : "focus";
+  return `rounded-md border bg-white px-3 text-sm outline-none transition-colors hover:bg-slate-50 ${focus}:ring-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 disabled:hover:bg-slate-100 ${
+    invalid
+      ? `border-red-400 ${focus}:border-red-600 ${focus}:ring-red-100`
+      : active
+        ? `border-blue-600 ring-1 ring-blue-600 ${focus}:border-blue-600 ${focus}:ring-blue-100`
+        : `border-slate-300 ${focus}:border-blue-600 ${focus}:ring-blue-100`
+  }`;
+}
+
 export function formatPortalEditableDate(isoDate: string | null | undefined): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate ?? "");
   return match && isCalendarDate(match[1], match[2], match[3])

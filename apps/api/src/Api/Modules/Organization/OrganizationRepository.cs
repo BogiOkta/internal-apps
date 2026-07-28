@@ -394,7 +394,15 @@ internal sealed class OrganizationRepository(NpgsqlDataSource dataSource)
             "-status" =>
                 " ORDER BY employees.employment_status DESC, employees.last_name, employees.first_name, employees.employee_number",
             _ =>
-                " ORDER BY employees.last_name, employees.first_name, employees.employee_number"
+                """
+                 ORDER BY
+                    CASE WHEN employees.employment_status = 'Active' THEN 0 ELSE 1 END,
+                    lower(regexp_replace(employees.employee_number, '\d', '', 'g')),
+                    length(regexp_replace(employees.employee_number, '\D', '', 'g')),
+                    regexp_replace(employees.employee_number, '\D', '', 'g'),
+                    employees.employee_number,
+                    employees.public_id
+                """
         };
 
     private sealed class DepartmentRow

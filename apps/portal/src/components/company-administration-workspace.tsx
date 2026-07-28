@@ -7,6 +7,7 @@ type CompanyAdministrationWorkspaceProps = {
   title: string;
   description?: string;
   commandBar?: ReactNode;
+  contentFillsViewport?: boolean;
   children: ReactNode;
 };
 
@@ -14,10 +15,11 @@ export function CompanyAdministrationWorkspace({
   title,
   description,
   commandBar,
+  contentFillsViewport,
   children,
 }: CompanyAdministrationWorkspaceProps) {
   return (
-    <AppShell title={title} description={description} commandBar={commandBar}>
+    <AppShell title={title} description={description} commandBar={commandBar} contentFillsViewport={contentFillsViewport}>
       {children}
     </AppShell>
   );

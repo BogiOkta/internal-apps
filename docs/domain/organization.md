@@ -93,7 +93,11 @@ must never clean up dependent rows. This extension procedure requires no API,
 C#, employee-service, or Portal code change.
 
 Employee number, name, department, email, and status sorts are fixed,
-allowlisted contracts with deterministic tie-breakers.
+allowlisted contracts with deterministic tie-breakers. When the Employee list
+omits `sort`, the API orders Active employees first, then inactive employees;
+within each status group it applies natural ascending employee-number ordering
+(`2` before `10`, `EMP-2` before `EMP-10`). An explicit `sort` continues to
+override this default.
 
 `employment_status` is the sole authoritative active/inactive state. An
 employment end date is historical information only and does not deactivate an

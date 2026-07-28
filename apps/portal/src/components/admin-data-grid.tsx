@@ -7,6 +7,51 @@ export type GridSort<Field extends string> = {
   direction: "asc" | "desc";
 } | null;
 
+export function AdministrativeGridShell({
+  ariaLabel,
+  toolbar,
+  viewport,
+  pagination,
+  footer,
+  detailsPanel,
+}: {
+  ariaLabel: string;
+  toolbar?: ReactNode;
+  viewport: ReactNode;
+  pagination?: ReactNode;
+  footer?: ReactNode;
+  detailsPanel?: ReactNode;
+}) {
+  return (
+    <div
+      className={`grid min-h-0 gap-4 ${
+        detailsPanel
+          ? "lg:h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_22rem]"
+          : "lg:h-0 lg:flex-1"
+      }`}
+    >
+      <section
+        aria-label={ariaLabel}
+        className="flex min-h-[24rem] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm [contain:paint] lg:min-h-0"
+      >
+        {toolbar ? (
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-50 px-4 py-3">
+            {toolbar}
+          </div>
+        ) : null}
+        <div className="min-h-0 flex-1 overflow-auto">{viewport}</div>
+        {pagination}
+        {footer}
+      </section>
+      {detailsPanel ? (
+        <aside className="min-h-0 overflow-y-auto rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
+          {detailsPanel}
+        </aside>
+      ) : null}
+    </div>
+  );
+}
+
 export function nextGridSort<Field extends string>(
   sort: GridSort<Field>,
   field: Field,

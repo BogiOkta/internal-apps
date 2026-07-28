@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  AdministrativeGridShell,
   GridFilterCell,
   GridFilterRow,
   GridFooter,
@@ -65,7 +66,7 @@ export default function EmployeesPage() {
   const [isConfirmingStatus, setIsConfirmingStatus] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [sort, setSort] = useState<GridSort<EmployeeSortField>>({ field: "employeeNumber", direction: "asc" });
+  const [sort, setSort] = useState<GridSort<EmployeeSortField> | null>(null);
   const [areFiltersVisible, setAreFiltersVisible] = useState(false);
   const [exportError, setExportError] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -154,9 +155,11 @@ export default function EmployeesPage() {
     refreshVersion,
   ]);
 
-  const employees = useMemo(() => employeeResult
-    .filter((employee) => employmentEndDateState === "all" || (employmentEndDateState === "missing") === (employee.employmentEndDate === null))
-    .sort((left, right) => compareEmployees(left, right, sort)), [employeeResult, employmentEndDateState, sort]);
+  const employees = useMemo(() => {
+    const filtered = employeeResult
+      .filter((employee) => employmentEndDateState === "all" || (employmentEndDateState === "missing") === (employee.employmentEndDate === null));
+    return sort ? [...filtered].sort((left, right) => compareEmployees(left, right, sort)) : filtered;
+  }, [employeeResult, employmentEndDateState, sort]);
   const totalPages = Math.max(1, Math.ceil(employees.length / pageSize));
   const visibleEmployees = useMemo(() => employees.slice((page - 1) * pageSize, page * pageSize), [employees, page, pageSize]);
   const selectedEmployee = useMemo(
@@ -279,20 +282,23 @@ export default function EmployeesPage() {
   }
 
   const commandBar = (
-    <EmployeeCommandBar
-      isRefreshing={isLoading}
+    <div className="flex flex-wrap items-center gap-2">
+      {canManage && <button type="button" onClick={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }} className="inline-flex min-h-9 items-center gap-2 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"><PlusIcon />{t("vacation.employees.new")}</button>}
+      <button type="button" onClick={() => setRefreshVersion((version) => version + 1)} disabled={isLoading} className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"><RefreshIcon />{isLoading ? t("vacation.employees.refreshing") : t("vacation.employees.refresh")}</button>
+    </div>
+  );
+
+  const gridToolbar = (
+    <EmployeeGridToolbar
       search={search}
-      canManage={canManage}
       activeFilterCount={activeFilterCount}
       areFiltersVisible={areFiltersVisible}
       exportDisabled={employees.length === 0}
       onClearFilters={() => {
         setDepartmentPublicId(""); setStatus("all"); setEmploymentEndDateState("all");
       }}
-      onNew={() => { setFeedback(null); setWriteError(null); setPanelMode("create"); }}
       onExportCsv={() => void exportEmployees("csv")}
       onExportExcel={() => void exportEmployees("xlsx")}
-      onRefresh={() => setRefreshVersion((version) => version + 1)}
       onSearchChange={setSearch}
       onToggleFilters={() => setAreFiltersVisible((visible) => !visible)}
     />
@@ -303,8 +309,9 @@ export default function EmployeesPage() {
       title={t("vacation.employees.title")}
       description={t("vacation.employees.description")}
       commandBar={commandBar}
+      contentFillsViewport
     >
-      <div className="space-y-3">
+      <div className="space-y-3 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
         {writeError && <div role="alert" className="whitespace-pre-line rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
         {hasDepartmentError && (
@@ -332,17 +339,15 @@ export default function EmployeesPage() {
           </div>
         )}
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <section
-          aria-label={t("vacation.employees.tableLabel")}
-          className="min-w-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm [contain:paint]"
-        >
-          <div className="overflow-x-auto">
+        <AdministrativeGridShell
+          ariaLabel={t("vacation.employees.tableLabel")}
+          toolbar={gridToolbar}
+          viewport={
             <table
               aria-busy={isLoading}
               className="w-full min-w-[1160px] border-collapse text-left text-sm"
             >
-              <thead className="border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
+              <thead className="sticky top-0 z-10 border-b border-slate-300 bg-slate-100 text-xs font-semibold text-slate-600">
                 <tr>
                   <SortableGridHeader
                     field="employeeNumber"
@@ -458,17 +463,16 @@ export default function EmployeesPage() {
                   })}
               </tbody>
             </table>
-          </div>
-
-          <GridPagination page={page} pageSize={pageSize} totalCount={employees.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />
-          <GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: [selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ") }) : t("vacation.employees.selectionHint")} />
-        </section>
-        <aside aria-label={t("vacation.employees.details")} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+          }
+          pagination={<GridPagination page={page} pageSize={pageSize} totalCount={employees.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />}
+          footer={<GridFooter countLabel={t("vacation.employees.records", { count: employees.length })} selectionLabel={selectedEmployee ? t("vacation.employees.selected", { name: [selectedEmployee.firstName, selectedEmployee.middleName, selectedEmployee.lastName].filter(Boolean).join(" ") }) : t("vacation.employees.selectionHint")} />}
+          detailsPanel={
+            <div aria-label={t("vacation.employees.details")}>
           <h2 className="mb-4 text-lg font-semibold text-slate-950">{panelMode === "create" ? t("vacation.employees.new") : panelMode === "edit" ? t("vacation.employees.edit") : t("vacation.employees.details")}</h2>
           {panelMode === "create" ? (
-            <EmployeeForm mode="create" departments={departments} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} />
+            <EmployeeForm key="create" mode="create" departments={departments} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} />
           ) : panelMode === "edit" && selectedEmployee ? (
-            <EmployeeForm mode="edit" employee={selectedEmployee} departments={departments} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} />
+            <EmployeeForm key={`edit-${selectedEmployee.publicId}`} mode="edit" employee={selectedEmployee} departments={departments} onCancel={() => setPanelMode("details")} onCreate={create} onUpdate={update} />
           ) : selectedEmployee ? (
             <div className="space-y-3 text-sm">
               <Detail label={t("vacation.employees.employeeNumber")} value={selectedEmployee.employeeNumber} />
@@ -482,39 +486,32 @@ export default function EmployeesPage() {
               {canManage && <div className="space-y-2 pt-2"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPanelMode("edit")} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.edit")}</button><button type="button" onClick={() => setIsConfirmingStatus(true)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm font-medium">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivate") : t("vacation.employees.activate")}</button><button type="button" onClick={() => setIsConfirmingDelete(true)} className="min-h-9 rounded-md border border-red-300 px-3 text-sm font-medium text-red-700">{t("vacation.employees.delete")}</button></div>{isConfirmingStatus && <div className="rounded-md border border-amber-200 bg-amber-50 p-3"><p className="text-sm text-amber-900">{selectedEmployee.employmentStatus === "Active" ? t("vacation.employees.deactivateConfirmation") : t("vacation.employees.activateConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" onClick={() => void changeStatus()} className="min-h-9 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white">{t("vacation.employees.confirm")}</button><button type="button" onClick={() => setIsConfirmingStatus(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm">{t("vacation.employees.cancel")}</button></div></div>}{isConfirmingDelete && <div role="alertdialog" aria-modal="true" className="rounded-md border border-red-200 bg-red-50 p-3"><p className="text-sm text-red-900">{t("vacation.employees.deleteConfirmation")}</p><div className="mt-2 flex gap-2"><button type="button" disabled={isDeleting} onClick={() => void remove()} className="min-h-9 rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.delete")}</button><button type="button" disabled={isDeleting} onClick={() => setIsConfirmingDelete(false)} className="min-h-9 rounded-md border border-slate-300 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60">{t("vacation.employees.cancel")}</button></div></div>}</div>}
             </div>
           ) : <p className="text-sm text-slate-600">{t("vacation.employees.selectForDetails")}</p>}
-        </aside>
-        </div>
+            </div>
+          }
+        />
       </div>
     </CompanyAdministrationWorkspace>
   );
 }
 
-function EmployeeCommandBar({
-  isRefreshing,
+function EmployeeGridToolbar({
   search,
-  canManage,
   activeFilterCount,
   areFiltersVisible,
   exportDisabled,
   onClearFilters,
-  onNew,
   onExportCsv,
   onExportExcel,
-  onRefresh,
   onSearchChange,
   onToggleFilters,
 }: {
-  isRefreshing: boolean;
   search: string;
-  canManage: boolean;
   activeFilterCount: number;
   areFiltersVisible: boolean;
   exportDisabled: boolean;
   onClearFilters: () => void;
-  onNew: () => void;
   onExportCsv: () => void;
   onExportExcel: () => void;
-  onRefresh: () => void;
   onSearchChange: (value: string) => void;
   onToggleFilters: () => void;
 }) {
@@ -522,28 +519,7 @@ function EmployeeCommandBar({
 
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
-      {canManage && <button
-        type="button"
-        onClick={onNew}
-        className="inline-flex min-h-9 items-center gap-2 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <PlusIcon />
-        {t("vacation.employees.new")}
-      </button>}
-
-      <button
-        type="button"
-        onClick={onRefresh}
-        disabled={isRefreshing}
-        className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <RefreshIcon />
-        {isRefreshing
-          ? t("vacation.employees.refreshing")
-          : t("vacation.employees.refresh")}
-      </button>
-
-      <div className="ml-0 flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:ml-auto lg:justify-end">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         <label className="w-full min-w-0 flex-1 sm:min-w-[210px] lg:max-w-xs">
           <span className="sr-only">
             {t("vacation.employees.searchLabel")}
@@ -602,8 +578,8 @@ function deleteConflictMessage(dependencies: string[] | undefined, t: (key: neve
     : `${t("vacation.employees.deleteReferenced" as never)} ${t("vacation.employees.deleteConflictGuidance" as never)}`;
 }
 
-function compareEmployees(left: Employee, right: Employee, sort: GridSort<EmployeeSortField> | null) {
-  const activeSort = sort ?? { field: "employeeNumber" as const, direction: "asc" as const };
+function compareEmployees(left: Employee, right: Employee, sort: Exclude<GridSort<EmployeeSortField>, null>) {
+  const activeSort = sort;
   const value = (employee: Employee) => ({
     employeeNumber: employee.employeeNumber,
     name: `${employee.firstName} ${employee.lastName}`,

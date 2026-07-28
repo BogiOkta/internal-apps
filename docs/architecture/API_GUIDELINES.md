@@ -325,7 +325,7 @@ Current Organization, current-employee, and Identity administration endpoints:
 | `POST /api/v1/organization/departments/{publicId}/activate` | none | Activates a department. |
 | `POST /api/v1/organization/departments/{publicId}/deactivate` | none | Deactivates a department without deleting it. |
 | `DELETE /api/v1/organization/departments/{publicId}` | none | Deletes an unreferenced department; a referenced department returns `409 department_delete_conflict`. |
-| `GET /api/v1/organization/employees` | `search`, `employeeNumber`, `name`, `departmentPublicId`, `email`, `status`, `sort` | Returns employees with department display data; filters combine server-side and use allowlisted values. |
+| `GET /api/v1/organization/employees` | `search`, `employeeNumber`, `name`, `departmentPublicId`, `email`, `status`, `sort` | Returns employees with department display data; filters combine server-side and use allowlisted values. Without `sort`, Active employees precede inactive employees and employee numbers are natural ascending within each group. |
 | `POST /api/v1/organization/employees` | JSON body | Creates an employee; requires `organization.employees.manage`. |
 | `PUT /api/v1/organization/employees/{publicId}` | JSON body | Updates name, email, and department; employee number and status are excluded. |
 | `POST /api/v1/organization/employees/{publicId}/activate` | none | Activates an employee. |

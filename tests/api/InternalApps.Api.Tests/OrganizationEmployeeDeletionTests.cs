@@ -240,10 +240,12 @@ public sealed class OrganizationEmployeeDeletionTests
     public void PortalContract_HasCompactGridSafeDependenciesAndConfirmedDelete()
     {
         var page = Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx");
+        var grid = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
         var service = Read("apps", "portal", "src", "services", "organization.ts");
         Assert.Contains("employmentStartDate", page);
         Assert.Contains("employmentEndDate", page);
-        Assert.Contains("overflow-x-auto", page);
+        Assert.Contains("AdministrativeGridShell", page);
+        Assert.Contains("min-h-0 flex-1 overflow-auto", grid);
         Assert.Contains("min-w-[1160px]", page);
         Assert.Contains("isConfirmingDelete", page);
         Assert.Contains("isDeleting", page);

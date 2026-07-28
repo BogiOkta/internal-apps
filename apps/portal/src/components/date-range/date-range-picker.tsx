@@ -27,6 +27,7 @@ import {
   isSameDay,
   startOfDay,
 } from "@/components/date-range/date-range-utils";
+import { dateControlClassName } from "@/components/portal-date-utils";
 import { useTranslations } from "@/i18n/use-translations";
 import styles from "@/components/date-range/date-range-picker.module.css";
 
@@ -168,7 +169,7 @@ export function DateRangePicker({
           type="button"
           onClick={clearRange}
           disabled={disabled || (!value.from && !value.to)}
-          className="min-h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className={`min-h-10 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 ${dateControlClassName()}`}
         >
           {t("dateRange.clear")}
         </button>
@@ -178,13 +179,13 @@ export function DateRangePicker({
       <div className="mb-3 flex items-center justify-between gap-3">
         <button type="button" onClick={() => calendarRef.current?.getApi().prev()}
           disabled={disabled} aria-label={t("dateRange.previous")}
-          className="min-h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50">
+          className={`min-h-10 font-medium hover:bg-slate-50 disabled:opacity-50 ${dateControlClassName()}`}>
           ←
         </button>
         <h3 className="text-center text-sm font-semibold text-slate-950">{title}</h3>
         <button type="button" onClick={() => calendarRef.current?.getApi().next()}
           disabled={disabled} aria-label={t("dateRange.next")}
-          className="min-h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50">
+          className={`min-h-10 font-medium hover:bg-slate-50 disabled:opacity-50 ${dateControlClassName()}`}>
           →
         </button>
       </div>
@@ -290,9 +291,7 @@ function BoundaryButton({
   return (
     <button type="button" onClick={onClick} onKeyDown={onKeyDown}
       disabled={disabled} aria-pressed={isActive}
-      className={`min-h-16 rounded-md border bg-white px-3 py-2 text-left focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50 ${
-        isActive ? "border-blue-600 ring-1 ring-blue-600" : "border-slate-300"
-      }`}>
+      className={`min-h-16 py-2 text-left disabled:opacity-50 ${dateControlClassName({ active: isActive })}`}>
       <span className="block text-xs font-medium text-slate-600">{label}</span>
       <span className={`mt-1 block text-sm font-semibold ${value ? "text-slate-950" : "text-slate-500"}`}>
         {formattedValue}

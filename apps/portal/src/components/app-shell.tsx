@@ -39,6 +39,7 @@ type AppShellProps = {
   description?: string;
   commandBar?: ReactNode;
   secondaryNavigation?: ReactNode;
+  contentFillsViewport?: boolean;
   children: ReactNode | ((context: AppShellContext) => ReactNode);
 };
 
@@ -58,6 +59,7 @@ export function AppShell({
   description,
   commandBar,
   secondaryNavigation,
+  contentFillsViewport = false,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -159,7 +161,7 @@ export function AppShell({
         <Navigation {...navigationProps} />
       </aside>
 
-      <div className="lg:pl-[232px]">
+      <div className={`lg:pl-[232px] ${contentFillsViewport ? "lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden" : ""}`}>
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-300 bg-white px-4 lg:hidden">
           <Link
             href="/dashboard"
@@ -252,7 +254,7 @@ export function AppShell({
           </section>
         )}
 
-        <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-7">
+        <main className={`mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-7 ${contentFillsViewport ? "lg:flex lg:min-h-0 lg:w-full lg:flex-1 lg:flex-col" : ""}`}>
           {typeof children === "function" ? children(shellContext) : children}
         </main>
       </div>

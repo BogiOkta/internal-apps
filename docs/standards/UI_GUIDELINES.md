@@ -352,6 +352,24 @@ day. Invalid calendar dates are rejected adjacent to the field and nullable
 values remain empty. API date-only transport remains ISO `yyyy-MM-dd`;
 date-time display is `dd.MM.yyyy. HH:mm`.
 
+`PortalDateInput` and `DateRangePicker` share the Portal date-control visual
+contract: medium rounded borders, 40px minimum control height, shared padding,
+visible blue focus treatment, muted disabled treatment, red invalid treatment
+where validation applies, aligned calendar triggers, and token-based light and
+dark appearance. Feature pages must consume these shared components and their
+shared date-control utility rather than duplicating date-input styling.
+
+Administrative list pages use `AdministrativeGridShell` as the canonical grid
+frame. It provides a bordered, rounded card; an optional toolbar; a
+`min-height: 0` table viewport with internal overflow; a pagination and summary
+footer that remain outside the scrolling region; responsive horizontal table
+scrolling; and an optional independently scrolling details panel. Pages that
+fill the desktop application viewport must opt into the shell's viewport-fill
+layout and preserve the flex `min-height: 0` chain. Loading, empty, and error
+content belongs inside the grid viewport so the surrounding page geometry does
+not change between states. On narrow screens, the grid and details panel stack
+and the table retains horizontal scrolling.
+
 When a list filters a date field by range, use date-picker inputs in its
 expandable grid filter area, with explicit From and To labels. Preserve the
 existing clear-all behavior and keep range controls out of the compact command

@@ -67,6 +67,17 @@ public sealed class OrganizationEmployeeHistoricalDataTests
         Assert.Contains("employmentEndDate", page);
     }
 
+    [Fact]
+    public void EmployeeListDefaultOrder_GroupsActiveEmployeesAndOrdersCodesNaturally()
+    {
+        var repository = ReadRepositoryFile("apps", "api", "src", "Api", "Modules",
+            "Organization", "OrganizationRepository.cs");
+        Assert.Contains("CASE WHEN employees.employment_status = 'Active' THEN 0 ELSE 1 END", repository);
+        Assert.Contains("lower(regexp_replace(employees.employee_number, '\\d', '', 'g'))", repository);
+        Assert.Contains("length(regexp_replace(employees.employee_number, '\\D', '', 'g'))", repository);
+        Assert.Contains("employees.public_id", repository);
+    }
+
     private static string ReadRepositoryFile(params string[] parts)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
