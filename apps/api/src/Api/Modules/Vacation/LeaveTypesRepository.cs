@@ -5,7 +5,29 @@ namespace InternalApps.Api.Modules.Vacation;
 
 internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
 {
-    private const string Projection = """
+    /// <summary>
+    /// A leave type is "in use" once any Vacation request, yearly balance, or
+    /// append-only balance entry has referenced it. That state permanently locks the
+    /// balance-behaviour fields and blocks physical deletion.
+    /// </summary>
+    private const string UsageProjection = """
+        (
+            EXISTS (
+                SELECT 1 FROM vacation.leave_requests AS used_requests
+                WHERE used_requests.leave_type_id = leave_types.id
+            )
+            OR EXISTS (
+                SELECT 1 FROM vacation.leave_balances AS used_balances
+                WHERE used_balances.leave_type_id = leave_types.id
+            )
+            OR EXISTS (
+                SELECT 1 FROM vacation.leave_balance_entries AS used_entries
+                WHERE used_entries.leave_type_id = leave_types.id
+            )
+        )
+        """;
+
+    private const string Projection = $"""
         leave_types.public_id AS PublicId,
         leave_types.code AS Code,
         leave_types.name_sr AS NameSr,
@@ -17,7 +39,8 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         leave_types.requires_balance AS RequiresBalance,
         leave_types.requires_approval AS RequiresApproval,
         leave_types.is_active AS IsActive,
-        leave_types.display_order AS DisplayOrder
+        leave_types.display_order AS DisplayOrder,
+        {UsageProjection} AS IsInUse
         """;
 
     public async Task<IReadOnlyList<LeaveTypeRecord>> ListAsync(
@@ -176,6 +199,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                 description_en = @DescriptionEn,
                 calendar_color = @CalendarColor,
                 counts_against_vacation_balance = @CountsAgainstVacationBalance,
+                requires_balance = @RequiresBalance,
                 requires_approval = @RequiresApproval,
                 display_order = @DisplayOrder,
                 updated_at = now()
@@ -196,6 +220,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                     command.DescriptionEn,
                     command.CalendarColor,
                     command.CountsAgainstVacationBalance,
+                    command.RequiresBalance,
                     command.RequiresApproval,
                     command.DisplayOrder
                 },
@@ -230,6 +255,24 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
 
         return ToRecord(row);
     }
+
+    /// <summary>
+    /// Physical deletion runs only through the owner-controlled SECURITY DEFINER
+    /// function; the runtime role holds no DELETE privilege on vacation.leave_types.
+    /// </summary>
+    public Task<bool> DeleteUnreferencedLeaveTypeAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        CancellationToken cancellationToken) =>
+        connection.ExecuteScalarAsync<bool>(
+            new CommandDefinition(
+                """
+                SELECT vacation.delete_unreferenced_leave_type(@PublicId)
+                """,
+                new { PublicId = publicId },
+                transaction,
+                cancellationToken: cancellationToken));
 
     private static bool? ToIsActive(LeaveTypeStatusFilter status) =>
         status switch
@@ -281,7 +324,8 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
             row.RequiresBalance,
             row.RequiresApproval,
             row.IsActive,
-            row.DisplayOrder);
+            row.DisplayOrder,
+            row.IsInUse);
 
     private sealed class LeaveTypeRow
     {
@@ -308,5 +352,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         public bool IsActive { get; set; }
 
         public int DisplayOrder { get; set; }
+
+        public bool IsInUse { get; set; }
     }
 }

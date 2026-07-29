@@ -435,11 +435,14 @@ const englishTranslations = {
   "vacation.leaveTypes.code": "Code",
   "vacation.leaveTypes.name": "Name",
   "vacation.leaveTypes.balance": "Counts against balance",
+  "vacation.leaveTypes.requiresBalance": "Requires balance",
   "vacation.leaveTypes.approval": "Approval required",
-  "vacation.leaveTypes.status": "Status",
+  "vacation.leaveTypes.status": "Active",
+  "vacation.leaveTypes.actions": "Actions",
   "vacation.leaveTypes.codeFilter": "Filter by code",
   "vacation.leaveTypes.nameFilter": "Filter by localized name",
   "vacation.leaveTypes.balanceFilter": "Filter by balance behavior",
+  "vacation.leaveTypes.requiresBalanceFilter": "Filter by balance requirement",
   "vacation.leaveTypes.approvalFilter": "Filter by approval requirement",
   "vacation.leaveTypes.displayOrderFilter": "Filter by exact display order",
   "vacation.leaveTypes.exportDescription": "Description",
@@ -464,6 +467,9 @@ const englishTranslations = {
   "vacation.leaveTypes.calendarColor": "Calendar color",
   "vacation.leaveTypes.notSet": "Not set",
   "vacation.leaveTypes.displayOrder": "Display order",
+  "vacation.leaveTypes.usage": "Usage",
+  "vacation.leaveTypes.usageInUse": "Already in use",
+  "vacation.leaveTypes.usageUnused": "Not used yet",
   "vacation.leaveTypes.new": "New leave type",
   "vacation.leaveTypes.edit": "Edit",
   "vacation.leaveTypes.save": "Save",
@@ -487,14 +493,22 @@ const englishTranslations = {
     "The leave type could not be saved. Review the values and try again.",
   "vacation.leaveTypes.stateChangeFailed":
     "The leave type status could not be changed.",
+  "vacation.leaveTypes.delete": "Delete",
+  "vacation.leaveTypes.deleting": "Deleting…",
   "vacation.leaveTypes.createSuccess": "Leave type created.",
   "vacation.leaveTypes.updateSuccess": "Leave type updated.",
   "vacation.leaveTypes.activateSuccess": "Leave type activated.",
   "vacation.leaveTypes.deactivateSuccess": "Leave type deactivated.",
+  "vacation.leaveTypes.deleteSuccess": "Leave type deleted.",
   "vacation.leaveTypes.activateConfirmation":
     "Activate this leave type for future use?",
   "vacation.leaveTypes.deactivateConfirmation":
     "Deactivate this leave type? Existing historical references are preserved.",
+  "vacation.leaveTypes.deleteConfirmation":
+    "Permanently delete this leave type? This is possible only when it has never been used.",
+  "vacation.leaveTypes.deleteReferenced":
+    "This leave type is already in use by leave requests or balances and cannot be deleted. Deactivate it instead so historical records keep resolving.",
+  "vacation.leaveTypes.deleteFailed": "The leave type could not be deleted.",
   "vacation.leaveTypes.form.code": "Code",
   "vacation.leaveTypes.form.codeGuidance":
     "Use uppercase letters, digits, and single underscores.",
@@ -513,6 +527,10 @@ const englishTranslations = {
   "vacation.leaveTypes.form.behavior": "Leave type behavior",
   "vacation.leaveTypes.form.countsAgainstBalance":
     "Counts against annual vacation balance",
+  "vacation.leaveTypes.form.requiresBalance":
+    "Requires an existing balance record",
+  "vacation.leaveTypes.form.balanceLocked":
+    "Balance behavior is locked because this leave type is already in use.",
   "vacation.leaveTypes.form.requiresApproval": "Requires approval",
   "vacation.leaveTypes.form.initiallyActive": "Initially active",
   "vacation.leaveTypes.validation.codeRequired": "Code is required.",
@@ -532,6 +550,8 @@ const englishTranslations = {
     "Use a hexadecimal color in #RRGGBB format.",
   "vacation.leaveTypes.validation.displayOrder":
     "Display order must be a nonnegative whole number.",
+  "vacation.leaveTypes.validation.balanceLocked":
+    "Balance behavior cannot be changed after the leave type has been used.",
   "vacation.employeePortal.title": "Vacation",
   "vacation.employeePortal.description": "Manage your leave balances, requests, and calendar.",
   "vacation.employeePortal.newRequest": "New request",
@@ -1232,11 +1252,14 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.leaveTypes.code": "Šifra",
   "vacation.leaveTypes.name": "Naziv",
   "vacation.leaveTypes.balance": "Umanjuje saldo odmora",
+  "vacation.leaveTypes.requiresBalance": "Zahteva saldo",
   "vacation.leaveTypes.approval": "Potrebno odobrenje",
-  "vacation.leaveTypes.status": "Status",
+  "vacation.leaveTypes.status": "Aktivna",
+  "vacation.leaveTypes.actions": "Radnje",
   "vacation.leaveTypes.codeFilter": "Filtriraj prema šifri",
   "vacation.leaveTypes.nameFilter": "Filtriraj prema lokalizovanom nazivu",
   "vacation.leaveTypes.balanceFilter": "Filtriraj prema umanjenju salda",
+  "vacation.leaveTypes.requiresBalanceFilter": "Filtriraj prema obaveznom saldu",
   "vacation.leaveTypes.approvalFilter": "Filtriraj prema obaveznom odobrenju",
   "vacation.leaveTypes.displayOrderFilter": "Filtriraj prema tačnom redosledu prikaza",
   "vacation.leaveTypes.exportDescription": "Opis",
@@ -1262,6 +1285,9 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.leaveTypes.calendarColor": "Boja u kalendaru",
   "vacation.leaveTypes.notSet": "Nije podešeno",
   "vacation.leaveTypes.displayOrder": "Redosled prikaza",
+  "vacation.leaveTypes.usage": "Upotreba",
+  "vacation.leaveTypes.usageInUse": "Već se koristi",
+  "vacation.leaveTypes.usageUnused": "Još se ne koristi",
   "vacation.leaveTypes.new": "Nova vrsta",
   "vacation.leaveTypes.edit": "Izmeni",
   "vacation.leaveTypes.save": "Sačuvaj",
@@ -1285,14 +1311,22 @@ const serbianLatinTranslations: TranslationDictionary = {
     "Vrstu odsustva nije moguće sačuvati. Proverite podatke i pokušajte ponovo.",
   "vacation.leaveTypes.stateChangeFailed":
     "Status vrste odsustva nije moguće promeniti.",
+  "vacation.leaveTypes.delete": "Obriši",
+  "vacation.leaveTypes.deleting": "Brisanje…",
   "vacation.leaveTypes.createSuccess": "Vrsta odsustva je kreirana.",
   "vacation.leaveTypes.updateSuccess": "Vrsta odsustva je izmenjena.",
   "vacation.leaveTypes.activateSuccess": "Vrsta odsustva je aktivirana.",
   "vacation.leaveTypes.deactivateSuccess": "Vrsta odsustva je deaktivirana.",
+  "vacation.leaveTypes.deleteSuccess": "Vrsta odsustva je obrisana.",
   "vacation.leaveTypes.activateConfirmation":
     "Aktivirati ovu vrstu odsustva za buduću upotrebu?",
   "vacation.leaveTypes.deactivateConfirmation":
     "Deaktivirati ovu vrstu odsustva? Postojeće istorijske reference ostaju sačuvane.",
+  "vacation.leaveTypes.deleteConfirmation":
+    "Trajno obrisati ovu vrstu odsustva? To je moguće samo ako nikada nije korišćena.",
+  "vacation.leaveTypes.deleteReferenced":
+    "Ova vrsta odsustva se već koristi u zahtevima ili saldima i ne može se obrisati. Deaktivirajte je kako bi istorijski zapisi ostali ispravni.",
+  "vacation.leaveTypes.deleteFailed": "Vrstu odsustva nije moguće obrisati.",
   "vacation.leaveTypes.form.code": "Šifra",
   "vacation.leaveTypes.form.codeGuidance":
     "Koristite velika slova, cifre i pojedinačne donje crte.",
@@ -1309,6 +1343,10 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.leaveTypes.form.behavior": "Ponašanje vrste odsustva",
   "vacation.leaveTypes.form.countsAgainstBalance":
     "Umanjuje saldo godišnjeg odmora",
+  "vacation.leaveTypes.form.requiresBalance":
+    "Zahteva postojeći zapis o saldu",
+  "vacation.leaveTypes.form.balanceLocked":
+    "Ponašanje salda je zaključano jer se ova vrsta odsustva već koristi.",
   "vacation.leaveTypes.form.requiresApproval": "Potrebno odobrenje",
   "vacation.leaveTypes.form.initiallyActive": "Odmah aktivna",
   "vacation.leaveTypes.validation.codeRequired": "Šifra je obavezna.",
@@ -1328,6 +1366,8 @@ const serbianLatinTranslations: TranslationDictionary = {
     "Koristite heksadecimalnu boju u formatu #RRGGBB.",
   "vacation.leaveTypes.validation.displayOrder":
     "Redosled prikaza mora biti ceo broj koji nije negativan.",
+  "vacation.leaveTypes.validation.balanceLocked":
+    "Ponašanje salda se ne može menjati nakon što je vrsta odsustva korišćena.",
   "vacation.employeePortal.title": "Odmori",
   "vacation.employeePortal.description": "Pregledajte saldo, zahteve i kalendar svojih odsustava.",
   "vacation.employeePortal.newRequest": "Novi zahtev",

@@ -54,8 +54,9 @@ public sealed class PortalAdministrationUiContractTests
         var departments = Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx");
         var users = Read("apps", "portal", "src", "app", "identity", "users", "page.tsx");
         var links = Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx");
+        var leaveTypes = Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx");
 
-        foreach (var page in new[] { employees, departments, users, links })
+        foreach (var page in new[] { employees, departments, users, links, leaveTypes })
         {
             Assert.Contains("AdministrationPageBody", page);
             Assert.Contains("AdministrativeGridShell", page);
@@ -135,6 +136,91 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("panelMode === \"edit\"", page);
         Assert.Contains("GridPagination", page);
         Assert.DoesNotContain("GridFooter", page);
+    }
+
+    [Fact]
+    public void LeaveTypeAdministration_UsesCanonicalContractAndDeclaresRequiredColumns()
+    {
+        var page = Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx");
+        var form = Read("apps", "portal", "src", "features", "vacation",
+            "components", "leave-type-form.tsx");
+
+        Assert.Contains("AdministrationPageBody", page);
+        Assert.Contains("AdministrativeGridShell", page);
+        Assert.Contains("AdministrativeGridToolbar", page);
+        Assert.Contains("fillViewport", page);
+        Assert.Contains("GridPagination", page);
+        Assert.Contains("GridStateRows", page);
+        Assert.Contains("contentFillsViewport", page);
+        Assert.Contains("headerActions", page);
+        Assert.DoesNotContain("GridFooter", page);
+        Assert.DoesNotContain("GridToolbarActions", page);
+
+        // The canonical grid columns for this increment.
+        foreach (var column in new[]
+        {
+            "vacation.leaveTypes.code",
+            "vacation.leaveTypes.name",
+            "vacation.leaveTypes.balance",
+            "vacation.leaveTypes.requiresBalance",
+            "vacation.leaveTypes.approval",
+            "vacation.leaveTypes.status",
+            "vacation.leaveTypes.actions",
+        })
+        {
+            Assert.Contains(column, page);
+        }
+
+        // Shared controls and buttons rather than page-local variants.
+        Assert.Contains("formPrimaryButtonClassName", page);
+        Assert.Contains("formSecondaryButtonClassName", page);
+        Assert.Contains("formDangerButtonClassName", page);
+        Assert.Contains("selectForDetails", page);
+        Assert.Contains("panelMode === \"create\"", page);
+        Assert.Contains("panelMode === \"edit\"", page);
+        Assert.DoesNotContain("type=\"date\"", page, StringComparison.Ordinal);
+
+        // Safe delete with the canonical localized conflict guidance.
+        Assert.Contains("deleteLeaveType", page);
+        Assert.Contains("leave_type_delete_conflict", page);
+        Assert.Contains("vacation.leaveTypes.deleteReferenced", page);
+        Assert.Contains("vacation.leaveTypes.deleteConfirmation", page);
+
+        // Lock hints for the fields the business rules freeze after first use.
+        Assert.Contains("formControlClassName", form);
+        Assert.Contains("formPrimaryButtonClassName", form);
+        Assert.Contains("leaveType?.isInUse", form);
+        Assert.Contains("vacation.leaveTypes.form.balanceLocked", form);
+        Assert.Contains("vacation.leaveTypes.form.codeReadOnly", form);
+        Assert.Contains("disabled={isLocked}", form);
+    }
+
+    [Fact]
+    public void LeaveTypeAdministration_LocalizesEveryNewKeyInBothLocales()
+    {
+        var translations = Read("apps", "portal", "src", "i18n", "translations.ts");
+
+        foreach (var pair in new[]
+        {
+            ("\"vacation.leaveTypes.requiresBalance\": \"Requires balance\"",
+             "\"vacation.leaveTypes.requiresBalance\": \"Zahteva saldo\""),
+            ("\"vacation.leaveTypes.actions\": \"Actions\"",
+             "\"vacation.leaveTypes.actions\": \"Radnje\""),
+            ("\"vacation.leaveTypes.delete\": \"Delete\"",
+             "\"vacation.leaveTypes.delete\": \"Obriši\""),
+            ("\"vacation.leaveTypes.deleteSuccess\": \"Leave type deleted.\"",
+             "\"vacation.leaveTypes.deleteSuccess\": \"Vrsta odsustva je obrisana.\""),
+        })
+        {
+            Assert.Contains(pair.Item1, translations);
+            Assert.Contains(pair.Item2, translations);
+        }
+
+        Assert.Contains("\"vacation.leaveTypes.deleteReferenced\":", translations);
+        Assert.Contains("Deactivate it instead", translations);
+        Assert.Contains("Deaktivirajte je", translations);
+        Assert.Contains("\"vacation.leaveTypes.form.balanceLocked\":", translations);
+        Assert.Contains("\"vacation.leaveTypes.validation.balanceLocked\":", translations);
     }
 
     [Fact]

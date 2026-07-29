@@ -4,10 +4,12 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Vacation annual leave entitlement Portal UI.
-  The existing Leave Policy route now presents employee/year annual allocation
-  with canonical administration layout, localized entitlement terminology,
-  shared date entry, and a client-only derived total.
+- Latest functional milestone: canonical Vacation Leave Type administration.
+  Migration 032 adds owner-controlled safe deletion and the missing
+  `requires_balance` runtime grant; the API enforces the immutable code and the
+  unused-only balance-behaviour rules; the Portal route is migrated to the
+  canonical administration foundation with lock hints and localized
+  delete-conflict guidance.
 
 ## Platform foundation
 
@@ -36,12 +38,13 @@
   Serbian Latin date-display formatter are available. Language and appearance
   preferences are edited on `/settings` and reuse the canonical
   `LocaleProvider` / `AppearanceProvider` storage keys. Organization
-  Employees and Departments, Identity Users, and User–Employee links share
-  the canonical administration header/toolbar/shell/footer/side-panel
-  contract with stable loading, empty, error, and no-selection geometry.
-  Remaining Portal areas (Leave Types/Balances, Vacation request UIs,
-  Dashboard) are inventoried in `docs/standards/UI_GUIDELINES.md` §7.5 and are
-  not migrated in this increment.
+  Employees and Departments, Identity Users, User–Employee links, and Vacation
+  Leave Types share the canonical administration
+  header/toolbar/shell/footer/side-panel contract with stable loading, empty,
+  error, and no-selection geometry. Remaining Portal areas (Leave Balances,
+  Vacation request UIs, Dashboard) are inventoried in
+  `docs/standards/UI_GUIDELINES.md` §7.5 and are not migrated in this
+  increment.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation
@@ -53,6 +56,13 @@
 ## Vacation module
 
 - Database foundation: complete; migrations 012–017 are applied and validated.
+- Leave Type administration: complete. Create, edit, activate, deactivate, and
+  safe delete are implemented. Physical deletion is restricted to permanently
+  unreferenced records through the owner-controlled
+  `vacation.delete_unreferenced_leave_type(uuid)` function; there is no runtime
+  `DELETE` grant and no direct SQL delete path, and Vacation dependencies never
+  cascade. Code is immutable after creation, and Requires Balance and Counts
+  Against Balance lock after first use.
 - Backend API: complete and runtime validated.
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
@@ -69,6 +79,37 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
+- Canonical Vacation Leave Type administration: migration 032 applied
+  successfully against the configured database (32 migrations discovered,
+  journaled, no pending scripts). API Debug build passed with zero warnings and
+  errors. Portal strict TypeScript and production build passed with
+  `/vacation/leave-types` included. API test suite with database integration
+  enabled: 87/88 passed, including nine new focused
+  `VacationLeaveTypeAdministrationTests` (endpoint/permission contract,
+  controlled-delete-only repository contract, migration grant and function
+  shape, immutable code on update, delete-conflict token parsing, the
+  locked-field rule table, the three-table usage projection, and live-database
+  checks for the controlled delete function and the exact granted UPDATE
+  columns with absent direct DELETE and confirmed `SECURITY DEFINER`) and two
+  extended Portal contract tests. The single failure,
+  `LeaveRequestLedgerIntegrationTests.RequestConsumption_...`, is pre-existing
+  and unrelated: it requires a retained `LV2SMOKE-` SUBMITTED request fixture
+  that the earlier LV.2 smoke left approved/cancelled. It was confirmed to fail
+  identically on unmodified `main`. `git diff --check` is clean.
+- Canonical Vacation Leave Type administration runtime smoke: an authenticated
+  API smoke against fresh `internal.ps1` services passed 14/14 for permission
+  presence, the projected `isInUse` flag, Serbian Latin and English
+  localization, create, duplicate-code `409`, balance-behaviour edit while
+  unused, immutable code across update, deactivate and activate, the in-use
+  locked-field `400` with `countsAgainstVacationBalance` and `requiresBalance`
+  keys, an accepted in-use name-only edit, the referenced-delete `409`
+  `leave_type_delete_conflict` carrying the `Vacation leave balance entry`
+  dependency label, safe delete of the unreferenced type (`204`), `404` after
+  deletion and on repeat delete, and cleanup leaving the original six-row
+  catalogue. **Browser-driven smoke was not performed**: no browser automation
+  tool was available in this session. The Portal layer was validated by strict
+  TypeScript, the production build, and focused Portal contract tests instead;
+  a controlled browser smoke of this route remains outstanding.
 - Vacation annual leave entitlement Portal UI: strict TypeScript and Portal
   production build passed; focused `PortalAdministrationUiContractTests`
   passed 9/9; `git diff --check` is clean. Controlled browser validation
@@ -214,7 +255,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
   recurrence, multi-country, or multi-calendar support.
 - Vacation request administration uses `vacation.requests.manage`; refreshed
   Administrator tokens are required after migration 031. Leave Policies and
-  Leave Balances continue to use `identity.users.manage`.
+  Leave Balances continue to use `identity.users.manage`. Leave Type
+  administration reuses the existing `vacation.leave-types.manage` permission,
+  so migration 032 requires no token refresh.
 - No frontend automated-test framework is currently present.
 - Employee pagination is client-side because the current API contract intentionally
   returns a bounded unpaged result. Larger datasets require documented API
@@ -223,15 +266,15 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Identity administration Design System rollout: migrate Users and
-User–Employee Links to the canonical Portal administration layout already
-used by Employees and Departments.
+Canonical Vacation Leave Type administration: canonical Portal administration
+migration, create, edit, activate, deactivate, and safe delete. Complete.
 
 ## Next task
 
 No follow-on scope is approved. Do not begin further Portal UI migration
-(Leave Types/Policies/Balances, Vacation request UIs, Dashboard) without a
-separately approved task.
+(Leave Balances, Vacation request UIs, Dashboard) without a separately approved
+task. A controlled browser smoke of `/vacation/leave-types` remains outstanding
+because no browser automation was available in the implementing session.
 
 ## Session instruction
 

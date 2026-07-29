@@ -591,19 +591,26 @@ it:
 
 | Area | Gap relative to the canonical contract |
 |---|---|
-| Vacation Leave Types | Uses `GridFooter` selection/record summary alongside its grid |
 | Vacation Leave Balances | Native `type="date"` remain; page-local form chrome |
 | Vacation request employee self-service | Outside administration shell rollout |
 | Vacation request administration | Outside this administration UI foundation rollout |
 | Dashboard | Outside scope; launcher surface, not an administration grid |
 
-Identity user administration and User–Employee links now reuse the same
-Organization administration contract as Employees and Departments:
-`AdministrationPageHeader` (via the shell), `AdministrationPageBody`,
-`AdministrativeGridToolbar`, `AdministrativeGridShell` with `fillViewport`,
-`GridPagination`, shared form controls and button helpers, and the shared
-side panel. Client-side pagination applies because those list APIs remain
-bounded and unpaged.
+Identity user administration, User–Employee links, and Vacation Leave Types now
+reuse the same Organization administration contract as Employees and
+Departments: `AdministrationPageHeader` (via the shell),
+`AdministrationPageBody`, `AdministrativeGridToolbar`,
+`AdministrativeGridShell` with `fillViewport`, `GridPagination`, shared form
+controls and button helpers, and the shared side panel. Client-side pagination
+applies because those list APIs remain bounded and unpaged.
+
+Leave Types is the first migrated administration grid with an explicit Actions
+column. Its grid columns are Code, Name, Counts Against Balance, Requires
+Balance, Requires Approval, Active, and Actions. Its side panel shows every
+business field plus a derived usage state, and its edit panel renders lock
+hints for fields the domain freezes after first use (immutable code, and
+balance behaviour once the leave type is referenced). Lock hints describe the
+rule; the API remains authoritative.
 
 New pages MUST reuse `AdministrationPageHeader`, `AdministrationPageBody`,
 `AdministrativeGridToolbar`, `AdministrativeGridShell` (when tabular),

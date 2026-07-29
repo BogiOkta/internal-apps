@@ -48,10 +48,35 @@ status, and display order. The established
 for the locked counts-against-balance concept.
 
 Inactive leave types remain valid references for historical records but cannot
-be selected for new requests. Initial lifecycle management uses `is_active`;
-physical deletion is not part of the initial application behavior.
-Future repository updates must explicitly set `updated_at = now()`; no
-automatic timestamp trigger is used.
+be selected for new requests. Deactivation is always allowed and never breaks
+historical resolution. Repository updates must explicitly set
+`updated_at = now()`; no automatic timestamp trigger is used.
+
+Migration 032 adds controlled physical deletion. A leave type may be deleted
+only when it has never been referenced by `vacation.leave_requests`,
+`vacation.leave_balances`, or `vacation.leave_balance_entries`. Deletion runs
+exclusively through the owner-owned `SECURITY DEFINER` function
+`vacation.delete_unreferenced_leave_type(uuid)`; the runtime role holds no
+`DELETE` privilege on `vacation.leave_types` and no direct SQL delete path
+exists. This matches the Organization Department pattern established by
+migration 030. A referenced leave type raises the internal
+`leave_type_delete_conflict:v1:<controlled-label>(|<controlled-label>)*`
+grammar, whose labels are `Vacation leave request`, `Vacation leave balance`,
+and `Vacation leave balance entry`. The API translates only those controlled
+labels into the stable `409` `leave_type_delete_conflict` Problem Details with a
+`dependencies` array; the Portal shows a localized message explaining that the
+leave type is already in use and should be deactivated instead. Dependent rows
+are never cascaded or deleted.
+
+`requires_balance` and `counts_against_vacation_balance` are editable only
+while a leave type is unused. The list and details projections derive an
+`isInUse` flag from the same three referencing tables. Once it is true, the API
+rejects a differing submitted value for either field with a locked-field
+validation error, and the Portal renders lock hints instead of editable
+controls. Migration 032 grants the runtime role the previously missing
+`requires_balance` column `UPDATE`; the unused-only rule is enforced in the
+application layer. The stable code remains immutable after creation and is not
+part of the update contract.
 
 Leave Type administration uses the explicit permission
 `vacation.leave-types.manage`. The permission is seeded by migration 007 and
@@ -299,11 +324,23 @@ or English names and descriptions; missing or unsupported languages fall back
 to Serbian, while a missing localized description remains null.
 
 Users with `vacation.leave-types.manage` can create and edit Leave Types in the
-same side panel and can explicitly activate or deactivate a selected type.
-Activation commands are state-idempotent. The Portal hides these controls for
-other users, while the API policy remains authoritative. Every successful
-mutation updates `updated_at` and writes an append-only audit event in the same
-database transaction. No physical deletion operation exists.
+same side panel, can explicitly activate or deactivate a selected type, and can
+delete a never-referenced type through
+`DELETE /api/v1/vacation/leave-types/{publicId}`. Activation commands are
+state-idempotent. The Portal hides these controls for other users, while the API
+policy remains authoritative. Every successful mutation, including deletion,
+updates `updated_at` where applicable and writes an append-only audit event in
+the same database transaction.
+
+The Leave Types Portal route uses the canonical administration foundation:
+`AdministrationPageHeader` through the workspace shell,
+`AdministrationPageBody`, `AdministrativeGridShell` with `fillViewport`,
+`AdministrativeGridToolbar`, `GridPagination`, the shared side panel, and the
+shared button and form-control helpers. Its grid columns are Code, Name, Counts
+Against Balance, Requires Balance, Requires Approval, Active, and Actions. The
+details panel shows all business fields plus the derived usage state, and the
+edit panel renders lock hints for the immutable code and for locked balance
+behaviour.
 
 ### Leave request application layer
 

@@ -1,5 +1,40 @@
 # Internal Apps Platform change history
 
+## 2026-07-30 — Canonical Vacation Leave Type administration
+
+- Added migration `032_vacation_leave_type_administration.sql`. It reuses the
+  existing `vacation.leave-types.manage` permission, seeds no new permission,
+  grants the runtime role the previously missing `requires_balance` column
+  `UPDATE`, and creates the owner-owned `SECURITY DEFINER` function
+  `vacation.delete_unreferenced_leave_type(uuid)` with `EXECUTE` granted only to
+  the runtime role. No runtime `DELETE` grant and no direct SQL delete path
+  exist, matching the Organization Department pattern from migration 030.
+- Added safe deletion through `DELETE /api/v1/vacation/leave-types/{publicId}`.
+  A leave type is physically deleted only when it has never been referenced by
+  `vacation.leave_requests`, `vacation.leave_balances`, or
+  `vacation.leave_balance_entries`. Otherwise the API returns the canonical
+  `409` `leave_type_delete_conflict` Problem Details with controlled dependency
+  labels, and the Portal shows a localized message explaining that the leave
+  type is already in use and should be deactivated instead. Dependent Vacation
+  data never cascades.
+- Enforced the business rules: `Code` stays immutable after creation;
+  `Requires Balance` and `Counts Against Balance` are editable only while the
+  leave type is unused and are locked afterward by a derived `isInUse` flag
+  projected from the same three referencing tables; deactivation is always
+  allowed and historical records continue to resolve the leave type.
+- Migrated `/vacation/leave-types` to the canonical Portal administration
+  foundation (`AdministrationPageHeader` via the workspace shell,
+  `AdministrationPageBody`, `AdministrativeGridShell` with `fillViewport`,
+  `AdministrativeGridToolbar`, `GridPagination`, the shared side panel, and the
+  shared button and form-control helpers), removing page-local command-bar
+  chrome and `GridFooter`. Grid columns are Code, Name, Counts Against Balance,
+  Requires Balance, Requires Approval, Active, and Actions; the details panel
+  shows all business fields plus the derived usage state; the edit panel renders
+  lock hints where the business rules prevent editing.
+- Added focused `VacationLeaveTypeAdministrationTests`, extended
+  `PortalAdministrationUiContractTests`, and updated `UI_GUIDELINES.md`,
+  `docs/domain/vacation.md`, and `docs/modules/vacation.md`.
+
 ## 2026-07-29 — Vacation annual leave entitlement Portal UI
 
 - Reframed `/vacation/admin/policies` as annual leave entitlement allocation

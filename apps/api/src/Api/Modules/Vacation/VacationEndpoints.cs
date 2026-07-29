@@ -26,6 +26,9 @@ internal static class VacationEndpoints
         vacation
             .MapPost("/leave-types/{publicId:guid}/deactivate", DeactivateLeaveTypeAsync)
             .RequireAuthorization(VacationPermissions.ManageLeaveTypes);
+        vacation
+            .MapDelete("/leave-types/{publicId:guid}", DeleteLeaveTypeAsync)
+            .RequireAuthorization(VacationPermissions.ManageLeaveTypes);
 
         return endpoints;
     }
@@ -190,6 +193,42 @@ internal static class VacationEndpoints
             cancellationToken);
 
         return WriteResult(context, result);
+    }
+
+    private static async Task<IResult> DeleteLeaveTypeAsync(
+        Guid publicId,
+        HttpContext context,
+        LeaveTypesService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetActorPublicId(context, out var actorPublicId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await service.DeleteAsync(
+            publicId,
+            actorPublicId,
+            context.TraceIdentifier,
+            cancellationToken);
+
+        return result.Status switch
+        {
+            LeaveTypeWriteStatus.Success => Results.NoContent(),
+            LeaveTypeWriteStatus.NotFound => NotFoundProblem(context),
+            LeaveTypeWriteStatus.HasDependencies => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Leave type is referenced",
+                detail: "Referenced leave types cannot be deleted and must be deactivated instead.",
+                instance: context.Request.Path,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "leave_type_delete_conflict",
+                    ["traceId"] = context.TraceIdentifier,
+                    ["dependencies"] = result.Dependencies ?? []
+                }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError)
+        };
     }
 
     private static IResult WriteResult(

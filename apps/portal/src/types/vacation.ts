@@ -9,6 +9,11 @@ export type LeaveType = {
   requiresApproval: boolean;
   isActive: boolean;
   displayOrder: number;
+  /**
+   * True once a leave request, yearly balance, or ledger entry has referenced the
+   * leave type. Balance behaviour is then locked and physical deletion is refused.
+   */
+  isInUse: boolean;
 };
 
 export type LeaveTypeDetails = LeaveType & {
@@ -32,9 +37,14 @@ export type CreateLeaveTypeRequest = {
   displayOrder: number;
 };
 
+/**
+ * Code is immutable after creation and activation uses its own commands. Balance
+ * behaviour stays in the contract but the API rejects a changed value once the
+ * leave type is in use.
+ */
 export type UpdateLeaveTypeRequest = Omit<
   CreateLeaveTypeRequest,
-  "code" | "requiresBalance" | "isActive"
+  "code" | "isActive"
 >;
 
 export type LeaveTypeStatusFilter = "active" | "inactive" | "all";

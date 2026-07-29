@@ -45,7 +45,8 @@ internal sealed record LeaveTypeRecord(
     bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
-    int DisplayOrder);
+    int DisplayOrder,
+    bool IsInUse);
 
 internal sealed record LeaveTypeResponse(
     Guid PublicId,
@@ -57,7 +58,8 @@ internal sealed record LeaveTypeResponse(
     bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
-    int DisplayOrder);
+    int DisplayOrder,
+    bool IsInUse);
 
 internal sealed record LeaveTypeDetailsResponse(
     Guid PublicId,
@@ -73,7 +75,8 @@ internal sealed record LeaveTypeDetailsResponse(
     bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
-    int DisplayOrder);
+    int DisplayOrder,
+    bool IsInUse);
 
 internal sealed record CreateLeaveTypeRequest(
     string? Code,
@@ -95,6 +98,7 @@ internal sealed record UpdateLeaveTypeRequest(
     string? DescriptionEn,
     string? CalendarColor,
     bool? CountsAgainstVacationBalance,
+    bool? RequiresBalance,
     bool? RequiresApproval,
     int? DisplayOrder);
 
@@ -118,6 +122,7 @@ internal sealed record UpdateLeaveTypeCommand(
     string? DescriptionEn,
     string? CalendarColor,
     bool CountsAgainstVacationBalance,
+    bool RequiresBalance,
     bool RequiresApproval,
     int DisplayOrder);
 
@@ -126,13 +131,18 @@ internal enum LeaveTypeWriteStatus
     Success,
     ValidationFailed,
     NotFound,
-    DuplicateCode
+    DuplicateCode,
+    HasDependencies
 }
 
 internal sealed record LeaveTypeWriteResult(
     LeaveTypeWriteStatus Status,
     LeaveTypeDetailsResponse? LeaveType = null,
     Dictionary<string, string[]>? Errors = null);
+
+internal sealed record LeaveTypeDeleteResult(
+    LeaveTypeWriteStatus Status,
+    string[]? Dependencies = null);
 
 internal sealed record LeaveTypeCreatePersistenceResult(
     LeaveTypeRecord? LeaveType,

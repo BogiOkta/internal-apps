@@ -10,9 +10,10 @@ The current implemented capabilities are:
   permission-controlled Organization administration actions;
 - links to canonical Organization-owned employee and department Portal routes;
 - authenticated Leave Type listing and details;
-- permission-controlled Leave Type creation, update, activation, and
-  deactivation;
-- atomic append-only audit records for successful Leave Type mutations.
+- permission-controlled Leave Type creation, update, activation, deactivation,
+  and safe deletion of never-referenced types;
+- atomic append-only audit records for successful Leave Type mutations,
+  including deletion;
 - database foundations for employee leave requests, status-transition history,
   and yearly leave balances.
 - authenticated employee request creation, own list/detail, cancellation,
@@ -102,6 +103,34 @@ single-transition histories confirmed duplicate-submission protection. A
 transient database connection reset during fixture creation displayed only the
 safe localized generic error and succeeded on retry. No runtime correction was
 required, and all smoke-created requests were left rejected or cancelled.
+
+### Leave Type administration
+
+Migration 032 completes canonical Leave Type administration. It reuses the
+existing `vacation.leave-types.manage` permission and seeds no new permission.
+Physical deletion is restricted to permanently unreferenced records through the
+owner-owned `SECURITY DEFINER` function
+`vacation.delete_unreferenced_leave_type(uuid)`; the runtime role receives only
+its `EXECUTE` grant plus the previously missing `requires_balance` column
+`UPDATE`, never a table `DELETE`. A leave type referenced by a leave request,
+yearly balance, or ledger entry returns the stable `409`
+`leave_type_delete_conflict` Problem Details with controlled dependency labels,
+and the Portal explains that the type is already in use and should be
+deactivated instead. Dependent Vacation data never cascades.
+
+The stable code stays immutable after creation. `Requires Balance` and
+`Counts Against Balance` are editable only while the leave type is unused and
+are locked by a derived `isInUse` flag afterward. Deactivation is always
+allowed, and historical records continue to resolve deactivated types.
+
+The Portal route is migrated to the canonical administration foundation
+(`AdministrationPageHeader` via the workspace shell, `AdministrationPageBody`,
+`AdministrativeGridShell` with `fillViewport`, `AdministrativeGridToolbar`,
+`GridPagination`, the shared side panel, and shared buttons and form controls).
+Its grid columns are Code, Name, Counts Against Balance, Requires Balance,
+Requires Approval, Active, and Actions; the details panel shows every business
+field and the derived usage state; the edit panel shows lock hints where the
+business rules prevent editing.
 
 See [`../domain/vacation.md`](../domain/vacation.md) for detailed ownership,
 domain rules, persistence, authorization, and current implementation behavior.

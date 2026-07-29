@@ -14,6 +14,14 @@ internal sealed class LeaveTypesService(
     private const int CodeMaxLength = 50;
     private const int NameMaxLength = 150;
     private const int DescriptionMaxLength = 500;
+    private const string DeleteConflictPrefix = "leave_type_delete_conflict:v1:";
+
+    private static readonly HashSet<string> ControlledDependencyNames =
+    [
+        "Vacation leave request",
+        "Vacation leave balance",
+        "Vacation leave balance entry"
+    ];
 
     public bool TryCreateListQuery(
         string? search,
@@ -180,6 +188,18 @@ internal sealed class LeaveTypesService(
             return new LeaveTypeWriteResult(LeaveTypeWriteStatus.NotFound);
         }
 
+        // Balance behaviour is editable only while the leave type is unused. Once any
+        // request, balance, or ledger entry references it, the persisted values are
+        // authoritative and a differing submitted value is rejected.
+        var lockedFieldErrors = ValidateLockedFields(previous, command);
+        if (lockedFieldErrors.Count > 0)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new LeaveTypeWriteResult(
+                LeaveTypeWriteStatus.ValidationFailed,
+                Errors: lockedFieldErrors);
+        }
+
         var updated = await repository.UpdateAsync(
             connection,
             transaction,
@@ -260,6 +280,96 @@ internal sealed class LeaveTypesService(
             ToDetailsResponse(updated, ResolveLocale(acceptLanguage)));
     }
 
+    public async Task<LeaveTypeDeleteResult> DeleteAsync(
+        Guid publicId,
+        Guid actorUserPublicId,
+        string traceId,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var deleted = await repository.DeleteUnreferencedLeaveTypeAsync(
+                connection,
+                transaction,
+                publicId,
+                cancellationToken);
+            if (!deleted)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new LeaveTypeDeleteResult(LeaveTypeWriteStatus.NotFound);
+            }
+
+            await auditWriter.WriteAsync(
+                connection,
+                transaction,
+                CreateAuditEntry(
+                    actorUserPublicId,
+                    "vacation.leave-types.deleted",
+                    publicId,
+                    traceId,
+                    [new AuditChange("record", "present", "deleted")]),
+                cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return new LeaveTypeDeleteResult(LeaveTypeWriteStatus.Success);
+        }
+        catch (PostgresException exception) when (
+            exception.SqlState == "P0001" &&
+            (exception.MessageText == "leave_type_delete_conflict" ||
+             exception.MessageText.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal)))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new LeaveTypeDeleteResult(
+                LeaveTypeWriteStatus.HasDependencies,
+                ParseDeleteConflictDependencies(exception.MessageText));
+        }
+    }
+
+    // Only labels emitted by the owner-controlled database function cross this boundary.
+    private static string[] ParseDeleteConflictDependencies(string message)
+    {
+        if (!message.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal))
+        {
+            return [];
+        }
+
+        var dependencies = message[DeleteConflictPrefix.Length..].Split('|');
+        return dependencies.Length > 0 &&
+               dependencies.All(dependency =>
+                   dependency.Length > 0 &&
+                   ControlledDependencyNames.Contains(dependency))
+            ? dependencies.Distinct(StringComparer.Ordinal).ToArray()
+            : [];
+    }
+
+    private static Dictionary<string, string[]> ValidateLockedFields(
+        LeaveTypeRecord previous,
+        UpdateLeaveTypeCommand command)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (!previous.IsInUse)
+        {
+            return errors;
+        }
+
+        if (command.CountsAgainstVacationBalance != previous.CountsAgainstVacationBalance)
+        {
+            errors["countsAgainstVacationBalance"] =
+                ["The field is locked because the leave type is already in use."];
+        }
+
+        if (command.RequiresBalance != previous.RequiresBalance)
+        {
+            errors["requiresBalance"] =
+                ["The field is locked because the leave type is already in use."];
+        }
+
+        return errors;
+    }
+
     private static LeaveTypeResponse ToResponse(
         LeaveTypeRecord record,
         LeaveTypeLocale locale)
@@ -278,7 +388,8 @@ internal sealed class LeaveTypesService(
             record.RequiresBalance,
             record.RequiresApproval,
             record.IsActive,
-            record.DisplayOrder);
+            record.DisplayOrder,
+            record.IsInUse);
     }
 
     private static LeaveTypeDetailsResponse ToDetailsResponse(
@@ -300,7 +411,8 @@ internal sealed class LeaveTypesService(
             localized.RequiresBalance,
             localized.RequiresApproval,
             localized.IsActive,
-            localized.DisplayOrder);
+            localized.DisplayOrder,
+            localized.IsInUse);
     }
 
     private static bool TryNormalizeCreate(
@@ -382,6 +494,7 @@ internal sealed class LeaveTypesService(
             request.CountsAgainstVacationBalance,
             "countsAgainstVacationBalance",
             errors);
+        ValidateRequiredBoolean(request.RequiresBalance, "requiresBalance", errors);
         ValidateRequiredBoolean(
             request.RequiresApproval,
             "requiresApproval",
@@ -394,6 +507,7 @@ internal sealed class LeaveTypesService(
             descriptionEn,
             calendarColor,
             request.CountsAgainstVacationBalance.GetValueOrDefault(),
+            request.RequiresBalance.GetValueOrDefault(),
             request.RequiresApproval.GetValueOrDefault(),
             request.DisplayOrder.GetValueOrDefault());
         return errors.Count == 0;
@@ -499,6 +613,11 @@ internal sealed class LeaveTypesService(
             "counts_against_vacation_balance",
             previous.CountsAgainstVacationBalance.ToString(),
             updated.CountsAgainstVacationBalance.ToString());
+        AddChange(
+            changes,
+            "requires_balance",
+            previous.RequiresBalance.ToString(),
+            updated.RequiresBalance.ToString());
         AddChange(
             changes,
             "requires_approval",

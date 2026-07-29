@@ -9,6 +9,8 @@ import {
   fieldDescriptionIds,
   FormField,
   formControlClassName,
+  formPrimaryButtonClassName,
+  formSecondaryButtonClassName,
 } from "@/components/form-field";
 import type {
   CreateLeaveTypeRequest,
@@ -24,6 +26,7 @@ type LeaveTypeFormValues = {
   descriptionEn: string;
   calendarColor: string;
   countsAgainstVacationBalance: boolean;
+  requiresBalance: boolean;
   requiresApproval: boolean;
   isActive: boolean;
   displayOrder: number;
@@ -46,6 +49,9 @@ export function LeaveTypeForm({
 }: LeaveTypeFormProps) {
   const { t } = useTranslations();
   const [formError, setFormError] = useState<string | null>(null);
+  // Balance behaviour is editable only while the leave type is unused; the API
+  // remains authoritative for this rule.
+  const isLocked = mode === "edit" && (leaveType?.isInUse ?? false);
   const schema = useMemo(
     () =>
       z.object({
@@ -84,6 +90,7 @@ export function LeaveTypeForm({
             t("vacation.leaveTypes.validation.colorFormat"),
           ),
         countsAgainstVacationBalance: z.boolean(),
+        requiresBalance: z.boolean(),
         requiresApproval: z.boolean(),
         isActive: z.boolean(),
         displayOrder: z
@@ -138,7 +145,7 @@ export function LeaveTypeForm({
           calendarColor: emptyToNull(normalized.calendarColor),
           countsAgainstVacationBalance:
             normalized.countsAgainstVacationBalance,
-          requiresBalance: normalized.countsAgainstVacationBalance,
+          requiresBalance: normalized.requiresBalance,
           requiresApproval: normalized.requiresApproval,
           isActive: normalized.isActive,
           displayOrder: normalized.displayOrder,
@@ -150,8 +157,13 @@ export function LeaveTypeForm({
           descriptionSr: emptyToNull(normalized.descriptionSr),
           descriptionEn: emptyToNull(normalized.descriptionEn),
           calendarColor: emptyToNull(normalized.calendarColor),
-          countsAgainstVacationBalance:
-            normalized.countsAgainstVacationBalance,
+          // Locked fields resubmit the persisted value so the API accepts the update.
+          countsAgainstVacationBalance: isLocked
+            ? (leaveType?.countsAgainstVacationBalance ?? false)
+            : normalized.countsAgainstVacationBalance,
+          requiresBalance: isLocked
+            ? (leaveType?.requiresBalance ?? false)
+            : normalized.requiresBalance,
           requiresApproval: normalized.requiresApproval,
           displayOrder: normalized.displayOrder,
         });
@@ -341,8 +353,19 @@ export function LeaveTypeForm({
         </legend>
         <CheckboxField
           label={t("vacation.leaveTypes.form.countsAgainstBalance")}
+          disabled={isLocked}
           registration={register("countsAgainstVacationBalance")}
         />
+        <CheckboxField
+          label={t("vacation.leaveTypes.form.requiresBalance")}
+          disabled={isLocked}
+          registration={register("requiresBalance")}
+        />
+        {isLocked && (
+          <p className="text-xs leading-5 text-slate-500">
+            {t("vacation.leaveTypes.form.balanceLocked")}
+          </p>
+        )}
         <CheckboxField
           label={t("vacation.leaveTypes.form.requiresApproval")}
           registration={register("requiresApproval")}
@@ -359,7 +382,7 @@ export function LeaveTypeForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="min-h-9 rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className={formPrimaryButtonClassName()}
         >
           {isSubmitting
             ? t("vacation.leaveTypes.saving")
@@ -369,7 +392,7 @@ export function LeaveTypeForm({
           type="button"
           disabled={isSubmitting}
           onClick={onCancel}
-          className="min-h-9 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-60"
+          className={formSecondaryButtonClassName()}
         >
           {t("vacation.leaveTypes.cancel")}
         </button>
@@ -388,6 +411,7 @@ function toFormValues(leaveType?: LeaveTypeDetails): LeaveTypeFormValues {
     calendarColor: leaveType?.calendarColor ?? "",
     countsAgainstVacationBalance:
       leaveType?.countsAgainstVacationBalance ?? false,
+    requiresBalance: leaveType?.requiresBalance ?? false,
     requiresApproval: leaveType?.requiresApproval ?? true,
     isActive: leaveType?.isActive ?? true,
     displayOrder: leaveType?.displayOrder ?? 0,
@@ -415,6 +439,7 @@ function mapServerFieldErrors(
     "descriptionEn",
     "calendarColor",
     "countsAgainstVacationBalance",
+    "requiresBalance",
     "requiresApproval",
     "isActive",
     "displayOrder",
@@ -450,6 +475,9 @@ function localizedServerFieldError(
       return t("vacation.leaveTypes.validation.colorFormat");
     case "displayOrder":
       return t("vacation.leaveTypes.validation.displayOrder");
+    case "countsAgainstVacationBalance":
+    case "requiresBalance":
+      return t("vacation.leaveTypes.validation.balanceLocked");
     default:
       return t("vacation.leaveTypes.saveFailed");
   }
@@ -457,18 +485,25 @@ function localizedServerFieldError(
 
 function CheckboxField({
   label,
+  disabled = false,
   registration,
 }: {
   label: string;
+  disabled?: boolean;
   registration: ReturnType<
     ReturnType<typeof useForm<LeaveTypeFormValues>>["register"]
   >;
 }) {
   return (
-    <label className="flex min-h-9 items-center gap-2 text-sm text-slate-800">
+    <label
+      className={`flex min-h-9 items-center gap-2 text-sm ${
+        disabled ? "text-slate-500" : "text-slate-800"
+      }`}
+    >
       <input
         type="checkbox"
-        className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600"
+        disabled={disabled}
+        className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
         {...registration}
       />
       <span>{label}</span>

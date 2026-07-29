@@ -137,6 +137,27 @@ export async function deactivateLeaveType(
   );
 }
 
+export async function deleteLeaveType(
+  accessToken: string,
+  publicId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/vacation/leave-types/${encodeURIComponent(publicId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      credentials: "include",
+    },
+  );
+  if (response.ok) return;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(
+    problem?.detail ?? problem?.title ?? "The leave type could not be deleted.",
+    problem ?? undefined,
+    response.status,
+  );
+}
+
 export function listMyVacationLeaveTypes(
   accessToken: string,
   locale: string,
