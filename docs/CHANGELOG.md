@@ -1,5 +1,19 @@
 # Internal Apps Platform change history
 
+## 2026-07-29 — Identity administration Design System rollout
+
+- Migrated Identity Users and User–Employee Links to the canonical Portal
+  administration layout already used by Employees and Departments:
+  `AdministrationPageBody`, `AdministrativeGridShell` with `fillViewport`,
+  `AdministrativeGridToolbar`, `GridPagination`, shared form controls and
+  button helpers, and the shared side panel.
+- Removed page-local bordered list/aside layout and `GridFooter` usage from
+  those pages without changing permissions, API contracts, or business
+  behavior. Client-side pagination remains because the list APIs stay
+  bounded and unpaged.
+- Updated focused Portal administration UI contract tests and
+  `UI_GUIDELINES.md` §7.5 inventory.
+
 ## 2026-07-28 — Portal Settings and shell simplification
 
 - Added authenticated `/settings` for language (Serbian Latin / English) and

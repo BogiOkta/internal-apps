@@ -52,8 +52,10 @@ public sealed class PortalAdministrationUiContractTests
     {
         var employees = Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx");
         var departments = Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx");
+        var users = Read("apps", "portal", "src", "app", "identity", "users", "page.tsx");
+        var links = Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx");
 
-        foreach (var page in new[] { employees, departments })
+        foreach (var page in new[] { employees, departments, users, links })
         {
             Assert.Contains("AdministrationPageBody", page);
             Assert.Contains("AdministrativeGridShell", page);
@@ -64,6 +66,45 @@ public sealed class PortalAdministrationUiContractTests
             Assert.Contains("headerActions", page);
             Assert.DoesNotContain("GridFooter", page);
         }
+    }
+
+    [Fact]
+    public void IdentityAdministration_PreservesShellGeometryStates()
+    {
+        var users = Read("apps", "portal", "src", "app", "identity", "users", "page.tsx");
+        Assert.Contains("AdministrationPageBody", users);
+        Assert.Contains("fillViewport", users);
+        Assert.Contains("GridStateRows", users);
+        Assert.Contains("isLoading={isLoading}", users);
+        Assert.Contains("isEmpty={users.length === 0}", users);
+        Assert.Contains("hasError={hasError}", users);
+        Assert.Contains("selectForDetails", users);
+        Assert.Contains("panelMode === \"create\"", users);
+        Assert.Contains("GridPagination", users);
+        Assert.Contains("formPrimaryButtonClassName", users);
+        Assert.Contains("formSecondaryButtonClassName", users);
+        Assert.Contains("formControlClassName", users);
+        Assert.DoesNotContain("GridFooter", users);
+    }
+
+    [Fact]
+    public void UserEmployeeLinksAdministration_PreservesShellGeometryStates()
+    {
+        var links = Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx");
+        Assert.Contains("AdministrationPageBody", links);
+        Assert.Contains("fillViewport", links);
+        Assert.Contains("GridStateRows", links);
+        Assert.Contains("isLoading={isLoading}", links);
+        Assert.Contains("isEmpty={links.length === 0}", links);
+        Assert.Contains("hasError={hasError}", links);
+        Assert.Contains("selectForDetails", links);
+        Assert.Contains("panelMode === \"create\"", links);
+        Assert.Contains("panelMode === \"edit\"", links);
+        Assert.Contains("GridPagination", links);
+        Assert.Contains("SearchableCombobox", links);
+        Assert.Contains("formPrimaryButtonClassName", links);
+        Assert.Contains("formSecondaryButtonClassName", links);
+        Assert.DoesNotContain("GridFooter", links);
     }
 
     [Fact]

@@ -585,20 +585,26 @@ Required states for every administration working surface:
 ### 7.5 Remaining Portal UI rollout inventory
 
 The following Portal areas still use older or partial administration patterns
-and are **not** migrated in the current Organization / Business Calendar UI
-foundation increment. Do not modify them unless a separately approved task
-requires it:
+and are **not** migrated in the current Identity / Organization administration
+UI increment. Do not modify them unless a separately approved task requires
+it:
 
 | Area | Gap relative to the canonical contract |
 |---|---|
-| Identity user administration | Still uses `GridFooter` record-count styling; not on `AdministrativeGridShell` fillViewport contract |
 | Vacation Leave Types | Uses `GridFooter` selection/record summary alongside its grid |
 | Vacation Leave Policies | Native `type="date"` remain; page-local form chrome |
 | Vacation Leave Balances | Native `type="date"` remain; page-local form chrome |
 | Vacation request employee self-service | Outside administration shell rollout |
 | Vacation request administration | Outside this administration UI foundation rollout |
 | Dashboard | Outside scope; launcher surface, not an administration grid |
-| User–Employee links | Company administration route without the shared grid shell |
+
+Identity user administration and User–Employee links now reuse the same
+Organization administration contract as Employees and Departments:
+`AdministrationPageHeader` (via the shell), `AdministrationPageBody`,
+`AdministrativeGridToolbar`, `AdministrativeGridShell` with `fillViewport`,
+`GridPagination`, shared form controls and button helpers, and the shared
+side panel. Client-side pagination applies because those list APIs remain
+bounded and unpaged.
 
 New pages MUST reuse `AdministrationPageHeader`, `AdministrationPageBody`,
 `AdministrativeGridToolbar`, `AdministrativeGridShell` (when tabular),

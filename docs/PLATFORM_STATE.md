@@ -4,11 +4,10 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Portal Settings page and authenticated shell
-  simplification. Language and appearance preferences moved to `/settings`;
-  page headers no longer repeat user identity; sidebar footer keeps Logout
-  only. This Portal shell and settings scope was explicitly approved by the
-  platform owner at session start.
+- Latest functional milestone: Identity administration Design System rollout.
+  Users and User–Employee Links now reuse the canonical Portal administration
+  layout already adopted by Employees and Departments. This Design System
+  rollout scope was explicitly approved by the platform owner at session start.
 
 ## Platform foundation
 
@@ -37,12 +36,12 @@
   Serbian Latin date-display formatter are available. Language and appearance
   preferences are edited on `/settings` and reuse the canonical
   `LocaleProvider` / `AppearanceProvider` storage keys. Organization
-  Employees and Departments share the canonical administration
-  header/toolbar/shell/footer/side-panel contract with stable loading, empty,
-  error, and no-selection geometry. Remaining Portal areas (Identity, Leave
-  Types/Policies/Balances, Vacation request UIs, Dashboard, User–Employee
-  links) are inventoried in `docs/standards/UI_GUIDELINES.md` §7.5 and are
-  not migrated in this increment.
+  Employees and Departments, Identity Users, and User–Employee links share
+  the canonical administration header/toolbar/shell/footer/side-panel
+  contract with stable loading, empty, error, and no-selection geometry.
+  Remaining Portal areas (Leave Types/Policies/Balances, Vacation request
+  UIs, Dashboard) are inventoried in `docs/standards/UI_GUIDELINES.md` §7.5
+  and are not migrated in this increment.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation
@@ -69,6 +68,19 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
+- Identity administration Design System rollout: Portal strict TypeScript
+  passed; Portal production build passed (`/identity/users` and
+  `/organization/user-employee-links` included); focused Portal
+  source/contract tests passed
+  (`PortalAdministrationUiContractTests`, `PortalNavigationContractTests`,
+  `BusinessCalendarPortalContractTests`), 17/17. `git diff --check` clean for
+  the changed scope. Controlled browser smoke against local API and Portal
+  services passed 14/14 for Users and User–Employee Links: shared page header
+  New/Refresh placement, shared toolbar, internal grid scrolling, side panel,
+  create/edit/details flows, desktop and mobile geometry, Serbian Latin and
+  English, light and dark appearance, no document-level horizontal overflow,
+  and a clean browser console (excluding pre-existing favicon/`401`
+  silent-refresh noise). No persistent smoke data was created.
 - Portal Settings and shell simplification: Portal strict TypeScript passed;
   Portal production build passed (`/settings` route included); focused Portal
   source/contract tests passed
@@ -201,15 +213,15 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Portal Settings page and authenticated shell simplification: preferences on
-`/settings`, no permanent sidebar language/appearance controls, no page-header
-user identity repetition, Logout retained as the sidebar footer action.
+Identity administration Design System rollout: migrate Users and
+User–Employee Links to the canonical Portal administration layout already
+used by Employees and Departments.
 
 ## Next task
 
 No follow-on scope is approved. Do not begin further Portal UI migration
-(Identity, Leave Types/Policies/Balances, Vacation request UIs, Dashboard)
-without a separately approved task.
+(Leave Types/Policies/Balances, Vacation request UIs, Dashboard) without a
+separately approved task.
 
 ## Session instruction
 
