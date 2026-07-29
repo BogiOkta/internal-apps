@@ -1,5 +1,16 @@
 # Internal Apps Platform change history
 
+## 2026-07-29 — Vacation annual leave entitlement Portal UI
+
+- Reframed `/vacation/admin/policies` as annual leave entitlement allocation
+  by employee and year, with localized Serbian Latin and English terminology.
+- Migrated the expiry field to shared `PortalDateInput`, retained nullable ISO
+  transport, and added a client-only live Total allocated display and grid
+  column derived from existing values.
+- Adopted the canonical administration header, toolbar, grid shell,
+  pagination, side panel, and restrained expiry state indication without any
+  backend, API, database, permission, or persistence change.
+
 ## 2026-07-29 — Identity administration Design System rollout
 
 - Migrated Identity Users and User–Employee Links to the canonical Portal

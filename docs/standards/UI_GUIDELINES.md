@@ -592,7 +592,6 @@ it:
 | Area | Gap relative to the canonical contract |
 |---|---|
 | Vacation Leave Types | Uses `GridFooter` selection/record summary alongside its grid |
-| Vacation Leave Policies | Native `type="date"` remain; page-local form chrome |
 | Vacation Leave Balances | Native `type="date"` remain; page-local form chrome |
 | Vacation request employee self-service | Outside administration shell rollout |
 | Vacation request administration | Outside this administration UI foundation rollout |

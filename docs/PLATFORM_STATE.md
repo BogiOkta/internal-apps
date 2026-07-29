@@ -4,10 +4,10 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Identity administration Design System rollout.
-  Users and User–Employee Links now reuse the canonical Portal administration
-  layout already adopted by Employees and Departments. This Design System
-  rollout scope was explicitly approved by the platform owner at session start.
+- Latest functional milestone: Vacation annual leave entitlement Portal UI.
+  The existing Leave Policy route now presents employee/year annual allocation
+  with canonical administration layout, localized entitlement terminology,
+  shared date entry, and a client-only derived total.
 
 ## Platform foundation
 
@@ -39,9 +39,9 @@
   Employees and Departments, Identity Users, and User–Employee links share
   the canonical administration header/toolbar/shell/footer/side-panel
   contract with stable loading, empty, error, and no-selection geometry.
-  Remaining Portal areas (Leave Types/Policies/Balances, Vacation request
-  UIs, Dashboard) are inventoried in `docs/standards/UI_GUIDELINES.md` §7.5
-  and are not migrated in this increment.
+  Remaining Portal areas (Leave Types/Balances, Vacation request UIs,
+  Dashboard) are inventoried in `docs/standards/UI_GUIDELINES.md` §7.5 and are
+  not migrated in this increment.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation
@@ -59,15 +59,25 @@
   transition history, cancellation, and the ownership-scoped history endpoint.
 - Administrator Portal: request list, filters, details, history, approval,
   rejection, and administrator cancellation are implemented.
-- Leave Policy foundation: annual employee/year entitlement persistence,
-  administrator CRUD API, and minimal administrator Portal are implemented.
-  Policies contain entitlement inputs only; balance calculation is deferred.
+- Annual leave entitlement administration: the existing employee/year CRUD
+  route presents current-year entitlement, carry-over, expiry, manual
+  adjustment, and a non-persisted derived total. It uses `PortalDateInput` and
+  preserves the existing API, persistence, permissions, and calculations.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
 
+- Vacation annual leave entitlement Portal UI: strict TypeScript and Portal
+  production build passed; focused `PortalAdministrationUiContractTests`
+  passed 9/9; `git diff --check` is clean. Controlled browser validation
+  passed against fresh services for create/edit/delete and cleanup, Serbian
+  Latin and English, desktop/mobile light and dark layouts, `PortalDateInput`,
+  derived totals (25, 27, 24, and 28), future/expired/empty expiry states,
+  internal grid scrolling without document-level overflow, visible focus
+  treatment, and a clean relevant console. The original non-smoke record
+  remains and all temporary smoke records were removed.
 - Identity administration Design System rollout: Portal strict TypeScript
   passed; Portal production build passed (`/identity/users` and
   `/organization/user-employee-links` included); focused Portal

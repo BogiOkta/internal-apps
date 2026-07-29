@@ -151,6 +151,27 @@ public sealed class PortalAdministrationUiContractTests
         Assert.DoesNotContain("type=\"date\"", page);
     }
 
+    [Fact]
+    public void LeavePolicyAdministration_UsesEntitlementTerminologyAndCanonicalControls()
+    {
+        var page = Read("apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx");
+        var translations = Read("apps", "portal", "src", "i18n", "translations.ts");
+
+        Assert.Contains("AdministrationPageBody", page);
+        Assert.Contains("AdministrativeGridShell", page);
+        Assert.Contains("AdministrativeGridToolbar", page);
+        Assert.Contains("GridPagination", page);
+        Assert.Contains("PortalDateInput", page);
+        Assert.Contains("leavePolicy.total", page);
+        Assert.Contains("formatAdjustment", page);
+        Assert.Contains("ExpiryStatus", page);
+        Assert.DoesNotContain("type=\"date\"", page, StringComparison.Ordinal);
+        Assert.Contains("\"leavePolicy.title\": \"Annual leave entitlement\"", translations);
+        Assert.Contains("\"leavePolicy.title\": \"Godišnje pravo na odmor\"", translations);
+        Assert.Contains("\"leavePolicy.total\": \"Total allocated\"", translations);
+        Assert.Contains("\"leavePolicy.total\": \"Ukupno raspoloživo\"", translations);
+    }
+
     private static string Read(params string[] parts)
     {
         return File.ReadAllText(Path.Combine([RepositoryRoot(), .. parts]));

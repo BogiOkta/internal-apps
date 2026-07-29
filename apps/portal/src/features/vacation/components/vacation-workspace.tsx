@@ -15,6 +15,8 @@ type VacationWorkspaceProps = {
   title: string;
   description?: string;
   commandBar?: ReactNode;
+  headerActions?: ReactNode;
+  contentFillsViewport?: boolean;
   children: ReactNode;
 };
 
@@ -22,6 +24,8 @@ export function VacationWorkspace({
   title,
   description,
   commandBar,
+  headerActions,
+  contentFillsViewport,
   children,
 }: VacationWorkspaceProps) {
   const { t } = useTranslations();
@@ -58,6 +62,8 @@ export function VacationWorkspace({
       title={title}
       description={description}
       commandBar={commandBar}
+      headerActions={headerActions}
+      contentFillsViewport={contentFillsViewport}
       secondaryNavigation={
         <WorkspaceNavigation
           ariaLabel={t("vacation.workspace.navigationLabel")}
