@@ -11,6 +11,7 @@ import {
   statusLabel,
 } from "@/features/vacation/components/employee-vacation-dashboard";
 import { VacationStatusBadge } from "@/features/vacation/components/vacation-status-badge";
+import { requestStatusLabel, sourceLabel } from "@/features/vacation/components/admin-vacation-request-list";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
@@ -110,13 +111,14 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><h2 className="text-xl font-semibold">{request.employeeName}</h2>
               <p className="mt-1 text-sm text-slate-500">{request.employeeNumber}</p></div>
-            <VacationStatusBadge status={request.status} label={statusLabel(request.status, t)} />
+            <VacationStatusBadge status={request.status} label={requestStatusLabel(request, t)} />
           </div>
           <dl className="mt-6 grid gap-5 sm:grid-cols-2">
             <Detail label={t("vacation.admin.column.leaveType")} value={request.leaveTypeName} />
             <Detail label={t("vacation.employeePortal.dateRange")}
               value={`${formatDate(request.dateFrom, locale)} – ${formatDate(request.dateTo, locale)}`} />
             <Detail label={t("vacation.employeePortal.workingDays")} value={String(request.workingDays)} />
+            <Detail label={t("vacation.admin.column.source")} value={sourceLabel(request.source, t)} />
             <Detail label={t("vacation.employeePortal.submitted")} value={formatDateTime(request.submittedAt, locale)} />
             <Detail label={t("vacation.employeePortal.note")}
               value={request.employeeNote ?? t("vacation.employeePortal.notProvided")} />
@@ -157,7 +159,9 @@ function AdminActions({ request, action, comment, isSubmitting, t, onChoose,
   onSubmit: () => void;
   onClose: () => void;
 }) {
-  const actions: AdminAction[] = request.status === "SUBMITTED"
+  const actions: AdminAction[] = request.source === "ADMINISTRATIVE_ENTRY"
+    ? request.status === "APPROVED" ? ["cancel"] : []
+    : request.status === "SUBMITTED"
     ? ["approve", "reject", "cancel"]
     : request.status === "APPROVED" ? ["cancel"] : [];
   if (actions.length === 0) return null;

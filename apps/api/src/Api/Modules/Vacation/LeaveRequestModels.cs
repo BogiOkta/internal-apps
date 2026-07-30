@@ -11,7 +11,22 @@ internal static class LeaveRequestStatuses
         value is Submitted or Approved or Rejected or Cancelled;
 }
 
+internal static class LeaveRequestSources
+{
+    public const string EmployeeRequest = "EMPLOYEE_REQUEST";
+    public const string AdministrativeEntry = "ADMINISTRATIVE_ENTRY";
+    public static bool IsValid(string value) =>
+        value is EmployeeRequest or AdministrativeEntry;
+}
+
 internal sealed record CreateLeaveRequest(
+    Guid? LeaveTypeId,
+    DateOnly? DateFrom,
+    DateOnly? DateTo,
+    string? Note);
+
+internal sealed record RecordAdministrativeAbsence(
+    Guid? EmployeeId,
     Guid? LeaveTypeId,
     DateOnly? DateFrom,
     DateOnly? DateTo,
@@ -43,6 +58,7 @@ internal sealed record LeaveRequestResponse(
     DateOnly DateTo,
     int WorkingDays,
     string Status,
+    string Source,
     string? EmployeeNote,
     string? DecisionNote,
     DateTimeOffset SubmittedAt,
@@ -84,6 +100,7 @@ internal sealed record LeaveRequestAdminQuery(
     Guid? DepartmentId,
     Guid? LeaveTypeId,
     string? Status,
+    string? Source,
     DateOnly? DateFrom,
     DateOnly? DateTo,
     string? Search,
@@ -101,6 +118,8 @@ internal enum LeaveRequestOperationStatus
     CurrentEmployeeInactive,
     LeaveTypeNotFound,
     LeaveTypeInactive,
+    EmployeeNotFound,
+    EmployeeInactive,
     RequestNotFound,
     Forbidden,
     Overlap,

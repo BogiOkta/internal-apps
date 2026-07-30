@@ -15,19 +15,20 @@ public sealed class LeaveRequestLedgerIntegrationTests
             "Vacation", "LeaveRequestService.cs");
         var ledger = ReadRepositoryFile("apps", "api", "src", "Api", "Modules",
             "Vacation", "LeaveBalanceLedgerRepository.cs");
+        var transition = service[service.IndexOf("private async Task<LeaveRequestOperationResult> TransitionAsync", StringComparison.Ordinal)..];
 
         Assert.Contains("LeaveBalanceLedgerRepository ledgerRepository", service);
         Assert.Contains("await repository.SetStatusAsync", service);
         Assert.Contains("await ledgerRepository.InsertRequestConsumptionAsync", service);
         Assert.Contains("await ledgerRepository.InsertCancellationReversalAsync", service);
-        Assert.True(service.IndexOf("await repository.SetStatusAsync", StringComparison.Ordinal) <
-                    service.IndexOf("await ledgerRepository.InsertRequestConsumptionAsync", StringComparison.Ordinal));
-        Assert.True(service.IndexOf("await ledgerRepository.InsertRequestConsumptionAsync", StringComparison.Ordinal) <
-                    service.LastIndexOf("await repository.InsertHistoryAsync", StringComparison.Ordinal));
-        Assert.True(service.LastIndexOf("await repository.InsertHistoryAsync", StringComparison.Ordinal) <
-                    service.LastIndexOf("await auditWriter.WriteAsync", StringComparison.Ordinal));
-        Assert.True(service.LastIndexOf("await auditWriter.WriteAsync", StringComparison.Ordinal) <
-                    service.LastIndexOf("await transaction.CommitAsync", StringComparison.Ordinal));
+        Assert.True(transition.IndexOf("await repository.SetStatusAsync", StringComparison.Ordinal) <
+                    transition.IndexOf("await ledgerRepository.InsertRequestConsumptionAsync", StringComparison.Ordinal));
+        Assert.True(transition.IndexOf("await ledgerRepository.InsertRequestConsumptionAsync", StringComparison.Ordinal) <
+                    transition.IndexOf("await repository.InsertHistoryAsync", StringComparison.Ordinal));
+        Assert.True(transition.IndexOf("await repository.InsertHistoryAsync", StringComparison.Ordinal) <
+                    transition.IndexOf("await auditWriter.WriteAsync", StringComparison.Ordinal));
+        Assert.True(transition.IndexOf("await auditWriter.WriteAsync", StringComparison.Ordinal) <
+                    transition.IndexOf("await transaction.CommitAsync", StringComparison.Ordinal));
 
         Assert.Contains("-request.WorkingDays", ledger);
         Assert.Contains("request.WorkingDays,", ledger);

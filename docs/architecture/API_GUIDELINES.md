@@ -401,6 +401,7 @@ Current Vacation Leave Request endpoints:
 | `GET /api/v1/vacation/requests` | `vacation.requests.manage` | Lists all requests with typed filters and pagination. |
 | `GET /api/v1/vacation/requests/{requestId}` | `vacation.requests.manage` | Returns request details. |
 | `GET /api/v1/vacation/requests/{requestId}/history` | `vacation.requests.manage` | Returns ordered transition history. |
+| `POST /api/v1/vacation/requests/record` | `vacation.requests.manage` | Records an immediately approved administrative absence using the existing leave-request contract; source is `ADMINISTRATIVE_ENTRY`. |
 | `POST /api/v1/vacation/requests/{requestId}/approve` | `vacation.requests.manage` | Approves a submitted request and consumes required balance. |
 | `POST /api/v1/vacation/requests/{requestId}/reject` | `vacation.requests.manage` | Rejects a submitted request without changing balance. |
 | `POST /api/v1/vacation/requests/{requestId}/cancel` | `vacation.requests.manage` | Cancels a submitted or approved request and restores approved balance use. |

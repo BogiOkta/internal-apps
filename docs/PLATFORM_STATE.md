@@ -56,6 +56,10 @@
 ## Vacation module
 
 - Database foundation: complete; migrations 012–017 are applied and validated.
+- Administrative absence recording: implemented on the existing leave-request
+  domain. Migration 033 adds immutable request source values; administrative
+  entries are immediately approved and reuse balance, ledger, history, audit,
+  and cancellation behavior. Recorded/Evidentirano is a Portal-only label.
 - Leave Type administration: complete. Create, edit, activate, deactivate, and
   safe delete are implemented. Physical deletion is restricted to permanently
   unreferenced records through the owner-controlled

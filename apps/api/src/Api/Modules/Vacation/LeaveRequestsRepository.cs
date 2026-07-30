@@ -22,6 +22,7 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         requests.date_to AS DateTo,
         requests.working_days AS WorkingDays,
         requests.status AS Status,
+        requests.source AS Source,
         requests.employee_note AS EmployeeNote,
         requests.decision_note AS DecisionNote,
         requests.submitted_at AS SubmittedAt,
@@ -76,20 +77,57 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
                 cancellationToken: cancellationToken));
     }
 
+    public async Task<EmployeeTargetEntity?> GetEmployeeAsync(
+        NpgsqlConnection connection, NpgsqlTransaction transaction,
+        Guid publicId, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id AS Id, public_id AS PublicId, employment_status AS EmploymentStatus
+            FROM organization.employees
+            WHERE public_id = @PublicId
+            """;
+        return await connection.QuerySingleOrDefaultAsync<EmployeeTargetEntity>(
+            new CommandDefinition(sql, new { PublicId = publicId }, transaction,
+                cancellationToken: cancellationToken));
+    }
+
     public async Task<LeaveRequestResponse> CreateAsync(
         NpgsqlConnection connection, NpgsqlTransaction transaction,
         Guid employeePublicId, Guid leaveTypePublicId, Guid actorUserPublicId,
         DateOnly dateFrom, DateOnly dateTo, int workingDays, string? note,
         bool english, CancellationToken cancellationToken)
+        => await CreateAsync(connection, transaction, employeePublicId, leaveTypePublicId,
+            actorUserPublicId, dateFrom, dateTo, workingDays, note,
+            LeaveRequestStatuses.Submitted, LeaveRequestSources.EmployeeRequest, false,
+            english, cancellationToken);
+
+    public async Task<LeaveRequestResponse> CreateAdministrativeAsync(
+        NpgsqlConnection connection, NpgsqlTransaction transaction,
+        Guid employeePublicId, Guid leaveTypePublicId, Guid actorUserPublicId,
+        DateOnly dateFrom, DateOnly dateTo, int workingDays, string? note,
+        bool english, CancellationToken cancellationToken)
+        => await CreateAsync(connection, transaction, employeePublicId, leaveTypePublicId,
+            actorUserPublicId, dateFrom, dateTo, workingDays, note,
+            LeaveRequestStatuses.Approved, LeaveRequestSources.AdministrativeEntry, true,
+            english, cancellationToken);
+
+    private async Task<LeaveRequestResponse> CreateAsync(
+        NpgsqlConnection connection, NpgsqlTransaction transaction,
+        Guid employeePublicId, Guid leaveTypePublicId, Guid actorUserPublicId,
+        DateOnly dateFrom, DateOnly dateTo, int workingDays, string? note,
+        string status, string source, bool decided, bool english, CancellationToken cancellationToken)
     {
         var sql = $"""
             WITH inserted AS (
                 INSERT INTO vacation.leave_requests (
                     employee_id, leave_type_id, date_from, date_to, working_days,
-                    status, employee_note, submitted_at, created_by_user_id
+                    status, source, employee_note, submitted_at, decided_at, decided_by_user_id,
+                    created_by_user_id
                 )
                 SELECT employees.id, leave_types.id, @DateFrom, @DateTo, @WorkingDays,
-                       'SUBMITTED', @Note, now(), users.id
+                       @Status, @Source, @Note, now(),
+                       CASE WHEN @Decided THEN now() ELSE NULL END,
+                       CASE WHEN @Decided THEN users.id ELSE NULL END, users.id
                 FROM organization.employees AS employees
                 CROSS JOIN vacation.leave_types AS leave_types
                 CROSS JOIN identity.users AS users
@@ -113,7 +151,10 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
                     DateFrom = dateFrom,
                     DateTo = dateTo,
                     WorkingDays = workingDays,
-                    Note = note
+                    Note = note,
+                    Status = status,
+                    Source = source,
+                    Decided = decided
                 }, transaction, cancellationToken: cancellationToken));
             return Map(row, english);
         }
@@ -164,6 +205,7 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
               AND (@DepartmentId IS NULL OR departments.public_id = @DepartmentId)
               AND (@LeaveTypeId IS NULL OR leave_types.public_id = @LeaveTypeId)
               AND (@Status IS NULL OR requests.status = @Status)
+              AND (@Source IS NULL OR requests.source = @Source)
               AND (@DateFrom IS NULL OR requests.date_to >= @DateFrom)
               AND (@DateTo IS NULL OR requests.date_from <= @DateTo)
               AND (@SearchPattern IS NULL
@@ -177,6 +219,7 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         parameters.Add("DepartmentId", query.DepartmentId, DbType.Guid);
         parameters.Add("LeaveTypeId", query.LeaveTypeId, DbType.Guid);
         parameters.Add("Status", query.Status, DbType.String);
+        parameters.Add("Source", query.Source, DbType.String);
         parameters.Add("DateFrom", query.DateFrom, DbType.Date);
         parameters.Add("DateTo", query.DateTo, DbType.Date);
         parameters.Add("SearchPattern", string.IsNullOrWhiteSpace(query.Search)
@@ -396,7 +439,7 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         new(row.PublicId, row.EmployeePublicId, row.EmployeeNumber, row.EmployeeName,
             row.DepartmentPublicId, row.DepartmentName, row.LeaveTypePublicId,
             row.LeaveTypeCode, english ? row.LeaveTypeNameEn : row.LeaveTypeNameSr,
-            row.LeaveTypeColor, row.DateFrom, row.DateTo, row.WorkingDays, row.Status,
+            row.LeaveTypeColor, row.DateFrom, row.DateTo, row.WorkingDays, row.Status, row.Source,
             row.EmployeeNote, row.DecisionNote, row.SubmittedAt, row.DecidedAt,
             row.CancelledAt, row.CreatedAt, row.UpdatedAt);
 
@@ -430,6 +473,7 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         public DateOnly DateTo { get; set; }
         public int WorkingDays { get; set; }
         public string Status { get; set; } = "";
+        public string Source { get; set; } = "";
         public string? EmployeeNote { get; set; }
         public string? DecisionNote { get; set; }
         public DateTimeOffset SubmittedAt { get; set; }
@@ -465,5 +509,7 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         public DateTime ChangedAt { get; set; }
     }
 }
+
+internal sealed record EmployeeTargetEntity(long Id, Guid PublicId, string EmploymentStatus);
 
 internal sealed class LeaveRequestOverlapException : Exception;

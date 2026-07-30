@@ -132,6 +132,68 @@ internal sealed class LeaveRequestService(
         }
     }
 
+    public async Task<LeaveRequestOperationResult> RecordAdministrativeAsync(
+        HttpContext context, RecordAdministrativeAbsence request, string? acceptLanguage,
+        CancellationToken cancellationToken)
+    {
+        if (request.DateFrom.HasValue && request.DateTo.HasValue && request.DateTo < request.DateFrom)
+            return new(LeaveRequestOperationStatus.InvalidDateRange);
+        if (request.DateFrom.HasValue && request.DateTo.HasValue && request.DateFrom.Value.Year != request.DateTo.Value.Year)
+            return new(LeaveRequestOperationStatus.CrossYearNotAllowed);
+        var errors = ValidateAdministrativeCreate(request);
+        if (errors.Count > 0) return new(LeaveRequestOperationStatus.ValidationFailed, Errors: errors);
+        if (!TryGetActor(context, out var actor)) return new(LeaveRequestOperationStatus.Forbidden);
+
+        var dateFrom = request.DateFrom!.Value;
+        var dateTo = request.DateTo!.Value;
+        var workingDays = await businessCalendar.WorkingDaysBetween(dateFrom, dateTo, cancellationToken);
+        if (workingDays == 0) return new(LeaveRequestOperationStatus.NoWorkingDays);
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        var employee = await repository.GetEmployeeAsync(connection, transaction, request.EmployeeId!.Value, cancellationToken);
+        if (employee is null) return new(LeaveRequestOperationStatus.EmployeeNotFound);
+        if (!string.Equals(employee.EmploymentStatus, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+            return new(LeaveRequestOperationStatus.EmployeeInactive);
+        var leaveType = await repository.GetLeaveTypeAsync(connection, transaction, request.LeaveTypeId!.Value, cancellationToken);
+        if (leaveType is null) return new(LeaveRequestOperationStatus.LeaveTypeNotFound);
+        if (!leaveType.IsActive) return new(LeaveRequestOperationStatus.LeaveTypeInactive);
+
+        try
+        {
+            if (leaveType.RequiresBalance)
+            {
+                var balance = await repository.GetBalanceForUpdateAsync(connection, transaction, employee.Id, leaveType.Id, dateFrom.Year, cancellationToken);
+                if (balance is null) return new(LeaveRequestOperationStatus.BalanceNotFound);
+                if (balance.AvailableDays < workingDays) return new(LeaveRequestOperationStatus.BalanceInsufficient);
+                await repository.UpdateUsedDaysAsync(connection, transaction, balance.Id, balance.UsedDays + workingDays, cancellationToken);
+            }
+            var created = await repository.CreateAdministrativeAsync(connection, transaction,
+                employee.PublicId, leaveType.PublicId, actor, dateFrom, dateTo, workingDays,
+                NormalizeOptional(request.Note), IsEnglish(acceptLanguage), cancellationToken);
+            var entity = await repository.GetForUpdateAsync(connection, transaction, created.PublicId, null, cancellationToken)
+                ?? throw new InvalidOperationException("Created leave request was not found.");
+            if (leaveType.RequiresBalance)
+                await ledgerRepository.InsertRequestConsumptionAsync(connection, transaction, entity, actor, cancellationToken);
+            await repository.InsertHistoryAsync(connection, transaction, entity.Id, null, LeaveRequestStatuses.Approved, actor, NormalizeOptional(request.Note), cancellationToken);
+            await auditWriter.WriteAsync(connection, transaction,
+                new(actor, "vacation", "leave_request_recorded", "leave_request", created.PublicId, context.TraceIdentifier,
+                    [new("status", null, LeaveRequestStatuses.Approved), new("source", null, LeaveRequestSources.AdministrativeEntry), new("working_days", null, workingDays.ToString())]), cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new(LeaveRequestOperationStatus.Success, created);
+        }
+        catch (LeaveRequestOverlapException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(LeaveRequestOperationStatus.Overlap);
+        }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.RaiseException && exception.MessageText.Contains("negative", StringComparison.OrdinalIgnoreCase))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(LeaveRequestOperationStatus.BalanceInsufficient);
+        }
+    }
+
     public async Task<LeaveRequestOperationResult> CancelOwnAsync(
         HttpContext context, Guid publicId, LeaveRequestComment command,
         string? acceptLanguage, CancellationToken cancellationToken)
@@ -192,7 +254,7 @@ internal sealed class LeaveRequestService(
             cancellationToken);
 
     public bool TryCreateAdminQuery(
-        Guid? employeeId, Guid? departmentId, Guid? leaveTypeId, string? status,
+        Guid? employeeId, Guid? departmentId, Guid? leaveTypeId, string? status, string? source,
         DateOnly? dateFrom, DateOnly? dateTo, string? search, int? page, int? pageSize,
         out LeaveRequestAdminQuery query, out Dictionary<string, string[]> errors)
     {
@@ -201,6 +263,9 @@ internal sealed class LeaveRequestService(
             ? null : status.Trim().ToUpperInvariant();
         if (normalizedStatus is not null && !LeaveRequestStatuses.IsValid(normalizedStatus))
             errors["status"] = ["The status is not supported."];
+        var normalizedSource = string.IsNullOrWhiteSpace(source) ? null : source.Trim().ToUpperInvariant();
+        if (normalizedSource is not null && !LeaveRequestSources.IsValid(normalizedSource))
+            errors["source"] = ["The source is not supported."];
         if (dateFrom.HasValue && dateTo.HasValue && dateTo < dateFrom)
             errors["dateTo"] = ["The end date cannot precede the start date."];
         var normalizedSearch = NormalizeOptional(search);
@@ -211,7 +276,7 @@ internal sealed class LeaveRequestService(
         if (normalizedPage < 1) errors["page"] = ["Page must be at least 1."];
         if (normalizedPageSize is < 1 or > 100)
             errors["pageSize"] = ["Page size must be between 1 and 100."];
-        query = new(employeeId, departmentId, leaveTypeId, normalizedStatus,
+        query = new(employeeId, departmentId, leaveTypeId, normalizedStatus, normalizedSource,
             dateFrom, dateTo, normalizedSearch, normalizedPage, normalizedPageSize);
         return errors.Count == 0;
     }
@@ -323,6 +388,17 @@ internal sealed class LeaveRequestService(
         }
         if (NormalizeOptional(request.Note)?.Length > NoteMaxLength)
             errors["note"] = [$"Note must not exceed {NoteMaxLength} characters."];
+        return errors;
+    }
+
+    private static Dictionary<string, string[]> ValidateAdministrativeCreate(RecordAdministrativeAbsence request)
+    {
+        Dictionary<string, string[]> errors = [];
+        if (!request.EmployeeId.HasValue || request.EmployeeId == Guid.Empty) errors["employeeId"] = ["Employee is required."];
+        if (!request.LeaveTypeId.HasValue || request.LeaveTypeId == Guid.Empty) errors["leaveTypeId"] = ["Leave type is required."];
+        if (!request.DateFrom.HasValue) errors["dateFrom"] = ["Start date is required."];
+        if (!request.DateTo.HasValue) errors["dateTo"] = ["End date is required."];
+        if (NormalizeOptional(request.Note)?.Length > NoteMaxLength) errors["note"] = [$"Note must not exceed {NoteMaxLength} characters."];
         return errors;
     }
 

@@ -1,5 +1,26 @@
 # Internal Apps Platform change history
 
+## 2026-07-30 — Vacation administrative absence recording
+
+- Reused `vacation.leave_requests` with one immutable `source` column:
+  `EMPLOYEE_REQUEST` or `ADMINISTRATIVE_ENTRY`; existing requests default to
+  employee-request source.
+- Added the administrator recording flow under the existing
+  `vacation.requests.manage` permission. It creates an immediately approved
+  request atomically with balance validation, ledger consumption when required,
+  one null-to-approved history transition, and `leave_request_recorded` audit.
+- Extended administrator request list/details and the Portal form with source,
+  source filtering, and Recorded/Evidentirano presentation for approved
+  administrative entries. Cancellation remains the established exact-reversal
+  path and administrative entries expose no Approve/Reject action.
+- Added the repeatable `scripts/smoke/administrative-absence-entry.ps1`
+  development smoke. It uses unique `ADMSMOKE-<UTC timestamp>` fixtures,
+  validates the approved balance and non-balance paths, exact cancellation,
+  rollback/error cases, source filtering, and reports retained append-only
+  records. Runtime smoke also found and corrected the migration grant so the
+  application role may insert the existing decision columns used by the
+  direct-approved flow while retaining no permission to update `source`.
+
 ## 2026-07-30 — Canonical Vacation Leave Type administration
 
 - Added migration `032_vacation_leave_type_administration.sql`. It reuses the

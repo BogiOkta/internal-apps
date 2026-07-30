@@ -97,6 +97,7 @@ export type VacationRequest = {
   dateTo: string;
   workingDays: number;
   status: VacationRequestStatus;
+  source: VacationRequestSource;
   employeeNote: string | null;
   decisionNote: string | null;
   submittedAt: string;
@@ -105,6 +106,8 @@ export type VacationRequest = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type VacationRequestSource = "EMPLOYEE_REQUEST" | "ADMINISTRATIVE_ENTRY";
 
 export type VacationRequestHistory = {
   publicId: string;
@@ -137,6 +140,14 @@ export type CreateVacationRequest = {
   note: string | null;
 };
 
+export type RecordAdministrativeAbsence = {
+  employeeId: string;
+  leaveTypeId: string;
+  dateFrom: string;
+  dateTo: string;
+  note: string | null;
+};
+
 export type CancelVacationRequest = {
   comment: string | null;
 };
@@ -147,6 +158,7 @@ export type VacationRequestTransition = {
 
 export type VacationAdminRequestQuery = {
   status?: VacationRequestStatus;
+  source?: VacationRequestSource;
   leaveTypeId?: string;
   search?: string;
   dateFrom?: string;

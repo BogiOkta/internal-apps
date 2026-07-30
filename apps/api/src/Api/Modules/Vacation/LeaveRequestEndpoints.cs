@@ -22,6 +22,7 @@ internal static class LeaveRequestEndpoints
         admin.MapGet("/requests", ListAdminAsync);
         admin.MapGet("/requests/{requestId:guid}", GetAdminAsync);
         admin.MapGet("/requests/{requestId:guid}/history", ListHistoryAsync);
+        admin.MapPost("/requests/record", RecordAdministrativeAsync);
         admin.MapPost("/requests/{requestId:guid}/approve", ApproveAsync);
         admin.MapPost("/requests/{requestId:guid}/reject", RejectAsync);
         admin.MapPost("/requests/{requestId:guid}/cancel", CancelAdminAsync);
@@ -98,18 +99,29 @@ internal static class LeaveRequestEndpoints
     }
 
     private static async Task<IResult> ListAdminAsync(
-        Guid? employeeId, Guid? departmentId, Guid? leaveTypeId, string? status,
+        Guid? employeeId, Guid? departmentId, Guid? leaveTypeId, string? status, string? source,
         DateOnly? dateFrom, DateOnly? dateTo, string? search, int? page, int? pageSize,
         HttpContext context, LeaveRequestService service,
         CancellationToken cancellationToken)
     {
         if (!service.TryCreateAdminQuery(employeeId, departmentId, leaveTypeId,
-                status, dateFrom, dateTo, search, page, pageSize,
+                status, source, dateFrom, dateTo, search, page, pageSize,
                 out var query, out var errors))
             return Results.ValidationProblem(errors, instance: context.Request.Path,
                 extensions: Extensions(context, "validation_failed"));
         return Results.Ok(await service.ListAdminAsync(query,
             context.Request.Headers.AcceptLanguage, cancellationToken));
+    }
+
+    private static async Task<IResult> RecordAdministrativeAsync(
+        RecordAdministrativeAbsence request, HttpContext context, LeaveRequestService service,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.RecordAdministrativeAsync(context, request,
+            context.Request.Headers.AcceptLanguage, cancellationToken);
+        return result.Status == LeaveRequestOperationStatus.Success
+            ? Results.Created($"/api/v1/vacation/requests/{result.Request!.PublicId}", result.Request)
+            : ToResult(context, result);
     }
 
     private static async Task<IResult> GetAdminAsync(
@@ -185,6 +197,12 @@ internal static class LeaveRequestEndpoints
             LeaveRequestOperationStatus.LeaveTypeNotFound =>
                 (404, "Leave type not found", "vacation_leave_type_not_found",
                     "The selected leave type does not exist."),
+            LeaveRequestOperationStatus.EmployeeNotFound =>
+                (404, "Employee not found", "vacation_employee_not_found",
+                    "The selected employee does not exist."),
+            LeaveRequestOperationStatus.EmployeeInactive =>
+                (409, "Employee is inactive", "vacation_employee_inactive",
+                    "The selected employee is inactive."),
             LeaveRequestOperationStatus.LeaveTypeInactive =>
                 (409, "Leave type is inactive", "vacation_leave_type_inactive",
                     "The selected leave type is inactive."),

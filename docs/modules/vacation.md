@@ -135,6 +135,31 @@ business rules prevent editing.
 See [`../domain/vacation.md`](../domain/vacation.md) for detailed ownership,
 domain rules, persistence, authorization, and current implementation behavior.
 
+### Administrative absence recording
+
+Administrators with `vacation.requests.manage` can record an absence in the
+existing request administration workspace. The request uses the same
+`vacation.leave_requests` table with `source = ADMINISTRATIVE_ENTRY`; the
+employee flow retains `EMPLOYEE_REQUEST`. Administrative records are persisted
+as `APPROVED`, use the shared Business Calendar calculation, reuse the
+existing balance/ledger consumption and cancellation reversal, and show
+Recorded/Evidentirano without adding a status.
+
+### Administrative absence controlled smoke fixture
+
+Run `scripts/smoke/administrative-absence-entry.ps1` against fresh canonical
+API and Portal services. Each run creates dedicated development-only fixtures
+under a unique `ADMSMOKE-<UTC timestamp>` prefix and reports every retained
+identifier. It validates direct approved recording, working-day persistence,
+history, audit, balance consumption, exact cancellation reversal, duplicate
+cancellation protection, non-balance recording, overlap and insufficient-
+balance rollback, inactive references, and source filtering. Requests with
+ledger or history references are retained rather than deleted; the script
+cancels its balance request and deactivates its employee and Leave Types. Its
+non-balance request remains approved only long enough for Portal inspection and
+must then be cancelled through the supported request flow. Append-only ledger
+and history rows must never be deleted directly.
+
 ### LV.2 controlled development-database smoke fixture
 
 The configured remote PostgreSQL instance may be used only when explicitly

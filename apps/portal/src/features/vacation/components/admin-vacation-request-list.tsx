@@ -23,6 +23,7 @@ import {
   type PagedVacationRequests,
   type VacationRequest,
   type VacationRequestStatus,
+  type VacationRequestSource,
 } from "@/types/vacation";
 
 const pageSize = 25;
@@ -35,6 +36,7 @@ export function AdminVacationRequestList() {
   const [result, setResult] = useState<PagedVacationRequests | null>(null);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [status, setStatus] = useState<"all" | VacationRequestStatus>("all");
+  const [source, setSource] = useState<"all" | VacationRequestSource>("all");
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -52,6 +54,7 @@ export function AdminVacationRequestList() {
       const [requests, types] = await Promise.all([
         listAdminVacationRequests(accessToken, locale, {
           status: status === "all" ? undefined : status,
+          source: source === "all" ? undefined : source,
           leaveTypeId: leaveTypeId || undefined,
           search: search || undefined,
           dateFrom: `${selectedYear}-01-01`,
@@ -69,7 +72,7 @@ export function AdminVacationRequestList() {
     } finally {
       if (!signal?.aborted) setIsLoading(false);
     }
-  }, [accessToken, allowed, leaveTypeId, locale, page, search, status, year]);
+  }, [accessToken, allowed, leaveTypeId, locale, page, search, source, status, year]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -95,8 +98,9 @@ export function AdminVacationRequestList() {
   </VacationWorkspace>;
 
   return <VacationWorkspace title={t("vacation.admin.title")}
-    description={t("vacation.admin.description")}>
-    <form className="mb-5 grid gap-3 rounded-lg border border-slate-300 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4"
+    description={t("vacation.admin.description")}
+    headerActions={<Link href="/vacation/admin/requests/record" className="min-h-10 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white">{t("vacation.admin.record")}</Link>}>
+    <form className="mb-5 grid gap-3 rounded-lg border border-slate-300 bg-white p-4 sm:grid-cols-2 xl:grid-cols-5"
       onSubmit={(event) => {
         event.preventDefault();
         resetPage(() => setSearch(searchInput.trim()));
@@ -119,6 +123,14 @@ export function AdminVacationRequestList() {
           </option>)}
         </select>
       </Filter>
+      <Filter label={t("vacation.admin.filter.source")}>
+        <select className={inputClass} value={source}
+          onChange={(event) => resetPage(() => setSource(event.target.value as typeof source))}>
+          <option value="all">{t("vacation.admin.filter.allSources")}</option>
+          <option value="EMPLOYEE_REQUEST">{t("vacation.admin.source.employeeRequest")}</option>
+          <option value="ADMINISTRATIVE_ENTRY">{t("vacation.admin.source.administrativeEntry")}</option>
+        </select>
+      </Filter>
       <Filter label={t("vacation.admin.filter.employee")}>
         <div className="flex gap-2">
           <input className={inputClass} value={searchInput} maxLength={100}
@@ -139,9 +151,9 @@ export function AdminVacationRequestList() {
       : isLoading ? <div className="h-60 animate-pulse rounded-lg bg-slate-200" />
         : !result?.items.length ? <Empty text={t("vacation.admin.empty")} />
           : <><div className="hidden overflow-x-auto rounded-lg border border-slate-300 bg-white md:block">
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table className="w-full min-w-[1040px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase text-slate-600"><tr>
-                {["employee", "leaveType", "dateRange", "workingDays", "submitted", "status", "details"].map((key) =>
+                {["employee", "leaveType", "dateRange", "workingDays", "source", "submitted", "status", "details"].map((key) =>
                   <th key={key} className="px-4 py-3">{t(`vacation.admin.column.${key}` as TranslationKey)}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-slate-200">
@@ -181,8 +193,9 @@ function RequestRow({ request }: { request: VacationRequest }) {
     <td className="px-4 py-3">{request.leaveTypeName}</td>
     <td className="px-4 py-3">{formatDate(request.dateFrom, locale)} – {formatDate(request.dateTo, locale)}</td>
     <td className="px-4 py-3">{request.workingDays}</td>
+    <td className="px-4 py-3">{sourceLabel(request.source, t)}</td>
     <td className="px-4 py-3">{formatDateTime(request.submittedAt, locale)}</td>
-    <td className="px-4 py-3"><VacationStatusBadge status={request.status} label={statusLabel(request.status, t)} /></td>
+    <td className="px-4 py-3"><VacationStatusBadge status={request.status} label={requestStatusLabel(request, t)} /></td>
     <td className="px-4 py-3"><DetailsLink request={request} /></td>
   </tr>;
 }
@@ -193,11 +206,12 @@ function RequestCard({ request }: { request: VacationRequest }) {
     <div className="flex items-start justify-between gap-3">
       <div><h2 className="font-semibold">{request.employeeName}</h2>
         <p className="text-xs text-slate-500">{request.employeeNumber}</p></div>
-      <VacationStatusBadge status={request.status} label={statusLabel(request.status, t)} />
+      <VacationStatusBadge status={request.status} label={requestStatusLabel(request, t)} />
     </div>
     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
       <CardDetail label={t("vacation.admin.column.leaveType")} value={request.leaveTypeName} />
       <CardDetail label={t("vacation.admin.column.workingDays")} value={String(request.workingDays)} />
+      <CardDetail label={t("vacation.admin.column.source")} value={sourceLabel(request.source, t)} />
       <div className="col-span-2"><CardDetail label={t("vacation.admin.column.dateRange")}
         value={`${formatDate(request.dateFrom, locale)} – ${formatDate(request.dateTo, locale)}`} /></div>
       <div className="col-span-2"><CardDetail label={t("vacation.admin.column.submitted")}
@@ -205,6 +219,18 @@ function RequestCard({ request }: { request: VacationRequest }) {
     </dl>
     <div className="mt-4"><DetailsLink request={request} /></div>
   </article>;
+}
+
+export function sourceLabel(source: VacationRequestSource, t: ReturnType<typeof useTranslations>["t"]) {
+  return t(source === "ADMINISTRATIVE_ENTRY"
+    ? "vacation.admin.source.administrativeEntry"
+    : "vacation.admin.source.employeeRequest");
+}
+
+export function requestStatusLabel(request: VacationRequest, t: ReturnType<typeof useTranslations>["t"]) {
+  return request.status === "APPROVED" && request.source === "ADMINISTRATIVE_ENTRY"
+    ? t("vacation.admin.status.recorded")
+    : statusLabel(request.status, t);
 }
 
 function CardDetail({ label, value }: { label: string; value: string }) {

@@ -9,6 +9,7 @@ import type {
   UpdateLeaveTypeRequest,
   CancelVacationRequest,
   CreateVacationRequest,
+  RecordAdministrativeAbsence,
   VacationBalance,
   VacationLeaveTypeOption,
   VacationRequest,
@@ -285,6 +286,16 @@ export function getAdminVacationRequestHistory(
     locale,
     { signal },
   );
+}
+
+export function recordAdministrativeAbsence(
+  accessToken: string,
+  locale: string,
+  body: RecordAdministrativeAbsence,
+): Promise<VacationRequest> {
+  return vacationRequest("/api/v1/vacation/requests/record", accessToken, locale, {
+    method: "POST", body,
+  });
 }
 
 export function approveAdminVacationRequest(

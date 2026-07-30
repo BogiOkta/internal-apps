@@ -106,6 +106,14 @@ Every status transition is appended to
 `vacation.leave_request_history`. Platform audit events remain additionally
 required when future services implement consequential writes.
 
+Administrative absence recording reuses the same `vacation.leave_requests`
+table. Its immutable `source` distinguishes `EMPLOYEE_REQUEST` from
+`ADMINISTRATIVE_ENTRY`; it does not introduce another request status or an
+absence table. An administrative entry is persisted directly as `APPROVED`.
+Recorded/Evidentirano is Portal presentation only. The flow reuses the
+employee/request note, request-management permission, ledger consumption, and
+exact approved-cancellation reversal.
+
 ### Leave balances
 
 `vacation.leave_balances` persists entitlement, carry-over, adjustment, and
