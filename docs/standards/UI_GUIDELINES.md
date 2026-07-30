@@ -163,9 +163,11 @@ unless a row says otherwise.
 | Secondary button | Cancel, back, supporting commands | `formSecondaryButtonClassName` | `@/components/form-field` | Bordered neutral | Feature-local secondary class exports | Calendar toolbar navigation buttons remain calendar-owned | Yes |
 | Danger button | Destructive outline actions | `formDangerButtonClassName` | `@/components/form-field` | Red outline | One-off danger stacks | None | Yes |
 | Danger solid button | Destructive confirm inside `ConfirmDialog` | `formDangerSolidButtonClassName` | `@/components/form-field` | Red filled confirm | Inline solid-red class strings for the same purpose | None | Contract asserts helper existence |
-| Icon-only button | Compact icon commands | Semantic `<button>` + accessible name; Lucide | Shared/calendar toolbars | Visible focus; `aria-label` | Icon buttons without accessible names | `calendar-toolbar` keeps local sizing for calendar chrome | None |
+| Action icons | Canonical create/refresh/export/delete glyphs before command labels | `PortalActionIcon`, `portalActionContent` | `@/components/portal-action-icon` | create→plus; refresh→refresh; export→download; delete→trash; decorative when label present; icon-only needs accessible name | Feature-local SVG icons for the same commands; hand-written icon chrome on pages | None | Yes — known create/refresh consumers |
+| Icon-only button | Compact icon commands | Semantic `<button>` + accessible name; `PortalActionIcon` | Shared/calendar toolbars | Visible focus; `aria-label` | Icon buttons without accessible names | `calendar-toolbar` keeps local sizing for calendar chrome | None |
 | Field wrapper | Label, required, hint, error | `FormField`, `fieldDescriptionIds` | `@/components/form-field` | Stable IDs; hint/error wiring | Divergent hand-rolled label/error blocks for ordinary fields | Dense grid filter cells may use `sr-only` labels | None beyond consumer contracts |
 | Confirmation dialog | Destructive/consequential confirm | `ConfirmDialog` | `@/components/confirm-dialog` | Message; optional title/children; confirm/cancel; destructive tone; no browser `confirm` | `window.confirm` / `confirm()`; duplicated amber/red panels | None | Yes — rejects `window.confirm` / `window.alert` |
+| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` | `@/components/portal-notification` | Variants; dismiss; aria-live; stable placement that does not shift the primary grid | Full-width operation banners above administration grids; parallel toast stacks | Field/form validation stays beside the field (§1.6) | Yes — migrated admin pages |
 | Modal/dialog | Overlay dialogs beyond inline confirm | Not yet a shared overlay primitive | — | Prefer `ConfirmDialog` for confirmations | Ad-hoc full-screen modal frameworks | Calendar popovers owned by date controls | None |
 | Status badge | Compact status labels | `StatusBadge` for active/inactive/yes-no; `VacationStatusBadge` for leave-request statuses | `@/components/status-badge`; `@/features/vacation/components/vacation-status-badge` | Non-color indicators remain with text labels | Parallel active/inactive chip chrome | Domain request statuses stay in `VacationStatusBadge` | Partial |
 | Loading state | In-progress data | `GridStateRows` inside admin grids; localized page pulse/message elsewhere | `@/components/admin-data-grid` | Stable shell geometry | Full-page spinners that collapse admin chrome | Self-service pages keep localized loading blocks | Admin pages via existing contracts |
@@ -174,8 +176,9 @@ unless a row says otherwise.
 | Pagination | Admin list footers | `GridPagination` (20/50/100) | `@/components/grid-pagination` | Range summary; page size; first/prev/next/last | Second count rows; `GridFooter` on Organization-aligned pages | Vacation request administration retains server-driven prev/next with API `pageSize` 25 until that shell is migrated | Yes for migrated admin pages; allowlisted exception file for vacation admin list |
 | Administration page header/body | Title, description, New/Refresh; viewport fill chain | Shell `headerActions`; `AdministrationPageBody` | `@/components/administration-page-body` (+ header via shell) | Title left; New then Refresh right | Duplicate header chrome | Dashboard and pure self-service | Migrated admin pages |
 | Active section header | Section title, description, and tab-specific actions on screens with tab navigation (§2.5) | `PortalSectionHeader` | `@/components/portal-section-header` | Rendered below the tabs; `h2` title left; optional description; primary then secondary actions right on desktop, wrapping below on narrow screens | Tab-specific actions in the module header or in a command band above the tabs; page-local section-header chrome | None | Yes — tabbed Vacation screens contract test |
-| Administration toolbar | Search, filters, export | `AdministrativeGridToolbar` | `@/components/administrative-grid-toolbar` | Search → filters → export | Parallel filter command bars on admin grids | Vacation request admin filter form remains until shell migration | Migrated admin pages |
-| Administrative grid shell | Bordered grid + optional side panel | `AdministrativeGridShell` | `@/components/admin-data-grid` | Internal scroll; stable states; `fillViewport` only with body chain | Parallel bordered grid/panel frames | Non-tabular forms; Leave Balances / Vacation request admin pending shell rollout | Migrated admin pages |
+| Tab navigation | Secondary section tabs under the module header | `WorkspaceNavigation` | `@/components/workspace-navigation` | Medium/semibold labels; subtle separators between adjacent tabs only; active underline; hover/focus; overflow scroll; light/dark | Feature-local tab separator chrome; boxed/pill tabs for this navigation purpose | Unrelated segmented controls/filters | Yes — Vacation workspace + anti-duplication |
+| Administration toolbar | Search, filters, export | `AdministrativeGridToolbar` | `@/components/administrative-grid-toolbar` | Search → filters → export (export uses canonical export icon) | Parallel filter command bars on admin grids | Vacation request admin filter form remains until shell migration | Migrated admin pages |
+| Administrative grid shell | Bordered grid + optional side panel | `AdministrativeGridShell` | `@/components/admin-data-grid` | Internal scroll; stable states; optional `detailsNotification` below right-rail details/confirmation; `fillViewport` only with body chain | Parallel bordered grid/panel frames; operation banners above the grid | Non-tabular forms; Leave Balances / Vacation request admin pending shell rollout | Migrated admin pages |
 | Calendar | Month/week/day/agenda | `AppCalendar` | `@/components/calendar` | Platform locale/appearance; list/agenda alternative | Forked FullCalendar setup in features | None | Demo/consumer contracts |
 | Localization | User-visible text | `LocaleProvider`, `useTranslations` | `@/i18n/…` | sr-Latn default; en; typed keys | Hardcoded labels | None | Navigation/locale contracts |
 | Appearance/theme | Light/Dark/System | `AppearanceProvider` | `@/components/appearance-provider` | Semantic tokens; settings-owned preference | Page-local theme state | None | Settings/shell contracts |
@@ -189,6 +192,33 @@ unless an explicit row above documents an exception.
 
 **Button rule (normative):** Feature modules MUST NOT declare
 `primaryButtonClass`, `secondaryButtonClass`, or `dangerButtonClass` constants.
+
+**Operation feedback rule (normative):** Transient operation success, warning,
+and error messages MUST use `PortalNotification` in a stable region that does
+not shift the primary grid, filters, or page chrome. Full-width operation
+banners above administration grids are prohibited. Field and form validation
+messages remain beside the relevant control and may participate in layout.
+
+### 1.6 Validation messages vs operation notifications
+
+Two distinct message categories:
+
+1. **Field or form validation** — stays next to the relevant field or form
+   (`FormField` error, form-level summary when needed). May change local
+   layout around the form. Uses `aria-invalid` / `aria-describedby` for fields.
+2. **Operation feedback** — create/update/delete/activate results, delete
+   conflicts, refresh failures, export failures, and similar page-operation
+   outcomes. Uses `PortalNotification` only. Placement:
+   - administration pages with a right rail: `AdministrativeGridShell`
+     `detailsNotification` (below details, actions, and `ConfirmDialog`);
+   - equivalent custom right-rail layouts (for example Business Calendar):
+     the same position inside the aside, below confirmation;
+   - pages without a right rail: a stable non-layout-shifting host owned by
+     the shared notification pattern (do not invent a second toast stack).
+
+Confirmation (`ConfirmDialog`) and completed-operation notification remain
+separate visual blocks. Do not auto-dismiss destructive or important error
+guidance too quickly; always offer dismiss where the message is transient.
 
 Documented temporary exceptions (exact file + reason + removal condition):
 
@@ -217,9 +247,16 @@ Before merging a new Portal screen or form:
 - [ ] Use `ConfirmDialog` for destructive or consequential confirmations;
       never `window.confirm` / `window.alert`.
 - [ ] On screens with tab navigation, follow the §2.5 tabbed screen
-      hierarchy: module header → tabs → `PortalSectionHeader` → filters →
-      content. Tab-specific actions live in the active section header,
-      never in the module header.
+      hierarchy: module header → tabs (`WorkspaceNavigation`) →
+      `PortalSectionHeader` → filters → content. Tab-specific actions live in
+      the active section header, never in the module header. Do not recreate
+      tab separator or active-tab chrome locally.
+- [ ] Use `portalActionContent` / `PortalActionIcon` for create, refresh,
+      export, and delete command icons; do not hand-write those SVGs in
+      feature pages.
+- [ ] Use `PortalNotification` for operation feedback in a stable region
+      (`detailsNotification` on right-rail admin pages). Do not place
+      operation success/error banners above the primary grid.
 - [ ] If introducing a new shared control category, document it in §1.4
       (behavior, import path, ownership) and add or update Portal contract
       protection in the same change.
@@ -342,7 +379,14 @@ Region purposes:
   whole module.
 - **Tab navigation** — identifies the active section. It answers
   “Where am I?”. Tabs stay in one consistent position on every section of
-  the module and mark the active section.
+  the module and mark the active section. The shared `WorkspaceNavigation`
+  (`@/components/workspace-navigation`) owns presentation: medium or
+  semibold labels, subtle vertical separators between adjacent tabs only
+  (never before the first or after the last), the canonical active
+  underline/accent, hover and focus states for light and dark appearance,
+  and horizontal overflow scrolling. Keep the compact underline pattern;
+  do not convert tabs into boxed pills or recreate separator styling in
+  feature pages.
 - **Active section header** — the shared `PortalSectionHeader`
   (`@/components/portal-section-header`). It renders the active section
   title (`h2`), an optional section description, and the actions that
@@ -411,7 +455,8 @@ Responsive behavior belongs in shared layout and components where possible, not 
 
 ## 4. Design System
 
-Use Tailwind CSS and shared shadcn/ui components. Lucide is the only standard icon set.
+Use Tailwind CSS and shared shadcn/ui components. Canonical command icons are
+owned by `PortalActionIcon` (plus / refresh / download / trash mapping).
 
 ### 4.1 Component selection
 
@@ -445,10 +490,14 @@ Module-specific components stay under `src/features/<module>/components`.
 
 ### 4.3 Icons
 
-- Use Lucide icons at shared sizes.
-- Pair unfamiliar icons with visible text.
+- Canonical create, refresh, export, and delete command icons use
+  `PortalActionIcon` / `portalActionContent` (`@/components/portal-action-icon`).
+  Mapping: create → plus; refresh → refresh; export → download; delete → trash.
+- Pair unfamiliar icons with visible text. When a text label is present, the
+  icon is decorative (`aria-hidden`).
 - Icon-only buttons require an accessible name and normally a tooltip.
-- Do not use decorative icons that add visual noise to every label.
+- Do not insert hand-written SVG for the same command concepts in feature
+  pages, and do not add a parallel icon package for ordinary Portal actions.
 - Use the same icon for the same concept across modules.
 
 ## 5. Light and Dark Modes
@@ -741,7 +790,7 @@ Canonical placement:
 | Page header | Title and description on the left; primary New, then Refresh, on the far right |
 | Grid toolbar | Search, then filter controls, then export |
 | Grid footer | One localized visible-range summary, page-size selector, and pagination only |
-| Side panel | Details, create, or edit content sharing the shell border, radius, and padding |
+| Side panel | Details, create, or edit content sharing the shell border, radius, and padding; operation notifications via `detailsNotification` below details/confirmation |
 
 The header keeps the title and description on the left and places the primary
 New action, then Refresh, on the right; actions wrap below the description on

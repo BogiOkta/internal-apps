@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { formPrimaryButtonClassName } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
 import {
   Empty,
   ErrorState,
@@ -48,7 +49,7 @@ export default function VacationRequestsPage() {
   return <VacationWorkspace title={t("vacation.employeePortal.requestsTitle")}
     description={t("vacation.employeePortal.requestsDescription")}
     sectionActions={<Link href="/vacation/requests/new" className={formPrimaryButtonClassName()}>
-      {t("vacation.employeePortal.newRequest")}
+      {portalActionContent("create", t("vacation.employeePortal.newRequest"))}
     </Link>}>
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <label className="block text-sm font-medium">

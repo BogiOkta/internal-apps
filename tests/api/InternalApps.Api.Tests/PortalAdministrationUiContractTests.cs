@@ -187,6 +187,9 @@ public sealed class PortalAdministrationUiContractTests
             "export function AdministrativeGridToolbar",
             "export function SearchableCombobox",
             "export function PortalSectionHeader",
+            "export function WorkspaceNavigation",
+            "export function PortalActionIcon",
+            "export function PortalNotification",
         };
 
         var canonicalOwners = new HashSet<string>(StringComparer.Ordinal)
@@ -202,6 +205,9 @@ public sealed class PortalAdministrationUiContractTests
             "components/administrative-grid-toolbar.tsx",
             "components/searchable-combobox.tsx",
             "components/portal-section-header.tsx",
+            "components/workspace-navigation.tsx",
+            "components/portal-action-icon.tsx",
+            "components/portal-notification.tsx",
         };
 
         var filenamePatterns = new[]
@@ -214,6 +220,9 @@ public sealed class PortalAdministrationUiContractTests
             "grid-pagination",
             "searchable-combobox",
             "section-header",
+            "workspace-navigation",
+            "portal-action-icon",
+            "portal-notification",
         };
 
         var filenameAllowlist = new HashSet<string>(StringComparer.Ordinal)
@@ -271,6 +280,9 @@ public sealed class PortalAdministrationUiContractTests
             "components/grid-pagination.tsx",
             "components/searchable-combobox.tsx",
             "components/portal-section-header.tsx",
+            "components/workspace-navigation.tsx",
+            "components/portal-action-icon.tsx",
+            "components/portal-notification.tsx",
         })
         {
             var parts = relative.Split('/');
@@ -424,6 +436,153 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("headerActions", source);
             Assert.DoesNotContain("commandBar", source);
         }
+    }
+
+    [Fact]
+    public void PortalTabNavigation_UsesCanonicalWorkspaceNavigation()
+    {
+        var tabs = Read("apps", "portal", "src", "components", "workspace-navigation.tsx");
+        Assert.Contains("export function WorkspaceNavigation", tabs);
+        Assert.Contains("font-semibold", tabs);
+        Assert.Contains("font-medium", tabs);
+        Assert.Contains("before:w-px", tabs);
+        Assert.Contains("showLeadingSeparator", tabs);
+        Assert.Contains("border-b-2", tabs);
+        Assert.Contains("aria-current", tabs);
+        Assert.Contains("dark:", tabs);
+
+        var workspace = Read("apps", "portal", "src", "features", "vacation",
+            "components", "vacation-workspace.tsx");
+        Assert.Contains("WorkspaceNavigation", workspace);
+
+        // Feature pages must not recreate inter-tab separator chrome.
+        var violations = ScanPortalSource((relative, source) =>
+        {
+            if (relative == "components/workspace-navigation.tsx")
+            {
+                return null;
+            }
+
+            if (!relative.StartsWith("app/", StringComparison.Ordinal) &&
+                !relative.StartsWith("features/", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            return source.Contains("before:w-px", StringComparison.Ordinal)
+                ? relative
+                : null;
+        });
+
+        Assert.True(
+            violations.Count == 0,
+            "Feature-local tab separator styling is prohibited. Use WorkspaceNavigation. Violations: "
+            + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void PortalActionIcons_UseCanonicalSharedMapping()
+    {
+        var icons = Read("apps", "portal", "src", "components", "portal-action-icon.tsx");
+        Assert.Contains("export function PortalActionIcon", icons);
+        Assert.Contains("export function portalActionContent", icons);
+        Assert.Contains("\"create\"", icons);
+        Assert.Contains("\"refresh\"", icons);
+        Assert.Contains("\"export\"", icons);
+        Assert.Contains("\"delete\"", icons);
+        Assert.Contains("aria-hidden", icons);
+
+        var createConsumers = new[]
+        {
+            Read("apps", "portal", "src", "app", "vacation", "requests", "page.tsx"),
+            Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx"),
+            Read("apps", "portal", "src", "features", "vacation",
+                "components", "admin-vacation-request-list.tsx"),
+            Read("apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx"),
+            Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx"),
+            Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx"),
+            Read("apps", "portal", "src", "app", "identity", "users", "page.tsx"),
+            Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx"),
+            Read("apps", "portal", "src", "app", "business-calendar", "admin",
+                "non-working-days", "page.tsx"),
+        };
+
+        foreach (var source in createConsumers)
+        {
+            Assert.Contains("portalActionContent", source);
+            Assert.Contains("\"create\"", source);
+        }
+
+        var refreshConsumers = new[]
+        {
+            Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx"),
+            Read("apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx"),
+            Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx"),
+            Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx"),
+            Read("apps", "portal", "src", "app", "identity", "users", "page.tsx"),
+            Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx"),
+            Read("apps", "portal", "src", "app", "business-calendar", "admin",
+                "non-working-days", "page.tsx"),
+        };
+
+        foreach (var source in refreshConsumers)
+        {
+            Assert.Contains("portalActionContent", source);
+            Assert.Contains("\"refresh\"", source);
+        }
+
+        var toolbar = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
+        Assert.Contains("PortalActionIcon kind=\"export\"", toolbar);
+        Assert.DoesNotContain("function PlusIcon", Read("apps", "portal", "src", "app",
+            "organization", "employees", "page.tsx"));
+    }
+
+    [Fact]
+    public void PortalOperationNotifications_UseStableRightRailRegion()
+    {
+        var notification = Read("apps", "portal", "src", "components",
+            "portal-notification.tsx");
+        Assert.Contains("export function PortalNotification", notification);
+        Assert.Contains("aria-live", notification);
+        Assert.Contains("success", notification);
+        Assert.Contains("warning", notification);
+        Assert.Contains("error", notification);
+        Assert.Contains("info", notification);
+
+        var shell = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
+        Assert.Contains("detailsNotification", shell);
+
+        var shellPages = new[]
+        {
+            "apps/portal/src/app/vacation/leave-types/page.tsx",
+            "apps/portal/src/app/organization/departments/page.tsx",
+            "apps/portal/src/app/organization/employees/page.tsx",
+            "apps/portal/src/app/identity/users/page.tsx",
+            "apps/portal/src/app/organization/user-employee-links/page.tsx",
+            "apps/portal/src/app/vacation/admin/policies/page.tsx",
+        };
+
+        foreach (var relative in shellPages)
+        {
+            var source = Read(relative.Split('/'));
+            Assert.Contains("PortalNotification", source);
+            Assert.Contains("detailsNotification", source);
+
+            // Operation banners must not sit above AdministrativeGridShell.
+            var beforeShell = source.Split("AdministrativeGridShell", 2)[0];
+            Assert.DoesNotContain("border-emerald-200 bg-emerald-50 px-4 py-3", beforeShell);
+            Assert.DoesNotContain("border-red-200 bg-red-50 px-4 py-3", beforeShell);
+        }
+
+        var businessCalendar = Read("apps", "portal", "src", "app", "business-calendar",
+            "admin", "non-working-days", "page.tsx");
+        Assert.Contains("PortalNotification", businessCalendar);
+        Assert.Contains("portalActionContent", businessCalendar);
+        Assert.Contains("\"create\"", businessCalendar);
+        // Feedback must live in the aside, not above the grid section.
+        var beforeAside = businessCalendar.Split("<aside", 2)[0];
+        Assert.DoesNotContain("<PortalNotification", beforeAside);
+        Assert.DoesNotContain("border-emerald-200 bg-emerald-50", beforeAside);
     }
 
     [Fact]

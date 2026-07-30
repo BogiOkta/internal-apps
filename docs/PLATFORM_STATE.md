@@ -4,13 +4,13 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: canonical tabbed-screen hierarchy for the
-  Portal platform. `docs/standards/UI_GUIDELINES.md` §2.5 defines the
-  mandatory layout for every current and future Portal screen with tab
-  navigation: module header → tabs → active section header
-  (`PortalSectionHeader`) → filters → content. Tab-specific actions live in
-  the active section header, never in the module header. Vacation workspace
-  screens are migrated; contract tests enforce the hierarchy.
+- Latest functional milestone: Portal-wide navigation, action-icon, and
+  operation-notification polish. `WorkspaceNavigation` owns tab separators
+  and label weight; `PortalActionIcon` / `portalActionContent` own create /
+  refresh / export / delete glyphs; `PortalNotification` plus
+  `AdministrativeGridShell` `detailsNotification` keep operation feedback in
+  the right rail without shifting administration grids. Documented in
+  `docs/standards/UI_GUIDELINES.md` §1.4 / §1.6 / §2.5 / §4.3.
 
 ## Platform foundation
 
@@ -37,30 +37,38 @@
   every application module. Shared components live under
   `apps/portal/src/components` and include `PortalDateInput`,
   `DateRangePicker`, `ConfirmDialog`, `StatusBadge`, `PortalSectionHeader`,
-  `FormField` / `formControlClassName` / primary·secondary·danger·danger-solid
-  button helpers, `SearchableCombobox`, `AppCalendar`,
-  `AdministrationPageBody`, `AdministrativeGridShell`,
-  `AdministrativeGridToolbar`, and `GridPagination`. Locale and appearance
-  are owned by `LocaleProvider` and `AppearanceProvider` (`/settings`).
-  Organization Employees and Departments, Identity Users, User–Employee
-  links, Vacation Leave Types, and Leave Policies share the administration
-  shell contract. Portal-wide regression tests reject native `type="date"`,
+  `WorkspaceNavigation`, `PortalActionIcon` / `portalActionContent`,
+  `PortalNotification`, `FormField` / `formControlClassName` /
+  primary·secondary·danger·danger-solid button helpers, `SearchableCombobox`,
+  `AppCalendar`, `AdministrationPageBody`, `AdministrativeGridShell` (with
+  optional `detailsNotification`), `AdministrativeGridToolbar`, and
+  `GridPagination`. Locale and appearance are owned by `LocaleProvider` and
+  `AppearanceProvider` (`/settings`). Organization Employees and Departments,
+  Identity Users, User–Employee links, Vacation Leave Types, Leave Policies,
+  and Business Calendar non-working days share stable right-rail operation
+  feedback. Portal-wide regression tests reject native `type="date"`,
   `window.confirm` / `window.alert`, forbidden local input/button class
-  constants, feature-local date display formatters, and known
-  module-prefixed copies of canonical controls. Documented remaining
-  non-mechanical exceptions: Vacation request administration
-  pagination/shell, Leave Balances shell migration, calendar toolbar chrome,
-  and domain `VacationStatusBadge` (§1.4 / §7.5).
+  constants, feature-local date display formatters, known module-prefixed
+  copies of canonical controls, feature-local tab separator chrome, and
+  layout-shifting operation banners above migrated administration grids.
+  Documented remaining non-mechanical exceptions: Vacation request
+  administration pagination/shell, Leave Balances shell migration, calendar
+  toolbar chrome, and domain `VacationStatusBadge` (§1.4 / §7.5).
 - Tabbed screen hierarchy (platform rule, §2.5): every Portal screen with
   multiple tabs uses module header (stable `h1` + module description; only
-  genuinely module-global actions) → tab navigation (“Where am I?”) →
-  `PortalSectionHeader` active section title/description and tab-specific
-  actions (“What can I do here?”) → filters → section content. The shell no
-  longer offers a command band between the module header and the tabs.
-  Vacation workspace routes (`/vacation`, `/vacation/requests`,
+  genuinely module-global actions) → tab navigation via
+  `WorkspaceNavigation` (medium/semibold labels, subtle inter-tab
+  separators, active underline) → `PortalSectionHeader` active section
+  title/description and tab-specific actions → filters → section content.
+  The shell no longer offers a command band between the module header and
+  the tabs. Vacation workspace routes (`/vacation`, `/vacation/requests`,
   `/vacation/leave-types`, `/vacation/admin/requests`,
   `/vacation/admin/policies`, `/vacation/admin/leave-balances`, and related
   detail/create flows) follow this layout via `VacationWorkspace`.
+- Operation feedback (platform rule, §1.6): field validation stays beside
+  fields; operation success/error/warning uses `PortalNotification` in the
+  right-rail `detailsNotification` region (or equivalent aside placement)
+  and must not push the primary grid down.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation

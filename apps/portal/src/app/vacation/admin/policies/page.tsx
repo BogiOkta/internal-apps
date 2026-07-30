@@ -8,7 +8,9 @@ import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { FormField, formControlClassName, formPrimaryButtonClassName, formSecondaryButtonClassName } from "@/components/form-field";
 import { GridPagination } from "@/components/grid-pagination";
+import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalDateInput } from "@/components/portal-date-input";
+import { PortalNotification } from "@/components/portal-notification";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate } from "@/utils/portal-date-format";
@@ -130,11 +132,9 @@ export default function LeavePoliciesPage() {
   </VacationWorkspace>;
 
   return <VacationWorkspace title={t("leavePolicy.title")} description={t("leavePolicy.description")} contentFillsViewport
-    sectionActions={<button type="button" onClick={reset} className={formPrimaryButtonClassName()}>{t("leavePolicy.new")}</button>}
-    sectionSecondaryActions={<button type="button" onClick={() => void load()} disabled={loading} className={formSecondaryButtonClassName()}>{loading ? t("leavePolicy.refreshing") : t("leavePolicy.refresh")}</button>}>
+    sectionActions={<button type="button" onClick={reset} className={formPrimaryButtonClassName()}>{portalActionContent("create", t("leavePolicy.new"))}</button>}
+    sectionSecondaryActions={<button type="button" onClick={() => void load()} disabled={loading} className={formSecondaryButtonClassName()}>{portalActionContent("refresh", loading ? t("leavePolicy.refreshing") : t("leavePolicy.refresh"))}</button>}>
     <AdministrationPageBody>
-    {feedback && <div role={feedback.error ? "alert" : "status"} className={`rounded-md border p-3 text-sm ${feedback.error ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>{feedback.text}</div>}
-    {pendingDeletePolicy && <ConfirmDialog destructive message={t("leavePolicy.deleteConfirm", { employee: pendingDeletePolicy.employeeName, year: pendingDeletePolicy.leaveYear })} confirmLabel={t("leavePolicy.delete")} cancelLabel={t("leavePolicy.cancel")} pending={isDeleting} onConfirm={() => void confirmDelete()} onCancel={() => setPendingDeletePolicy(null)} />}
     <AdministrativeGridShell ariaLabel={t("leavePolicy.tableLabel")} fillViewport
       toolbar={<AdministrativeGridToolbar search={search} searchLabel={t("leavePolicy.searchLabel")} searchPlaceholder={t("leavePolicy.searchPlaceholder")} onSearchChange={setSearch} activeFilterCount={employeeFilter ? 1 : 0} areFiltersVisible exportDisabled filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={() => undefined} onClearFilters={() => { setEmployeeFilter(""); setYear(currentYear); }} onExportCsv={() => undefined} onExportExcel={() => undefined} />}
       viewport={<><div className="grid gap-3 border-b border-slate-200 bg-slate-50 p-3 sm:grid-cols-2"><FormField id="policy-year-filter" label={t("leavePolicy.year")}><input id="policy-year-filter" type="number" min={1900} max={9999} value={year} onChange={(e) => setYear(Number(e.target.value))} className={formControlClassName()} /></FormField><FormField id="policy-employee-filter" label={t("leavePolicy.employee")}><select id="policy-employee-filter" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className={formControlClassName()}><option value="">{t("leavePolicy.allEmployees")}</option>{employees.map((employee) => <option key={employee.publicId} value={employee.publicId}>{employee.lastName}, {employee.firstName} ({employee.employeeNumber})</option>)}</select></FormField></div><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-slate-100 text-xs font-semibold text-slate-600"><tr>
@@ -165,7 +165,8 @@ export default function LeavePoliciesPage() {
               </tr>)}</tbody>
             </table></>}
       pagination={<GridPagination page={page} pageSize={pageSize} totalCount={filteredPolicies.length} onPageChange={setPage} onPageSizeChange={setPageSize} labels={{ range: (from, to, total) => t("grid.visibleRange", { from, to, total }), pageSize: t("grid.pageSize"), first: t("grid.firstPage"), previous: t("grid.previousPage"), next: t("grid.nextPage"), last: t("grid.lastPage") }} />}
-      detailsPanel={<form onSubmit={submit} className="space-y-4">
+      detailsPanel={<div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
         <h2 className="text-lg font-semibold">{t(editingId ? "leavePolicy.editTitle" : "leavePolicy.createTitle")}</h2>
         <FormField id="policy-employee" label={t("leavePolicy.employee")} required>
           <select id="policy-employee" required disabled={saving || Boolean(editingId)} value={form.employeeId}
@@ -209,7 +210,33 @@ export default function LeavePoliciesPage() {
             {saving ? t("leavePolicy.saving") : t("leavePolicy.save")}</button>
           <button type="button" onClick={reset} className={formSecondaryButtonClassName()}>{t("leavePolicy.cancel")}</button>
         </div>
-      </form>} />
+      </form>
+      {pendingDeletePolicy && (
+        <ConfirmDialog
+          destructive
+          message={t("leavePolicy.deleteConfirm", {
+            employee: pendingDeletePolicy.employeeName,
+            year: pendingDeletePolicy.leaveYear,
+          })}
+          confirmLabel={t("leavePolicy.delete")}
+          cancelLabel={t("leavePolicy.cancel")}
+          pending={isDeleting}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => setPendingDeletePolicy(null)}
+        />
+      )}
+      </div>}
+      detailsNotification={
+        feedback ? (
+          <PortalNotification
+            variant={feedback.error ? "error" : "success"}
+            message={feedback.text}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : undefined
+      }
+    />
     </AdministrationPageBody>
   </VacationWorkspace>;
 }

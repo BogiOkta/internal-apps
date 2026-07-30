@@ -21,6 +21,8 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
+import { PortalNotification } from "@/components/portal-notification";
 import { useTranslations } from "@/i18n/use-translations";
 import {
   activateEmployee,
@@ -299,8 +301,7 @@ export default function EmployeesPage() {
           }}
           className={formPrimaryButtonClassName()}
         >
-          <PlusIcon />
-          {t("vacation.employees.new")}
+          {portalActionContent("create", t("vacation.employees.new"))}
         </button>
       )}
       <button
@@ -309,8 +310,10 @@ export default function EmployeesPage() {
         disabled={isLoading}
         className={formSecondaryButtonClassName()}
       >
-        <RefreshIcon />
-        {isLoading ? t("vacation.employees.refreshing") : t("vacation.employees.refresh")}
+        {portalActionContent(
+          "refresh",
+          isLoading ? t("vacation.employees.refreshing") : t("vacation.employees.refresh"),
+        )}
       </button>
     </div>
   );
@@ -339,33 +342,6 @@ export default function EmployeesPage() {
       contentFillsViewport
     >
       <AdministrationPageBody>
-        {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
-        {writeError && <div role="alert" className="whitespace-pre-line rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
-        {hasDepartmentError && (
-          <div
-            role="status"
-            className="rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900"
-          >
-            {t("vacation.employees.departmentError")}
-          </div>
-        )}
-
-        {hasError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {t("vacation.employees.error")}
-          </div>
-        )}
-        {exportError && (
-          <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {employees.length === 0
-              ? t("grid.noExportRows")
-              : t("grid.exportFailure")}
-          </div>
-        )}
-
         <AdministrativeGridShell
           ariaLabel={t("vacation.employees.tableLabel")}
           fillViewport
@@ -515,6 +491,60 @@ export default function EmployeesPage() {
           ) : <p className="text-sm text-slate-600">{t("vacation.employees.selectForDetails")}</p>}
             </div>
           }
+          detailsNotification={
+            feedback ||
+            writeError ||
+            hasDepartmentError ||
+            hasError ||
+            exportError ? (
+              <>
+                {feedback && (
+                  <PortalNotification
+                    variant="success"
+                    message={feedback}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setFeedback(null)}
+                  />
+                )}
+                {writeError && (
+                  <PortalNotification
+                    variant="error"
+                    message={writeError}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setWriteError(null)}
+                  />
+                )}
+                {hasDepartmentError && (
+                  <PortalNotification
+                    variant="warning"
+                    message={t("vacation.employees.departmentError")}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setHasDepartmentError(false)}
+                  />
+                )}
+                {hasError && (
+                  <PortalNotification
+                    variant="error"
+                    message={t("vacation.employees.error")}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setHasError(false)}
+                  />
+                )}
+                {exportError && (
+                  <PortalNotification
+                    variant="error"
+                    message={
+                      employees.length === 0
+                        ? t("grid.noExportRows")
+                        : t("grid.exportFailure")
+                    }
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setExportError(false)}
+                  />
+                )}
+              </>
+            ) : undefined
+          }
         />
       </AdministrationPageBody>
     </CompanyAdministrationWorkspace>
@@ -608,36 +638,4 @@ function ClearableSelect({ value, defaultValue, disabled, label, clearLabel, onC
 
 function Detail({ label, value }: { label: string; value: string }) {
   return <dl><dt className="font-medium text-slate-500">{label}</dt><dd className="mt-0.5 text-slate-950">{value}</dd></dl>;
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      className="h-4 w-4"
-    >
-      <path d="M10 4v12M4 10h12" />
-    </svg>
-  );
-}
-
-function RefreshIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-4 w-4"
-    >
-      <path d="M15.5 6.5V3m0 0H12M15.5 3A7 7 0 1 0 17 11" />
-    </svg>
-  );
 }

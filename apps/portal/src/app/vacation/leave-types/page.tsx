@@ -20,6 +20,8 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
+import { PortalNotification } from "@/components/portal-notification";
 import { StatusBadge } from "@/components/status-badge";
 import { GridPagination } from "@/components/grid-pagination";
 import { LeaveTypeForm } from "@/features/vacation/components/leave-type-form";
@@ -430,7 +432,7 @@ export default function LeaveTypesPage() {
             onClick={startCreate}
             className={formPrimaryButtonClassName()}
           >
-            {t("vacation.leaveTypes.new")}
+            {portalActionContent("create", t("vacation.leaveTypes.new"))}
           </button>
         )
       }
@@ -441,40 +443,17 @@ export default function LeaveTypesPage() {
           disabled={isLoading}
           className={formSecondaryButtonClassName()}
         >
-          {isLoading
-            ? t("vacation.leaveTypes.refreshing")
-            : t("vacation.leaveTypes.refresh")}
+          {portalActionContent(
+            "refresh",
+            isLoading
+              ? t("vacation.leaveTypes.refreshing")
+              : t("vacation.leaveTypes.refresh"),
+          )}
         </button>
       }
       contentFillsViewport
     >
       <AdministrationPageBody>
-        {successMessage && (
-          <div
-            role="status"
-            className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-          >
-            {successMessage}
-          </div>
-        )}
-        {operationError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {operationError}
-          </div>
-        )}
-        {exportError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {displayedLeaveTypes.length === 0
-              ? t("grid.noExportRows")
-              : t("grid.exportFailure")}
-          </div>
-        )}
         <AdministrativeGridShell
           ariaLabel={t("vacation.leaveTypes.tableLabel")}
           fillViewport
@@ -893,6 +872,40 @@ export default function LeaveTypesPage() {
                 </p>
               )}
             </div>
+          }
+          detailsNotification={
+            successMessage || operationError || exportError ? (
+              <>
+                {successMessage && (
+                  <PortalNotification
+                    variant="success"
+                    message={successMessage}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setSuccessMessage(null)}
+                  />
+                )}
+                {operationError && (
+                  <PortalNotification
+                    variant="error"
+                    message={operationError}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setOperationError(null)}
+                  />
+                )}
+                {exportError && (
+                  <PortalNotification
+                    variant="error"
+                    message={
+                      displayedLeaveTypes.length === 0
+                        ? t("grid.noExportRows")
+                        : t("grid.exportFailure")
+                    }
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setExportError(false)}
+                  />
+                )}
+              </>
+            ) : undefined
           }
         />
       </AdministrationPageBody>

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppCalendar } from "@/components/calendar";
 import { useAuth } from "@/components/auth-provider";
 import { formPrimaryButtonClassName } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
 import { VacationStatusBadge } from "@/features/vacation/components/vacation-status-badge";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import {
@@ -95,7 +96,7 @@ export function EmployeeVacationDashboard() {
     <VacationWorkspace title={t("vacation.workspace.overview")}
       description={t("vacation.employeePortal.description")}
       sectionActions={<Link href="/vacation/requests/new" className={formPrimaryButtonClassName()}>
-        {t("vacation.employeePortal.newRequest")}
+        {portalActionContent("create", t("vacation.employeePortal.newRequest"))}
       </Link>}>
       {errorCode === "current_user_employee_not_linked" ? <UnlinkedState />
         : errorCode ? <ErrorState message={problemMessage(errorCode, t)}

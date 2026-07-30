@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { PortalActionIcon } from "@/components/portal-action-icon";
 
 export type GridSort<Field extends string> = {
   field: Field;
@@ -14,6 +15,7 @@ export function AdministrativeGridShell({
   pagination,
   footer,
   detailsPanel,
+  detailsNotification,
   fillViewport = false,
 }: {
   ariaLabel: string;
@@ -22,6 +24,11 @@ export function AdministrativeGridShell({
   pagination?: ReactNode;
   footer?: ReactNode;
   detailsPanel?: ReactNode;
+  /**
+   * Stable operation-feedback region in the right rail, below details /
+   * actions / confirmation. Must not be rendered above the primary grid.
+   */
+  detailsNotification?: ReactNode;
   /**
    * When true, the shell participates in the authenticated viewport-fill flex
    * chain (`AdministrationPageBody` / `contentFillsViewport`). Height-collapse
@@ -58,11 +65,16 @@ export function AdministrativeGridShell({
       {detailsPanel ? (
         <aside
           className={[
-            "min-h-0 overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-sm",
+            "flex min-h-0 flex-col overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-sm",
             fillViewport ? "lg:min-h-0" : "min-h-[24rem]",
           ].join(" ")}
         >
-          {detailsPanel}
+          <div className="min-h-0 flex-1">{detailsPanel}</div>
+          {detailsNotification ? (
+            <div className="mt-4 shrink-0 space-y-2 border-t border-slate-200 pt-4 dark:border-slate-600">
+              {detailsNotification}
+            </div>
+          ) : null}
         </aside>
       ) : null}
     </div>
@@ -271,10 +283,11 @@ export function GridToolbarActions({
       <details className="relative">
         <summary
           aria-disabled={exportDisabled}
-          className={`flex min-h-9 cursor-pointer list-none items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+          className={`inline-flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
             exportDisabled ? "pointer-events-none opacity-50" : "hover:bg-slate-50"
           }`}
         >
+          <PortalActionIcon kind="export" />
           {exportLabel}
         </summary>
         <div className="absolute right-0 z-20 mt-1 min-w-40 rounded-md border border-slate-300 bg-white p-1 shadow-lg">

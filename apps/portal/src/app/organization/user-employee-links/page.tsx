@@ -19,6 +19,8 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
+import { PortalNotification } from "@/components/portal-notification";
 import { GridPagination } from "@/components/grid-pagination";
 import { SearchableCombobox } from "@/components/searchable-combobox";
 import { useTranslations } from "@/i18n/use-translations";
@@ -346,7 +348,7 @@ export default function UserEmployeeLinksPage() {
         onClick={beginCreate}
         className={formPrimaryButtonClassName()}
       >
-        {t("organization.links.new")}
+        {portalActionContent("create", t("organization.links.new"))}
       </button>
       <button
         type="button"
@@ -354,9 +356,12 @@ export default function UserEmployeeLinksPage() {
         disabled={isLoading}
         className={formSecondaryButtonClassName()}
       >
-        {isLoading
-          ? t("organization.links.refreshing")
-          : t("organization.links.refresh")}
+        {portalActionContent(
+          "refresh",
+          isLoading
+            ? t("organization.links.refreshing")
+            : t("organization.links.refresh"),
+        )}
       </button>
     </div>
   );
@@ -369,25 +374,6 @@ export default function UserEmployeeLinksPage() {
       contentFillsViewport
     >
       <AdministrationPageBody>
-        {writeError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {writeError}
-          </div>
-        )}
-        {exportError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {links.length === 0
-              ? t("grid.noExportRows")
-              : t("grid.exportFailure")}
-          </div>
-        )}
-
         <AdministrativeGridShell
           ariaLabel={t("organization.links.tableLabel")}
           fillViewport
@@ -680,6 +666,32 @@ export default function UserEmployeeLinksPage() {
                 </p>
               )}
             </div>
+          }
+          detailsNotification={
+            writeError || exportError ? (
+              <>
+                {writeError && (
+                  <PortalNotification
+                    variant="error"
+                    message={writeError}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setWriteError(null)}
+                  />
+                )}
+                {exportError && (
+                  <PortalNotification
+                    variant="error"
+                    message={
+                      links.length === 0
+                        ? t("grid.noExportRows")
+                        : t("grid.exportFailure")
+                    }
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setExportError(false)}
+                  />
+                )}
+              </>
+            ) : undefined
           }
         />
       </AdministrationPageBody>

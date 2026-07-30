@@ -22,6 +22,8 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
+import { PortalNotification } from "@/components/portal-notification";
 import { GridPagination } from "@/components/grid-pagination";
 import { useTranslations } from "@/i18n/use-translations";
 import {
@@ -245,7 +247,7 @@ export default function UsersPage() {
         }}
         className={formPrimaryButtonClassName()}
       >
-        {t("identity.users.new")}
+        {portalActionContent("create", t("identity.users.new"))}
       </button>
       <button
         type="button"
@@ -253,9 +255,12 @@ export default function UsersPage() {
         disabled={isLoading}
         className={formSecondaryButtonClassName()}
       >
-        {isLoading
-          ? t("identity.users.refreshing")
-          : t("identity.users.refresh")}
+        {portalActionContent(
+          "refresh",
+          isLoading
+            ? t("identity.users.refreshing")
+            : t("identity.users.refresh"),
+        )}
       </button>
     </div>
   );
@@ -268,39 +273,6 @@ export default function UsersPage() {
       contentFillsViewport
     >
       <AdministrationPageBody>
-        {feedback && (
-          <div
-            role="status"
-            className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-          >
-            {feedback}{" "}
-            <Link
-              className="font-semibold underline"
-              href="/organization/user-employee-links"
-            >
-              {t("identity.users.linkEmployee")}
-            </Link>
-          </div>
-        )}
-        {writeError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {writeError}
-          </div>
-        )}
-        {exportError && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          >
-            {users.length === 0
-              ? t("grid.noExportRows")
-              : t("grid.exportFailure")}
-          </div>
-        )}
-
         <AdministrativeGridShell
           ariaLabel={t("identity.users.tableLabel")}
           fillViewport
@@ -580,6 +552,48 @@ export default function UsersPage() {
                 </p>
               )}
             </div>
+          }
+          detailsNotification={
+            feedback || writeError || exportError ? (
+              <>
+                {feedback && (
+                  <PortalNotification
+                    variant="success"
+                    message={feedback}
+                    detail={
+                      <Link
+                        className="font-semibold underline"
+                        href="/organization/user-employee-links"
+                      >
+                        {t("identity.users.linkEmployee")}
+                      </Link>
+                    }
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setFeedback(null)}
+                  />
+                )}
+                {writeError && (
+                  <PortalNotification
+                    variant="error"
+                    message={writeError}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setWriteError(null)}
+                  />
+                )}
+                {exportError && (
+                  <PortalNotification
+                    variant="error"
+                    message={
+                      users.length === 0
+                        ? t("grid.noExportRows")
+                        : t("grid.exportFailure")
+                    }
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setExportError(false)}
+                  />
+                )}
+              </>
+            ) : undefined
           }
         />
       </AdministrationPageBody>

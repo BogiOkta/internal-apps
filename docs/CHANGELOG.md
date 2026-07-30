@@ -1,5 +1,27 @@
 # Internal Apps Platform change history
 
+## 2026-07-30 — Portal navigation, action-icon, and notification polish
+
+- Extended `WorkspaceNavigation` as the canonical tab control: medium/semibold
+  labels, subtle separators between adjacent tabs only, active underline,
+  light/dark hover and focus, and overflow scrolling. Vacation workspace tabs
+  consume it; feature-local tab separator chrome is prohibited.
+- Added `PortalActionIcon` / `portalActionContent` for canonical create
+  (plus), refresh, export (download), and delete glyphs. Migrated New /
+  Refresh actions across Vacation, Organization, Identity, and Business
+  Calendar surfaces; toolbar export uses the shared export icon.
+- Added `PortalNotification` and `AdministrativeGridShell`
+  `detailsNotification` so operation success, warning, and error feedback
+  stays in the right rail below details/confirmation without shifting the
+  primary grid. Migrated Leave Types (including delete conflict),
+  Departments, Employees, Users, User–Employee Links, Leave Policies, and
+  Business Calendar operation banners.
+- Documented the validation vs operation-notification distinction in
+  `UI_GUIDELINES` §1.4 / §1.6 / §2.5 / §4.3 and the new-screen checklist.
+  Extended `PortalAdministrationUiContractTests` for tab ownership, action
+  icons, notification ownership, and no layout-shifting operation banners on
+  migrated administration pages.
+
 ## 2026-07-30 — Canonical tabbed-screen hierarchy for the Portal platform
 
 - Established `docs/standards/UI_GUIDELINES.md` §2.5 as the canonical layout

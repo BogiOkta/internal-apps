@@ -20,6 +20,8 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
+import { PortalNotification } from "@/components/portal-notification";
 import { GridPagination } from "@/components/grid-pagination";
 import { StatusBadge } from "@/components/status-badge";
 import { DepartmentForm } from "@/features/organization/components/department-form";
@@ -210,7 +212,7 @@ export default function DepartmentsPage() {
           }}
           className={formPrimaryButtonClassName()}
         >
-          {t("organization.departments.new")}
+          {portalActionContent("create", t("organization.departments.new"))}
         </button>
       )}
       <button
@@ -219,9 +221,12 @@ export default function DepartmentsPage() {
         disabled={isLoading}
         className={formSecondaryButtonClassName()}
       >
-        {isLoading
-          ? t("organization.departments.refreshing")
-          : t("organization.departments.refresh")}
+        {portalActionContent(
+          "refresh",
+          isLoading
+            ? t("organization.departments.refreshing")
+            : t("organization.departments.refresh"),
+        )}
       </button>
     </div>
   );
@@ -234,9 +239,6 @@ export default function DepartmentsPage() {
       contentFillsViewport
     >
       <AdministrationPageBody>
-        {feedback && <div role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{feedback}</div>}
-        {writeError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{writeError}</div>}
-        {exportError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{departments.length === 0 ? t("grid.noExportRows") : t("grid.exportFailure")}</div>}
         <AdministrativeGridShell
           ariaLabel={t("organization.departments.tableLabel")}
           fillViewport
@@ -441,6 +443,40 @@ export default function DepartmentsPage() {
                 <p className="text-sm text-slate-600">{t("organization.departments.selectForDetails")}</p>
               )}
             </div>
+          }
+          detailsNotification={
+            feedback || writeError || exportError ? (
+              <>
+                {feedback && (
+                  <PortalNotification
+                    variant="success"
+                    message={feedback}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setFeedback(null)}
+                  />
+                )}
+                {writeError && (
+                  <PortalNotification
+                    variant="error"
+                    message={writeError}
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setWriteError(null)}
+                  />
+                )}
+                {exportError && (
+                  <PortalNotification
+                    variant="error"
+                    message={
+                      departments.length === 0
+                        ? t("grid.noExportRows")
+                        : t("grid.exportFailure")
+                    }
+                    dismissLabel={t("common.dismissNotification")}
+                    onDismiss={() => setExportError(false)}
+                  />
+                )}
+              </>
+            ) : undefined
           }
         />
       </AdministrationPageBody>

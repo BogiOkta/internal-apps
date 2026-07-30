@@ -7,6 +7,7 @@ import {
   formControlClassName,
   formPrimaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
 import {
   Empty,
   ErrorState,
@@ -103,7 +104,7 @@ export function AdminVacationRequestList() {
 
   return <VacationWorkspace title={t("vacation.admin.title")}
     description={t("vacation.admin.description")}
-    sectionActions={<Link href="/vacation/admin/requests/record" className={formPrimaryButtonClassName()}>{t("vacation.admin.record")}</Link>}>
+    sectionActions={<Link href="/vacation/admin/requests/record" className={formPrimaryButtonClassName()}>{portalActionContent("create", t("vacation.admin.record"))}</Link>}>
     <form className="mb-5 grid gap-3 rounded-lg border border-slate-300 bg-white p-4 sm:grid-cols-2 xl:grid-cols-5"
       onSubmit={(event) => {
         event.preventDefault();

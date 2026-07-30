@@ -10,7 +10,9 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalDateInput } from "@/components/portal-date-input";
+import { PortalNotification } from "@/components/portal-notification";
 import { useAuth } from "@/components/auth-provider";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate } from "@/utils/portal-date-format";
@@ -147,7 +149,7 @@ export default function NonWorkingDaysPage() {
             }}
             className={formPrimaryButtonClassName()}
           >
-            {t("businessCalendar.createTitle")}
+            {portalActionContent("create", t("businessCalendar.createTitle"))}
           </button>
           <button
             type="button"
@@ -155,37 +157,15 @@ export default function NonWorkingDaysPage() {
             disabled={isLoading}
             className={formSecondaryButtonClassName()}
           >
-            {isLoading ? t("businessCalendar.refreshing") : t("businessCalendar.refresh")}
+            {portalActionContent(
+              "refresh",
+              isLoading ? t("businessCalendar.refreshing") : t("businessCalendar.refresh"),
+            )}
           </button>
         </div>
       }
     >
-      <div className="space-y-3">
-        {feedback && (
-          <div
-            role={feedback.kind === "error" ? "alert" : "status"}
-            className={`rounded-md border p-3 text-sm ${
-              feedback.kind === "error"
-                ? "border-red-200 bg-red-50 text-red-800"
-                : "border-emerald-200 bg-emerald-50 text-emerald-800"
-            }`}
-          >
-            {feedback.text}
-          </div>
-        )}
-        {pendingDelete && (
-          <ConfirmDialog
-            destructive
-            message={t("businessCalendar.deleteConfirm", { name: pendingDelete.name })}
-            confirmLabel={t("businessCalendar.delete")}
-            cancelLabel={t("businessCalendar.cancel")}
-            pending={isDeleting}
-            onConfirm={() => void confirmDelete()}
-            onCancel={() => setPendingDelete(null)}
-          />
-        )}
-
-        <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
           <section
             aria-label={t("businessCalendar.title")}
             className="min-w-0 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm"
@@ -275,78 +255,98 @@ export default function NonWorkingDaysPage() {
           </section>
 
           <aside className="min-h-[24rem] rounded-xl border border-slate-300 bg-white p-5 shadow-sm">
-            <form onSubmit={submit} className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-950">
-                {t(editingId ? "businessCalendar.editTitle" : "businessCalendar.createTitle")}
-              </h2>
-              <FormField
-                id="non-working-date"
-                label={t("businessCalendar.date")}
-                required
-                hint={t("dateInput.hint")}
-                error={errors.date}
-              >
-                <PortalDateInput
-                  key={dateInputVersion}
+            <div className="space-y-4">
+              <form onSubmit={submit} className="space-y-4">
+                <h2 className="text-lg font-semibold text-slate-950">
+                  {t(editingId ? "businessCalendar.editTitle" : "businessCalendar.createTitle")}
+                </h2>
+                <FormField
                   id="non-working-date"
-                  value={form.date || null}
-                  disabled={isSubmitting}
-                  nullable={false}
-                  onChange={(value) => {
-                    setForm({ ...form, date: value ?? "" });
-                    if (errors.date) setErrors({ ...errors, date: undefined });
-                  }}
-                  onValidityChange={setDateValid}
-                  ariaDescribedBy={fieldDescriptionIds("non-working-date", Boolean(errors.date), true)}
-                  invalidLabel={t("dateInput.invalid")}
-                  incompleteLabel={t("dateInput.incomplete")}
-                  todayLabel={t("dateInput.today")}
-                  clearLabel={t("dateInput.clear")}
-                  openCalendarLabel={t("dateInput.openCalendar")}
-                  previousMonthLabel={t("dateInput.previousMonth")}
-                  nextMonthLabel={t("dateInput.nextMonth")}
-                />
-              </FormField>
-              <FormField id="non-working-name" label={t("businessCalendar.name")} required error={errors.name}>
-                <input
-                  id="non-working-name"
-                  maxLength={200}
-                  value={form.name}
-                  disabled={isSubmitting}
-                  aria-invalid={Boolean(errors.name)}
-                  aria-describedby={fieldDescriptionIds("non-working-name", Boolean(errors.name))}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  className={formControlClassName({ invalid: Boolean(errors.name) })}
-                />
-              </FormField>
-              <FormField id="non-working-description" label={t("businessCalendar.descriptionField")}>
-                <textarea
-                  id="non-working-description"
-                  maxLength={1000}
-                  value={form.description ?? ""}
-                  disabled={isSubmitting}
-                  onChange={(event) => setForm({ ...form, description: event.target.value })}
-                  className={`${formControlClassName()} min-h-24 resize-y`}
-                />
-              </FormField>
-              <div className="flex flex-wrap gap-2">
-                <button type="submit" disabled={isSubmitting} className={formPrimaryButtonClassName()}>
-                  {isSubmitting ? t("businessCalendar.saving") : t("businessCalendar.save")}
-                </button>
-                {editingId && (
-                  <button
-                    type="button"
+                  label={t("businessCalendar.date")}
+                  required
+                  hint={t("dateInput.hint")}
+                  error={errors.date}
+                >
+                  <PortalDateInput
+                    key={dateInputVersion}
+                    id="non-working-date"
+                    value={form.date || null}
                     disabled={isSubmitting}
-                    onClick={resetForm}
-                    className={formSecondaryButtonClassName()}
-                  >
-                    {t("businessCalendar.cancel")}
+                    nullable={false}
+                    onChange={(value) => {
+                      setForm({ ...form, date: value ?? "" });
+                      if (errors.date) setErrors({ ...errors, date: undefined });
+                    }}
+                    onValidityChange={setDateValid}
+                    ariaDescribedBy={fieldDescriptionIds("non-working-date", Boolean(errors.date), true)}
+                    invalidLabel={t("dateInput.invalid")}
+                    incompleteLabel={t("dateInput.incomplete")}
+                    todayLabel={t("dateInput.today")}
+                    clearLabel={t("dateInput.clear")}
+                    openCalendarLabel={t("dateInput.openCalendar")}
+                    previousMonthLabel={t("dateInput.previousMonth")}
+                    nextMonthLabel={t("dateInput.nextMonth")}
+                  />
+                </FormField>
+                <FormField id="non-working-name" label={t("businessCalendar.name")} required error={errors.name}>
+                  <input
+                    id="non-working-name"
+                    maxLength={200}
+                    value={form.name}
+                    disabled={isSubmitting}
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={fieldDescriptionIds("non-working-name", Boolean(errors.name))}
+                    onChange={(event) => setForm({ ...form, name: event.target.value })}
+                    className={formControlClassName({ invalid: Boolean(errors.name) })}
+                  />
+                </FormField>
+                <FormField id="non-working-description" label={t("businessCalendar.descriptionField")}>
+                  <textarea
+                    id="non-working-description"
+                    maxLength={1000}
+                    value={form.description ?? ""}
+                    disabled={isSubmitting}
+                    onChange={(event) => setForm({ ...form, description: event.target.value })}
+                    className={`${formControlClassName()} min-h-24 resize-y`}
+                  />
+                </FormField>
+                <div className="flex flex-wrap gap-2">
+                  <button type="submit" disabled={isSubmitting} className={formPrimaryButtonClassName()}>
+                    {isSubmitting ? t("businessCalendar.saving") : t("businessCalendar.save")}
                   </button>
-                )}
-              </div>
-            </form>
+                  {editingId && (
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={resetForm}
+                      className={formSecondaryButtonClassName()}
+                    >
+                      {t("businessCalendar.cancel")}
+                    </button>
+                  )}
+                </div>
+              </form>
+              {pendingDelete && (
+                <ConfirmDialog
+                  destructive
+                  message={t("businessCalendar.deleteConfirm", { name: pendingDelete.name })}
+                  confirmLabel={t("businessCalendar.delete")}
+                  cancelLabel={t("businessCalendar.cancel")}
+                  pending={isDeleting}
+                  onConfirm={() => void confirmDelete()}
+                  onCancel={() => setPendingDelete(null)}
+                />
+              )}
+              {feedback && (
+                <PortalNotification
+                  variant={feedback.kind === "error" ? "error" : "success"}
+                  message={feedback.text}
+                  dismissLabel={t("common.dismissNotification")}
+                  onDismiss={() => setFeedback(null)}
+                />
+              )}
+            </div>
           </aside>
-        </div>
       </div>
     </CompanyAdministrationWorkspace>
   );
