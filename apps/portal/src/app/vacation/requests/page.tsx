@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { formPrimaryButtonClassName } from "@/components/form-field";
 import {
   Empty,
   ErrorState,
-  primaryButtonClass,
   problemMessage,
   RequestTable,
 } from "@/features/vacation/components/employee-vacation-dashboard";
@@ -47,7 +47,7 @@ export default function VacationRequestsPage() {
 
   return <VacationWorkspace title={t("vacation.employeePortal.requestsTitle")}
     description={t("vacation.employeePortal.requestsDescription")}
-    commandBar={<Link href="/vacation/requests/new" className={primaryButtonClass}>
+    sectionActions={<Link href="/vacation/requests/new" className={formPrimaryButtonClassName()}>
       {t("vacation.employeePortal.newRequest")}
     </Link>}>
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

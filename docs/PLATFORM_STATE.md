@@ -4,12 +4,13 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: canonical Vacation Leave Type administration.
-  Migration 032 adds owner-controlled safe deletion and the missing
-  `requires_balance` runtime grant; the API enforces the immutable code and the
-  unused-only balance-behaviour rules; the Portal route is migrated to the
-  canonical administration foundation with lock hints and localized
-  delete-conflict guidance.
+- Latest functional milestone: canonical tabbed-screen hierarchy for the
+  Portal platform. `docs/standards/UI_GUIDELINES.md` §2.5 defines the
+  mandatory layout for every current and future Portal screen with tab
+  navigation: module header → tabs → active section header
+  (`PortalSectionHeader`) → filters → content. Tab-specific actions live in
+  the active section header, never in the module header. Vacation workspace
+  screens are migrated; contract tests enforce the hierarchy.
 
 ## Platform foundation
 
@@ -31,20 +32,35 @@
   working-day calculations to this shared service. A permission-aware Portal
   route provides localized year-filtered CRUD administration of those dates
   using `PortalDateInput` (`dd.MM.yyyy.`) rather than native date inputs.
-- Shared Portal UI: administrative grid pagination (20 default; 20/50/100),
-  form field conventions, shared primary/secondary/danger button utilities,
-  global appearance and locale providers, `AppCalendar`, `DateRangePicker`,
-  `PortalDateInput`, `AdministrationPageBody`, and the mandatory shared
-  Serbian Latin date-display formatter are available. Language and appearance
-  preferences are edited on `/settings` and reuse the canonical
-  `LocaleProvider` / `AppearanceProvider` storage keys. Organization
-  Employees and Departments, Identity Users, User–Employee links, and Vacation
-  Leave Types share the canonical administration
-  header/toolbar/shell/footer/side-panel contract with stable loading, empty,
-  error, and no-selection geometry. Remaining Portal areas (Leave Balances,
-  Vacation request UIs, Dashboard) are inventoried in
-  `docs/standards/UI_GUIDELINES.md` §7.5 and are not migrated in this
-  increment.
+- Shared Portal UI / canonical control platform: the Portal control registry
+  in `docs/standards/UI_GUIDELINES.md` §1.4 is the single source of truth for
+  every application module. Shared components live under
+  `apps/portal/src/components` and include `PortalDateInput`,
+  `DateRangePicker`, `ConfirmDialog`, `StatusBadge`, `PortalSectionHeader`,
+  `FormField` / `formControlClassName` / primary·secondary·danger·danger-solid
+  button helpers, `SearchableCombobox`, `AppCalendar`,
+  `AdministrationPageBody`, `AdministrativeGridShell`,
+  `AdministrativeGridToolbar`, and `GridPagination`. Locale and appearance
+  are owned by `LocaleProvider` and `AppearanceProvider` (`/settings`).
+  Organization Employees and Departments, Identity Users, User–Employee
+  links, Vacation Leave Types, and Leave Policies share the administration
+  shell contract. Portal-wide regression tests reject native `type="date"`,
+  `window.confirm` / `window.alert`, forbidden local input/button class
+  constants, feature-local date display formatters, and known
+  module-prefixed copies of canonical controls. Documented remaining
+  non-mechanical exceptions: Vacation request administration
+  pagination/shell, Leave Balances shell migration, calendar toolbar chrome,
+  and domain `VacationStatusBadge` (§1.4 / §7.5).
+- Tabbed screen hierarchy (platform rule, §2.5): every Portal screen with
+  multiple tabs uses module header (stable `h1` + module description; only
+  genuinely module-global actions) → tab navigation (“Where am I?”) →
+  `PortalSectionHeader` active section title/description and tab-specific
+  actions (“What can I do here?”) → filters → section content. The shell no
+  longer offers a command band between the module header and the tabs.
+  Vacation workspace routes (`/vacation`, `/vacation/requests`,
+  `/vacation/leave-types`, `/vacation/admin/requests`,
+  `/vacation/admin/policies`, `/vacation/admin/leave-balances`, and related
+  detail/create flows) follow this layout via `VacationWorkspace`.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation
@@ -60,6 +76,9 @@
   domain. Migration 033 adds immutable request source values; administrative
   entries are immediately approved and reuse balance, ledger, history, audit,
   and cancellation behavior. Recorded/Evidentirano is a Portal-only label.
+  The administrator record form uses shared `PortalDateInput`, `FormField`,
+  and form button helpers, and recalculates working days through the Business
+  Calendar API.
 - Leave Type administration: complete. Create, edit, activate, deactivate, and
   safe delete are implemented. Physical deletion is restricted to permanently
   unreferenced records through the owner-controlled
@@ -82,6 +101,30 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- Canonical tabbed-screen hierarchy: Portal strict TypeScript passed; Portal
+  production build passed; focused `PortalAdministrationUiContractTests`
+  passed (20/20), including
+  `TabbedVacationScreens_UseCanonicalActiveSectionHeader` and
+  `PortalSectionHeader` registry ownership. `git diff --check` clean.
+  Controlled Playwright smoke `scripts/smoke/tabbed-screen-hierarchy.mjs`
+  passed 82/82 for My Requests, Leave Types, Request Administration, Leave
+  Balances, and Leave Policies (sr-Latn/en; light/dark; desktop/mobile;
+  section-header action ownership; filters below section header; visible
+  focus; no document overflow; clean relevant console).
+
+- Portal canonical control platform standard (prior): Portal strict TypeScript
+  passed; Portal production build passed; focused Portal UI contract tests
+  passed (including Portal-wide rejection of native date inputs,
+  `window.confirm` / `window.alert`, forbidden local button/input class
+  constants, feature-local date display formatters, and feature-specific
+  copies of canonical controls). `git diff --check` clean. Controlled
+  Playwright smokes `scripts/smoke/portal-control-standardization.mjs` and
+  `scripts/smoke/shared-date-controls.mjs` passed for the representative
+  control matrix.
+
+- Prior Leave Type administration and earlier milestones remain as previously
+  recorded below where still relevant.
 
 - Canonical Vacation Leave Type administration: migration 032 applied
   successfully against the configured database (32 migrations discovered,
@@ -270,15 +313,14 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Canonical Vacation Leave Type administration: canonical Portal administration
-migration, create, edit, activate, deactivate, and safe delete. Complete.
+Canonical tabbed-screen hierarchy for the Portal platform: §2.5 standard,
+`PortalSectionHeader`, Vacation workspace migration, contract protection.
+Complete.
 
 ## Next task
 
-No follow-on scope is approved. Do not begin further Portal UI migration
-(Leave Balances, Vacation request UIs, Dashboard) without a separately approved
-task. A controlled browser smoke of `/vacation/leave-types` remains outstanding
-because no browser automation was available in the implementing session.
+No follow-on scope is approved. Remaining non-mechanical work is Vacation
+request administration and Leave Balances full administration-shell migration.
 
 ## Session instruction
 

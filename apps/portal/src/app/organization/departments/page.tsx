@@ -14,12 +14,14 @@ import {
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   formDangerButtonClassName,
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
 import { GridPagination } from "@/components/grid-pagination";
+import { StatusBadge } from "@/components/status-badge";
 import { DepartmentForm } from "@/features/organization/components/department-form";
 import { useTranslations } from "@/i18n/use-translations";
 import {
@@ -409,7 +411,7 @@ export default function DepartmentsPage() {
                         </button>
                       </div>
                       {isConfirmingStatus && (
-                        <Confirmation
+                        <ConfirmDialog
                           message={
                             selectedDepartment.isActive
                               ? t("organization.departments.deactivateConfirmation")
@@ -422,7 +424,7 @@ export default function DepartmentsPage() {
                         />
                       )}
                       {isConfirmingDelete && (
-                        <Confirmation
+                        <ConfirmDialog
                           destructive
                           message={t("organization.departments.deleteConfirmation")}
                           confirmLabel={t("organization.departments.delete")}
@@ -448,51 +450,11 @@ export default function DepartmentsPage() {
 
 function DepartmentStatus({ isActive }: { isActive: boolean }) {
   const { t } = useTranslations();
-  return <span className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${isActive ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-300 bg-slate-100 text-slate-700"}`}>{isActive ? t("organization.departments.active") : t("organization.departments.inactive")}</span>;
-}
-
-function Confirmation({
-  message,
-  confirmLabel,
-  cancelLabel,
-  pending = false,
-  destructive = false,
-  onConfirm,
-  onCancel,
-}: {
-  message: string;
-  confirmLabel: string;
-  cancelLabel: string;
-  pending?: boolean;
-  destructive?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
   return (
-    <div
-      role={destructive ? "alertdialog" : "status"}
-      aria-modal={destructive || undefined}
-      className={`rounded-md border p-3 ${destructive ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}
-    >
-      <p className={`text-sm ${destructive ? "text-red-900" : "text-amber-900"}`}>{message}</p>
-      <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onConfirm}
-          className={
-            destructive
-              ? "inline-flex min-h-9 items-center rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:opacity-50"
-              : formPrimaryButtonClassName()
-          }
-        >
-          {confirmLabel}
-        </button>
-        <button type="button" disabled={pending} onClick={onCancel} className={formSecondaryButtonClassName()}>
-          {cancelLabel}
-        </button>
-      </div>
-    </div>
+    <StatusBadge
+      tone={isActive ? "active" : "inactive"}
+      label={isActive ? t("organization.departments.active") : t("organization.departments.inactive")}
+    />
   );
 }
 

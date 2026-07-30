@@ -68,22 +68,41 @@ The Portal maps `sr-Latn` to `sr-Latn-RS` and `en` to `en-GB` when a browser loc
 
 The control rule for the entire Internal Apps platform is:
 
-> One purpose uses one standard control across the platform.
+> One purpose uses one standard control across the Portal platform.
 
-This applies to every current and future application, module, administrative
-area, and shared platform page—not only Vacation. Controls serving the same
-purpose must have consistent behavior and presentation.
+This is the **Portal platform control registry**. It applies to every current
+and future application module, administrative area, and shared platform
+page—not only Vacation. Organization, Identity, Business Calendar, Vacation,
+and every later module MUST consume the same approved controls.
+
+§1.4 is the single source of truth for which component or helper is approved
+for each control purpose. Feature modules MUST NOT create
+application-specific equivalents of an approved Portal control. Examples of
+prohibited future duplication include `VacationDateInput`, `HrDateInput`,
+`WmsDateInput`, feature-local `primaryButtonClass` / `inputClass` constants,
+feature-local confirmation overlays that recreate `ConfirmDialog`, and
+feature-local active/inactive badge chrome that recreates `StatusBadge`.
 
 Implementation rules:
 
 - a first unique use case may remain local;
 - on the second real use case, evaluate extraction into a small shared
-  control;
+  Portal control under `apps/portal/src/components` (or the documented shared
+  helper path);
+- shared controls are introduced only from demonstrated need, never
+  speculatively and never as unused placeholder wrappers;
 - once a shared standard exists, new screens must use it;
 - new Portal pages MUST reuse the existing canonical shared components for
   the same purpose rather than introducing parallel primitives;
 - shared controls own presentation, interaction, and accessibility behavior,
   while domain rules and business state remain with the consuming feature;
+- every new shared control MUST define behavior, import path, and ownership
+  in §1.4 in the same change that introduces it, and SHOULD add regression
+  protection where practical;
+- when a required control does not yet exist: (1) verify that an existing
+  canonical component/helper cannot satisfy it; (2) add the smallest shared
+  Portal component; (3) document it in §1.4; (4) add regression protection
+  where practical; (5) only then use it in the feature;
 - a local alternative requires a concrete business or accessibility reason
   the shared control cannot satisfy;
 - speculative controls, configuration-driven UI frameworks, and placeholder
@@ -110,10 +129,100 @@ connected through `aria-describedby`. Safe summary errors are added only when
 they materially help recovery. Server validation remains authoritative; raw
 API, exception, and database messages are never shown.
 
-An exception requires a documented concrete reason, review by the owning
-frontend reviewer, and an update to this standard when it establishes a new
-platform pattern. Convenience, preference, or module-specific visual identity
-is not sufficient.
+Exceptions MUST be exact (file path), documented in §1.4, temporary, and
+state a removal condition. Convenience, preference, or module-specific visual
+identity is not sufficient.
+
+### 1.4 Approved control registry
+
+This registry is the single definitive source of truth for approved Portal
+platform form and administration controls. Ownership of every listed shared
+control is the Portal shared UI layer under `apps/portal/src/components`
+(helpers may also live under `apps/portal/src/utils` or `apps/portal/src/i18n`
+when documented). Feature pages MUST import the canonical component or helper
+listed here. Local recreation of an equivalent control is prohibited once the
+shared implementation exists.
+
+Automated enforcement lives in
+`tests/api/InternalApps.Api.Tests/PortalAdministrationUiContractTests.cs`
+unless a row says otherwise.
+
+| Category | Purpose | Canonical | Import | Required behavior | Prohibited alternatives | Allowed exceptions | Automated enforcement |
+|---|---|---|---|---|---|---|---|
+| Date input | User-facing date entry | `PortalDateInput` | `@/components/portal-date-input` | Visible `dd.MM.yyyy.`; day→month→year keyboard entry; segment selection; calendar picker; ISO `yyyy-MM-dd` at API boundaries; sr-Latn/en; light/dark; mobile | Native `<input type="date">`; page-local date widgets; ad-hoc editable parsers | None | Yes — Portal-wide scan rejects `type="date"` / `type='date'` |
+| Date range | From/to range selection | `DateRangePicker` | `@/components/date-range` | Localized boundaries; keyboard; responsive months; consumers own validation and working-day math | Native date inputs; unrelated non-canonical pair of date widgets | None | Partial — consumers asserted where migrated |
+| Date/time display | Read-only API dates | `formatPortalDate`, `formatPortalDateTime` | `@/utils/portal-date-format` | Serbian Latin `dd.MM.yyyy.` and `dd.MM.yyyy. HH:mm` | Feature-local `Intl` / string formatters for that contract | Shared calendar widgets may use `Intl` for month/weekday labels only | Yes — rejects feature-local `toLocaleDateString` / hand-rolled display formatters outside allowlist |
+| Text input | Ordinary text/search/password | `formControlClassName` + `<input>` inside `FormField` | `@/components/form-field` | Shared height, focus, invalid, disabled, read-only | Page-local height/border/focus stacks for ordinary fields | Composing `formControlClassName()` with layout spacing (`mt-1`, `w-full`) is allowed | Yes — rejects known forbidden local `inputClass` / button class constants |
+| Numeric input | Bounded numbers | Same as text input with `type="number"` | `@/components/form-field` | Same chrome; step/min/max owned by the form | Parallel numeric chrome | None | Same as text input |
+| Textarea | Multi-line notes | `formControlClassName` + `<textarea>` | `@/components/form-field` | Vertical resize only; shared focus/invalid | Parallel textarea chrome | None | Same as text input |
+| Select | Small bounded options | `formControlClassName` + `<select>` | `@/components/form-field` | Localized empty/all option when allowed | Custom select clones for ordinary bounded lists | None | Same as text input |
+| Searchable combobox | Large/dynamic option sets | `SearchableCombobox` | `@/components/searchable-combobox` | Search, keyboard, clear, accessible combobox semantics | Native `<select>` with hundreds of options; page-local combobox forks | None | Contract tests on known consumers |
+| Checkbox | Independent Boolean form values | Native `<input type="checkbox">` with shared label spacing | Feature forms | Visible label; consistent gap | Switch styling for ordinary Booleans | No shared checkbox primitive yet; do not invent a second pattern | None yet |
+| Toggle/switch | Immediate on/off state changes only | Not yet approved as a shared primitive | — | Do not introduce until a second real use case exists | Page-local switch clones | None present | None |
+| Primary button | Main constructive/submit action | `formPrimaryButtonClassName` | `@/components/form-field` | Blue filled; focus ring; disabled opacity | `primaryButtonClass` and one-off blue stacks | Login may append layout width (`w-full`) | Yes — rejects `primaryButtonClass` / `secondaryButtonClass` / `dangerButtonClass` declarations |
+| Secondary button | Cancel, back, supporting commands | `formSecondaryButtonClassName` | `@/components/form-field` | Bordered neutral | Feature-local secondary class exports | Calendar toolbar navigation buttons remain calendar-owned | Yes |
+| Danger button | Destructive outline actions | `formDangerButtonClassName` | `@/components/form-field` | Red outline | One-off danger stacks | None | Yes |
+| Danger solid button | Destructive confirm inside `ConfirmDialog` | `formDangerSolidButtonClassName` | `@/components/form-field` | Red filled confirm | Inline solid-red class strings for the same purpose | None | Contract asserts helper existence |
+| Icon-only button | Compact icon commands | Semantic `<button>` + accessible name; Lucide | Shared/calendar toolbars | Visible focus; `aria-label` | Icon buttons without accessible names | `calendar-toolbar` keeps local sizing for calendar chrome | None |
+| Field wrapper | Label, required, hint, error | `FormField`, `fieldDescriptionIds` | `@/components/form-field` | Stable IDs; hint/error wiring | Divergent hand-rolled label/error blocks for ordinary fields | Dense grid filter cells may use `sr-only` labels | None beyond consumer contracts |
+| Confirmation dialog | Destructive/consequential confirm | `ConfirmDialog` | `@/components/confirm-dialog` | Message; optional title/children; confirm/cancel; destructive tone; no browser `confirm` | `window.confirm` / `confirm()`; duplicated amber/red panels | None | Yes — rejects `window.confirm` / `window.alert` |
+| Modal/dialog | Overlay dialogs beyond inline confirm | Not yet a shared overlay primitive | — | Prefer `ConfirmDialog` for confirmations | Ad-hoc full-screen modal frameworks | Calendar popovers owned by date controls | None |
+| Status badge | Compact status labels | `StatusBadge` for active/inactive/yes-no; `VacationStatusBadge` for leave-request statuses | `@/components/status-badge`; `@/features/vacation/components/vacation-status-badge` | Non-color indicators remain with text labels | Parallel active/inactive chip chrome | Domain request statuses stay in `VacationStatusBadge` | Partial |
+| Loading state | In-progress data | `GridStateRows` inside admin grids; localized page pulse/message elsewhere | `@/components/admin-data-grid` | Stable shell geometry | Full-page spinners that collapse admin chrome | Self-service pages keep localized loading blocks | Admin pages via existing contracts |
+| Empty state | No rows / no data | `GridStateRows` or localized empty copy inside content viewport | `@/components/admin-data-grid` | Explain absence; offer permitted next action | Empty chrome that collapses grid geometry | Self-service `Empty` helpers remain until a second shared empty primitive is justified | Admin pages via existing contracts |
+| Error state | Safe recoverable failure | Localized alert + retry where safe | Page / `GridStateRows` | No raw API dumps; expose `traceId` when supportable | Hard-coded exception text | Self-service `ErrorState` helpers remain for non-admin surfaces | Admin pages via existing contracts |
+| Pagination | Admin list footers | `GridPagination` (20/50/100) | `@/components/grid-pagination` | Range summary; page size; first/prev/next/last | Second count rows; `GridFooter` on Organization-aligned pages | Vacation request administration retains server-driven prev/next with API `pageSize` 25 until that shell is migrated | Yes for migrated admin pages; allowlisted exception file for vacation admin list |
+| Administration page header/body | Title, description, New/Refresh; viewport fill chain | Shell `headerActions`; `AdministrationPageBody` | `@/components/administration-page-body` (+ header via shell) | Title left; New then Refresh right | Duplicate header chrome | Dashboard and pure self-service | Migrated admin pages |
+| Active section header | Section title, description, and tab-specific actions on screens with tab navigation (§2.5) | `PortalSectionHeader` | `@/components/portal-section-header` | Rendered below the tabs; `h2` title left; optional description; primary then secondary actions right on desktop, wrapping below on narrow screens | Tab-specific actions in the module header or in a command band above the tabs; page-local section-header chrome | None | Yes — tabbed Vacation screens contract test |
+| Administration toolbar | Search, filters, export | `AdministrativeGridToolbar` | `@/components/administrative-grid-toolbar` | Search → filters → export | Parallel filter command bars on admin grids | Vacation request admin filter form remains until shell migration | Migrated admin pages |
+| Administrative grid shell | Bordered grid + optional side panel | `AdministrativeGridShell` | `@/components/admin-data-grid` | Internal scroll; stable states; `fillViewport` only with body chain | Parallel bordered grid/panel frames | Non-tabular forms; Leave Balances / Vacation request admin pending shell rollout | Migrated admin pages |
+| Calendar | Month/week/day/agenda | `AppCalendar` | `@/components/calendar` | Platform locale/appearance; list/agenda alternative | Forked FullCalendar setup in features | None | Demo/consumer contracts |
+| Localization | User-visible text | `LocaleProvider`, `useTranslations` | `@/i18n/…` | sr-Latn default; en; typed keys | Hardcoded labels | None | Navigation/locale contracts |
+| Appearance/theme | Light/Dark/System | `AppearanceProvider` | `@/components/appearance-provider` | Semantic tokens; settings-owned preference | Page-local theme state | None | Settings/shell contracts |
+
+**Date rule (normative):** All user-facing date entry fields MUST use
+`PortalDateInput`. Native user-facing `<input type="date">` is not allowed
+unless an explicit row above documents an exception.
+
+**Confirmation rule (normative):** Browser-native `window.confirm` and
+`window.alert` are prohibited in Portal feature code.
+
+**Button rule (normative):** Feature modules MUST NOT declare
+`primaryButtonClass`, `secondaryButtonClass`, or `dangerButtonClass` constants.
+
+Documented temporary exceptions (exact file + reason + removal condition):
+
+| File | Reason | Removal condition |
+|---|---|---|
+| `apps/portal/src/features/vacation/components/admin-vacation-request-list.tsx` | Custom server-paged prev/next UI with fixed API `pageSize` 25; not yet on `AdministrativeGridShell` / `GridPagination` | When Vacation request administration is migrated to the canonical administration shell |
+| `apps/portal/src/app/vacation/admin/leave-balances/page.tsx` | Tabular history + posting form outside the administration grid shell | Dedicated Leave Balances administration-shell task |
+| `apps/portal/src/components/calendar/calendar-toolbar.tsx` | Calendar-specific navigation chrome sizing | Remains calendar-owned unless a second non-calendar toolbar needs the same control |
+| `apps/portal/src/features/vacation/components/vacation-status-badge.tsx` | Domain leave-request status vocabulary (`SUBMITTED`/`APPROVED`/…); not a copy of generic `StatusBadge` | Remains domain-owned; do not replace with generic `StatusBadge` tones |
+
+### 1.5 New screen checklist
+
+Before merging a new Portal screen or form:
+
+- [ ] Use canonical controls from §1.4; do not invent module-prefixed copies.
+- [ ] Use `LocaleProvider` / `useTranslations` for all user-visible text.
+- [ ] Use `AppearanceProvider` tokens; do not add page-local theme state.
+- [ ] Use `formatPortalDate` / `formatPortalDateTime` for read-only API dates.
+- [ ] Use `PortalDateInput` / `DateRangePicker` for editable dates; never
+      native `type="date"`.
+- [ ] Use `AdministrationPageBody`, `AdministrativeGridShell`,
+      `AdministrativeGridToolbar`, and `GridPagination` for administration
+      grids where the administration contract applies.
+- [ ] Do not declare local `inputClass`, `primaryButtonClass`,
+      `secondaryButtonClass`, or `dangerButtonClass` constants.
+- [ ] Use `ConfirmDialog` for destructive or consequential confirmations;
+      never `window.confirm` / `window.alert`.
+- [ ] On screens with tab navigation, follow the §2.5 tabbed screen
+      hierarchy: module header → tabs → `PortalSectionHeader` → filters →
+      content. Tab-specific actions live in the active section header,
+      never in the module header.
+- [ ] If introducing a new shared control category, document it in §1.4
+      (behavior, import path, ownership) and add or update Portal contract
+      protection in the same change.
 
 ## 2. Application Layout
 
@@ -160,22 +269,22 @@ Dashboard is always a platform navigation item. Settings is available to every a
 
 Business pages follow this hierarchy:
 
-1. Page title and context.
-2. Command bar, when commands exist.
-3. Filters or secondary navigation, when needed.
-4. Main working surface.
+1. Page title and context (the module header).
+2. Secondary navigation (tabs), when the screen has multiple sections.
+3. The active section header, on tabbed screens (§2.5).
+4. Filters or section controls, when needed.
+5. Main working surface.
 
-The shell provides optional command-bar and secondary-navigation regions so pages align these areas consistently without rendering empty placeholders. Within a command bar:
+The shell provides optional header-actions and secondary-navigation regions so pages align these areas consistently without rendering empty placeholders. There is no command band between the module header and the tabs. Within any action group:
 
-- create/new is placed on the left;
-- edit and related actions follow the primary action;
-- search, filter, and export are placed on the right when applicable;
+- create/new is placed first, followed by supporting actions such as refresh;
+- search, filter, and export belong to the grid toolbar, not the header;
 - unavailable commands use an explicit disabled state;
 - actions that do not exist are not shown as interactive previews.
 
 ### 2.2 Business workspaces
 
-An application may add compact secondary navigation inside the shared shell. The navigation is owned by that application, remains responsive and keyboard accessible, and marks the active section. It must not duplicate or replace global application navigation.
+An application may add compact secondary navigation inside the shared shell. The navigation is owned by that application, remains responsive and keyboard accessible, and marks the active section. It must not duplicate or replace global application navigation. Screens that use such tab navigation follow the canonical tabbed screen hierarchy in §2.5.
 
 Vacation establishes the first workspace pattern: Overview and Employees are functional sections; future sections are visibly disabled and labeled as coming soon. Read-only functionality is delivered before edit workflows when that provides usable business value.
 
@@ -191,18 +300,99 @@ Vacation establishes the first workspace pattern: Overview and Employees are fun
 
 ### 2.4 Page headers
 
-Each page has one visible `h1`. Put the primary action at the end of the page header on desktop and in an accessible, usable location on smaller screens.
+Each page has one visible `h1`. On screens without tab navigation, put the primary action at the end of the page header on desktop and in an accessible, usable location on smaller screens. On screens with tab navigation, the page header is the module header and section actions move below the tabs (§2.5).
 
-Example:
+Example (single-section screen):
 
 ```text
-Vacation requests                         [New request]
-Review your requests and current status.
+Departments                               [New department]
+Manage organizational units.
 ```
 
 Do not place the same primary action in multiple competing locations.
 
-## 3. Responsive Design
+### 2.5 Tabbed screen hierarchy (canonical)
+
+Every Portal screen with multiple tabs uses this exact vertical hierarchy.
+It is a platform rule: all current and future Portal modules MUST follow
+this structure, not only Vacation.
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ 1 Module header: module title · module description           │
+│   (only truly module-global actions, if any)                 │
+├──────────────────────────────────────────────────────────────┤
+│ 2 Tab navigation: Section A │ Section B │ Section C           │
+├──────────────────────────────────────────────────────────────┤
+│ 3 Active section header: section title · description         │
+│                                    [Primary] [Secondary]     │
+├──────────────────────────────────────────────────────────────┤
+│ 4 Filters or section controls                                 │
+├──────────────────────────────────────────────────────────────┤
+│ 5 Section content: grid · form · dashboard · details          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Region purposes:
+
+- **Module header** — identifies the module or application (`h1` title and
+  a short module-level description). It stays visually stable while the
+  user moves between tabs. It answers no task question; it provides
+  context. It may contain only actions that are genuinely global to the
+  whole module.
+- **Tab navigation** — identifies the active section. It answers
+  “Where am I?”. Tabs stay in one consistent position on every section of
+  the module and mark the active section.
+- **Active section header** — the shared `PortalSectionHeader`
+  (`@/components/portal-section-header`). It renders the active section
+  title (`h2`), an optional section description, and the actions that
+  belong only to that section. It answers “What can I do here?”.
+- **Filters / section controls** — status filters, scope selectors, and
+  grid toolbars appear below the active section header, never above it
+  and never inside the module header.
+- **Section content** — the working surface (grid, form, dashboard,
+  details) appears below the filters.
+
+Action placement:
+
+- **Tab-specific actions MUST live in the active section header.** An
+  action that belongs only to one tab must never be placed in the module
+  header. Examples: “New request” belongs to the Requests section header;
+  “New leave type” and “Refresh” belong to the Leave Types section header;
+  “Record absence” belongs to the Request Administration section header.
+- Primary actions come first, then secondary actions (refresh, export
+  helpers), in the same right-aligned group of the section header.
+- Search, column filters, and export commands stay in the grid toolbar
+  inside the working surface, as on non-tabbed administration pages.
+- **The module header must not contain actions that apply only to one
+  tab.** A module-level action is genuinely allowed only when it operates
+  on the module as a whole, is available and meaningful on every tab, and
+  does not duplicate a section action. No current Portal module has such
+  an action; treat any proposed one as an explicit design decision, not a
+  convenience.
+
+Prohibited ambiguous layouts:
+
+- section actions in the module header, above or visually detached from
+  the tab navigation;
+- a command band between the module header and the tabs;
+- a second competing title between the tabs and the section content;
+- the same action rendered both above and below the tabs;
+- filters rendered above the active section header;
+- per-module forks of the section-header chrome.
+
+Responsive behavior:
+
+- desktop: section title and description on the left, actions
+  right-aligned in the same section header, with clear visual ownership
+  inside that header;
+- narrow screens: title and description first, actions wrap below them;
+  no horizontal page overflow; tabs remain scrollable and usable;
+- the module header, tabs, section header, filters, and content keep the
+  same horizontal content bounds.
+
+The heading order is stable: the module header owns the page `h1`; the
+active section header is an `h2`; content headings nest below it.
 
 The Portal is desktop-first because business workflows commonly use tables, multi-field forms, and calendars. It must remain usable on tablet and mobile widths.
 
@@ -591,9 +781,9 @@ it:
 
 | Area | Gap relative to the canonical contract |
 |---|---|
-| Vacation Leave Balances | Native `type="date"` remain; page-local form chrome |
-| Vacation request employee self-service | Outside administration shell rollout |
-| Vacation request administration | Outside this administration UI foundation rollout |
+| Vacation Leave Balances | Uses `PortalDateInput` and shared form helpers; still outside the full administration grid shell |
+| Vacation request employee self-service | Outside administration shell; uses canonical buttons/`FormField`/`DateRangePicker` |
+| Vacation request administration | Filter form and fixed `pageSize` 25 prev/next pagination remain until shell migration; form controls and confirmations use shared helpers |
 | Dashboard | Outside scope; launcher surface, not an administration grid |
 
 Identity user administration, User–Employee links, and Vacation Leave Types now

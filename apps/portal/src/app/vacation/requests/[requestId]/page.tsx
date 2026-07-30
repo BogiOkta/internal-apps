@@ -4,11 +4,16 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  FormField,
+  formControlClassName,
+  formSecondaryButtonClassName,
+} from "@/components/form-field";
 import {
   formatDate,
   formatDateTime,
   problemMessage,
-  secondaryButtonClass,
   statusLabel,
 } from "@/features/vacation/components/employee-vacation-dashboard";
 import { VacationStatusBadge } from "@/features/vacation/components/vacation-status-badge";
@@ -81,7 +86,7 @@ export default function VacationRequestDetailsPage() {
 
   return <VacationWorkspace title={t("vacation.employeePortal.detailsTitle")}
     description={t("vacation.employeePortal.detailsDescription")}>
-    <div className="mb-4"><Link href="/vacation/requests" className={secondaryButtonClass}>
+    <div className="mb-4"><Link href="/vacation/requests" className={formSecondaryButtonClassName()}>
       {t("vacation.employeePortal.backToRequests")}
     </Link></div>
     {success && <div role="status" className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">{success}</div>}
@@ -111,31 +116,26 @@ export default function VacationRequestDetailsPage() {
           </dl>
           {isCancellationEligible(request.status) && <div className="mt-6 border-t border-slate-200 pt-5">
             {!isConfirming ? <button type="button" onClick={() => setIsConfirming(true)}
-              className={secondaryButtonClass}>{t("vacation.employeePortal.cancelRequest")}</button>
-              : <div className="rounded-md border border-amber-300 bg-amber-50 p-4">
-                <h3 className="font-semibold">{t("vacation.employeePortal.cancelConfirmTitle")}</h3>
-                <p className="mt-1 text-sm">{request.status === "APPROVED"
+              className={formSecondaryButtonClassName()}>{t("vacation.employeePortal.cancelRequest")}</button>
+              : <ConfirmDialog
+                title={t("vacation.employeePortal.cancelConfirmTitle")}
+                message={request.status === "APPROVED"
                   ? t("vacation.employeePortal.cancelApprovedWarning")
-                  : t("vacation.employeePortal.cancelWarning")}</p>
-                <label className="mt-3 block text-sm font-medium">
-                  {t("vacation.employeePortal.cancelComment")}
-                  <textarea value={comment} maxLength={1000} rows={3}
+                  : t("vacation.employeePortal.cancelWarning")}
+                confirmLabel={isCancelling
+                  ? t("vacation.employeePortal.cancelling")
+                  : t("vacation.employeePortal.confirmCancel")}
+                cancelLabel={t("vacation.employeePortal.keepRequest")}
+                pending={isCancelling}
+                onConfirm={() => void cancelRequest()}
+                onCancel={() => setIsConfirming(false)}
+              >
+                <FormField id="cancel-comment" label={t("vacation.employeePortal.cancelComment")}>
+                  <textarea id="cancel-comment" value={comment} maxLength={1000} rows={3}
                     disabled={isCancelling} onChange={(event) => setComment(event.target.value)}
-                    className="mt-1 block w-full resize-y rounded-md border border-slate-300 bg-white p-2 focus:outline-none focus:ring-2 focus:ring-blue-600" />
-                </label>
-                <div className="mt-3 flex gap-2">
-                  <button type="button" onClick={() => void cancelRequest()}
-                    disabled={isCancelling}
-                    className="min-h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
-                    {isCancelling ? t("vacation.employeePortal.cancelling")
-                      : t("vacation.employeePortal.confirmCancel")}
-                  </button>
-                  <button type="button" onClick={() => setIsConfirming(false)}
-                    disabled={isCancelling} className={secondaryButtonClass}>
-                    {t("vacation.employeePortal.keepRequest")}
-                  </button>
-                </div>
-              </div>}
+                    className={`${formControlClassName()} resize-y`} />
+                </FormField>
+              </ConfirmDialog>}
           </div>}
         </article>
         <aside className="rounded-lg border border-slate-300 bg-white p-6" aria-labelledby="history-heading">

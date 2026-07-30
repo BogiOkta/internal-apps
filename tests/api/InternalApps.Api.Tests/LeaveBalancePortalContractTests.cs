@@ -28,6 +28,9 @@ public sealed class LeaveBalancePortalContractTests
         Assert.Contains("form.sourceReference.trim()", page);
         Assert.Contains("setLoaded(false)", page);
         Assert.Contains("changeScope({ ...scope", page);
+        Assert.Contains("PortalDateInput", page);
+        Assert.DoesNotContain("type=\"date\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("type='date'", page, StringComparison.Ordinal);
     }
 
     [Fact]

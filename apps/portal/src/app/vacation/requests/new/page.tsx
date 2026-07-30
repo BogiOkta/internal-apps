@@ -5,11 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { DateRangePicker, type DateRangeValue } from "@/components/date-range";
-import { FormField, fieldDescriptionIds, formControlClassName } from "@/components/form-field";
+import { FormField, fieldDescriptionIds, formControlClassName, formPrimaryButtonClassName, formSecondaryButtonClassName } from "@/components/form-field";
 import {
-  primaryButtonClass,
   problemMessage,
-  secondaryButtonClass,
 } from "@/features/vacation/components/employee-vacation-dashboard";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { toApiDate } from "@/features/vacation/vacation-request-utils";
@@ -149,11 +147,11 @@ export default function NewVacationRequestPage() {
       </FormField>
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={isLoading || isSubmitting}
-          className={primaryButtonClass}>
+          className={formPrimaryButtonClassName()}>
           {isSubmitting ? t("vacation.employeePortal.submitting")
             : t("vacation.employeePortal.submit")}
         </button>
-        <Link href="/vacation" className={secondaryButtonClass}>
+        <Link href="/vacation" className={formSecondaryButtonClassName()}>
           {t("vacation.employeePortal.back")}
         </Link>
       </div>

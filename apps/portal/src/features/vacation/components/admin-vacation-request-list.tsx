@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import {
+  formControlClassName,
+  formPrimaryButtonClassName,
+} from "@/components/form-field";
+import {
   Empty,
   ErrorState,
   formatDate,
@@ -27,7 +31,7 @@ import {
 } from "@/types/vacation";
 
 const pageSize = 25;
-const inputClass = "mt-1 block min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600";
+const filterControlClassName = `${formControlClassName()} mt-1`;
 
 export function AdminVacationRequestList() {
   const { accessToken, user } = useAuth();
@@ -99,14 +103,14 @@ export function AdminVacationRequestList() {
 
   return <VacationWorkspace title={t("vacation.admin.title")}
     description={t("vacation.admin.description")}
-    headerActions={<Link href="/vacation/admin/requests/record" className="min-h-10 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white">{t("vacation.admin.record")}</Link>}>
+    sectionActions={<Link href="/vacation/admin/requests/record" className={formPrimaryButtonClassName()}>{t("vacation.admin.record")}</Link>}>
     <form className="mb-5 grid gap-3 rounded-lg border border-slate-300 bg-white p-4 sm:grid-cols-2 xl:grid-cols-5"
       onSubmit={(event) => {
         event.preventDefault();
         resetPage(() => setSearch(searchInput.trim()));
       }}>
       <Filter label={t("vacation.admin.filter.status")}>
-        <select className={inputClass} value={status}
+        <select className={filterControlClassName} value={status}
           onChange={(event) => resetPage(() => setStatus(event.target.value as typeof status))}>
           {["all", "submitted", "approved", "rejected", "cancelled"].map((value) =>
             <option key={value} value={value === "all" ? "all" : value.toUpperCase()}>
@@ -115,7 +119,7 @@ export function AdminVacationRequestList() {
         </select>
       </Filter>
       <Filter label={t("vacation.admin.filter.leaveType")}>
-        <select className={inputClass} value={leaveTypeId}
+        <select className={filterControlClassName} value={leaveTypeId}
           onChange={(event) => resetPage(() => setLeaveTypeId(event.target.value))}>
           <option value="">{t("vacation.admin.filter.allLeaveTypes")}</option>
           {leaveTypes.map((type) => <option key={type.publicId} value={type.publicId}>
@@ -124,7 +128,7 @@ export function AdminVacationRequestList() {
         </select>
       </Filter>
       <Filter label={t("vacation.admin.filter.source")}>
-        <select className={inputClass} value={source}
+        <select className={filterControlClassName} value={source}
           onChange={(event) => resetPage(() => setSource(event.target.value as typeof source))}>
           <option value="all">{t("vacation.admin.filter.allSources")}</option>
           <option value="EMPLOYEE_REQUEST">{t("vacation.admin.source.employeeRequest")}</option>
@@ -133,15 +137,15 @@ export function AdminVacationRequestList() {
       </Filter>
       <Filter label={t("vacation.admin.filter.employee")}>
         <div className="flex gap-2">
-          <input className={inputClass} value={searchInput} maxLength={100}
+          <input className={filterControlClassName} value={searchInput} maxLength={100}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t("vacation.admin.filter.employeePlaceholder")} />
-          <button className="mt-1 min-h-10 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white"
+          <button className={`${formPrimaryButtonClassName()} mt-1`}
             type="submit">{t("vacation.admin.filter.search")}</button>
         </div>
       </Filter>
       <Filter label={t("vacation.admin.filter.year")}>
-        <select className={inputClass} value={year}
+        <select className={filterControlClassName} value={year}
           onChange={(event) => resetPage(() => setYear(event.target.value))}>
           {years.map((value) => <option key={value}>{value}</option>)}
         </select>

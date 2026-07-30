@@ -13,11 +13,14 @@ import {
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
+  formControlClassName,
   formDangerButtonClassName,
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { StatusBadge } from "@/components/status-badge";
 import { GridPagination } from "@/components/grid-pagination";
 import { LeaveTypeForm } from "@/features/vacation/components/leave-type-form";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
@@ -416,35 +419,33 @@ export default function LeaveTypesPage() {
     setOperationError(null);
   }
 
-  const headerActions = (
-    <div className="flex flex-wrap items-center gap-2">
-      {canManage && (
-        <button
-          type="button"
-          onClick={startCreate}
-          className={formPrimaryButtonClassName()}
-        >
-          {t("vacation.leaveTypes.new")}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => setRefreshVersion((version) => version + 1)}
-        disabled={isLoading}
-        className={formSecondaryButtonClassName()}
-      >
-        {isLoading
-          ? t("vacation.leaveTypes.refreshing")
-          : t("vacation.leaveTypes.refresh")}
-      </button>
-    </div>
-  );
-
   return (
     <VacationWorkspace
       title={t("vacation.leaveTypes.title")}
       description={t("vacation.leaveTypes.description")}
-      headerActions={headerActions}
+      sectionActions={
+        canManage && (
+          <button
+            type="button"
+            onClick={startCreate}
+            className={formPrimaryButtonClassName()}
+          >
+            {t("vacation.leaveTypes.new")}
+          </button>
+        )
+      }
+      sectionSecondaryActions={
+        <button
+          type="button"
+          onClick={() => setRefreshVersion((version) => version + 1)}
+          disabled={isLoading}
+          className={formSecondaryButtonClassName()}
+        >
+          {isLoading
+            ? t("vacation.leaveTypes.refreshing")
+            : t("vacation.leaveTypes.refresh")}
+        </button>
+      }
       contentFillsViewport
     >
       <AdministrationPageBody>
@@ -659,16 +660,16 @@ export default function LeaveTypesPage() {
                           </button>
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
-                          <BooleanBadge value={leaveType.countsAgainstVacationBalance} />
+                          <YesNoBadge value={leaveType.countsAgainstVacationBalance} />
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
-                          <BooleanBadge value={leaveType.requiresBalance} />
+                          <YesNoBadge value={leaveType.requiresBalance} />
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
-                          <BooleanBadge value={leaveType.requiresApproval} />
+                          <YesNoBadge value={leaveType.requiresApproval} />
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
-                          <StatusBadge isActive={leaveType.isActive} />
+                          <ActiveStatusBadge isActive={leaveType.isActive} />
                         </td>
                         <td className="whitespace-nowrap px-4 py-3">
                           <button
@@ -848,7 +849,7 @@ export default function LeaveTypesPage() {
                       </div>
 
                       {pendingActiveState !== null && (
-                        <Confirmation
+                        <ConfirmDialog
                           message={
                             pendingActiveState
                               ? t("vacation.leaveTypes.activateConfirmation")
@@ -869,7 +870,7 @@ export default function LeaveTypesPage() {
                       )}
 
                       {isConfirmingDelete && (
-                        <Confirmation
+                        <ConfirmDialog
                           destructive
                           message={t("vacation.leaveTypes.deleteConfirmation")}
                           confirmLabel={
@@ -919,7 +920,7 @@ function GridTextFilter({
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-9 w-full min-w-28 rounded-md border border-slate-300 px-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+        className={`${formControlClassName()} min-h-9 min-w-28 px-2`}
       />
     </label>
   );
@@ -951,62 +952,6 @@ function GridBooleanFilter({
   );
 }
 
-function Confirmation({
-  message,
-  confirmLabel,
-  cancelLabel,
-  pending = false,
-  destructive = false,
-  onConfirm,
-  onCancel,
-}: {
-  message: string;
-  confirmLabel: string;
-  cancelLabel: string;
-  pending?: boolean;
-  destructive?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div
-      role={destructive ? "alertdialog" : "status"}
-      aria-modal={destructive || undefined}
-      className={`rounded-md border p-3 ${
-        destructive
-          ? "border-red-200 bg-red-50"
-          : "border-amber-200 bg-amber-50"
-      }`}
-    >
-      <p className={`text-sm ${destructive ? "text-red-900" : "text-amber-900"}`}>
-        {message}
-      </p>
-      <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onConfirm}
-          className={
-            destructive
-              ? "inline-flex min-h-9 items-center rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:opacity-50"
-              : formPrimaryButtonClassName()
-          }
-        >
-          {confirmLabel}
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onCancel}
-          className={formSecondaryButtonClassName()}
-        >
-          {cancelLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function Detail({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-slate-100 pb-2 last:border-0 last:pb-0">
@@ -1016,37 +961,29 @@ function Detail({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function BooleanBadge({ value }: { value: boolean }) {
+function YesNoBadge({ value }: { value: boolean }) {
   const { t } = useTranslations();
 
   return (
-    <span
-      className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${
-        value
-          ? "border-blue-200 bg-blue-50 text-blue-800"
-          : "border-slate-300 bg-slate-100 text-slate-700"
-      }`}
-    >
-      {value ? t("vacation.leaveTypes.yes") : t("vacation.leaveTypes.no")}
-    </span>
+    <StatusBadge
+      tone={value ? "positive" : "inactive"}
+      label={value ? t("vacation.leaveTypes.yes") : t("vacation.leaveTypes.no")}
+    />
   );
 }
 
-function StatusBadge({ isActive }: { isActive: boolean }) {
+function ActiveStatusBadge({ isActive }: { isActive: boolean }) {
   const { t } = useTranslations();
 
   return (
-    <span
-      className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${
+    <StatusBadge
+      tone={isActive ? "active" : "inactive"}
+      label={
         isActive
-          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "border-slate-300 bg-slate-100 text-slate-700"
-      }`}
-    >
-      {isActive
-        ? t("vacation.leaveTypes.recordActive")
-        : t("vacation.leaveTypes.recordInactive")}
-    </span>
+          ? t("vacation.leaveTypes.recordActive")
+          : t("vacation.leaveTypes.recordInactive")
+      }
+    />
   );
 }
 

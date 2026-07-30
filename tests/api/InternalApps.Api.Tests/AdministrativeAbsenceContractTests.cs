@@ -46,6 +46,19 @@ public sealed class AdministrativeAbsenceContractTests
         Assert.Contains("requests/record", Read("apps", "portal", "src", "services", "vacation.ts"));
     }
 
+    [Fact]
+    public void Portal_RecordForm_UsesPortalDateInputAndBusinessCalendarWorkingDays()
+    {
+        var form = Read("apps", "portal", "src", "features", "vacation", "components",
+            "admin-record-absence.tsx");
+        Assert.Contains("PortalDateInput", form);
+        Assert.Contains("getWorkingDaysBetween", form);
+        Assert.Contains("formControlClassName", form);
+        Assert.Contains("formPrimaryButtonClassName", form);
+        Assert.DoesNotContain("type=\"date\"", form, StringComparison.Ordinal);
+        Assert.DoesNotContain("type='date'", form, StringComparison.Ordinal);
+    }
+
     private static string Read(params string[] parts)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

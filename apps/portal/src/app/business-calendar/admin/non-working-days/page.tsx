@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   fieldDescriptionIds,
   FormField,
@@ -44,6 +45,8 @@ export default function NonWorkingDaysPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dateValid, setDateValid] = useState(true);
   const [dateInputVersion, setDateInputVersion] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<NonWorkingDay | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!accessToken || !allowed) return;
@@ -103,16 +106,20 @@ export default function NonWorkingDaysPage() {
     }
   }
 
-  async function remove(day: NonWorkingDay) {
-    if (!accessToken || !window.confirm(t("businessCalendar.deleteConfirm", { name: day.name }))) return;
+  async function confirmDelete() {
+    if (!accessToken || !pendingDelete || isDeleting) return;
     setFeedback(null);
+    setIsDeleting(true);
     try {
-      await deleteNonWorkingDay(accessToken, day.publicId);
-      if (editingId === day.publicId) resetForm();
+      await deleteNonWorkingDay(accessToken, pendingDelete.publicId);
+      if (editingId === pendingDelete.publicId) resetForm();
       await load();
       setFeedback({ kind: "success", text: t("businessCalendar.deleted") });
+      setPendingDelete(null);
     } catch {
       setFeedback({ kind: "error", text: t("businessCalendar.deleteError") });
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -165,6 +172,17 @@ export default function NonWorkingDaysPage() {
           >
             {feedback.text}
           </div>
+        )}
+        {pendingDelete && (
+          <ConfirmDialog
+            destructive
+            message={t("businessCalendar.deleteConfirm", { name: pendingDelete.name })}
+            confirmLabel={t("businessCalendar.delete")}
+            cancelLabel={t("businessCalendar.cancel")}
+            pending={isDeleting}
+            onConfirm={() => void confirmDelete()}
+            onCancel={() => setPendingDelete(null)}
+          />
         )}
 
         <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
@@ -241,7 +259,7 @@ export default function NonWorkingDaysPage() {
                               <button
                                 type="button"
                                 className="rounded-sm text-sm font-medium text-red-700 hover:underline focus:outline-none focus:ring-2 focus:ring-red-600"
-                                onClick={() => void remove(day)}
+                                onClick={() => setPendingDelete(day)}
                               >
                                 {t("businessCalendar.delete")}
                               </button>

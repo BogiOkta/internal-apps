@@ -13,6 +13,7 @@ import {
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import {
   formPrimaryButtonClassName,
@@ -663,28 +664,14 @@ export default function UserEmployeeLinksPage() {
                   {panelMode === "edit" &&
                     selectedLink &&
                     isConfirmingUnlink && (
-                      <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-                        <p className="text-sm text-amber-900">
-                          {t("organization.links.unlinkConfirmation")}
-                        </p>
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            type="button"
-                            disabled={isSaving}
-                            onClick={() => void unlink(selectedLink)}
-                            className={formPrimaryButtonClassName()}
-                          >
-                            {t("organization.links.confirm")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsConfirmingUnlink(false)}
-                            className={formSecondaryButtonClassName()}
-                          >
-                            {t("organization.links.cancel")}
-                          </button>
-                        </div>
-                      </div>
+                      <ConfirmDialog
+                        message={t("organization.links.unlinkConfirmation")}
+                        confirmLabel={t("organization.links.confirm")}
+                        cancelLabel={t("organization.links.cancel")}
+                        pending={isSaving}
+                        onConfirm={() => void unlink(selectedLink)}
+                        onCancel={() => setIsConfirmingUnlink(false)}
+                      />
                     )}
                 </div>
               ) : (

@@ -28,7 +28,6 @@ type AppShellContext = {
 type AppShellProps = {
   title: string;
   description?: string;
-  commandBar?: ReactNode;
   headerActions?: ReactNode;
   secondaryNavigation?: ReactNode;
   contentFillsViewport?: boolean;
@@ -49,7 +48,6 @@ type NavigationProps = {
 export function AppShell({
   title,
   description,
-  commandBar,
   headerActions,
   secondaryNavigation,
   contentFillsViewport = false,
@@ -222,17 +220,6 @@ export function AppShell({
             </div>
           )}
         </header>
-
-        {commandBar && (
-          <section
-            aria-label={t("navigation.pageCommands")}
-            className="border-b border-slate-200 bg-white"
-          >
-            <div className="mx-auto flex min-h-12 max-w-[1600px] items-center px-4 py-2 sm:px-6 lg:px-7">
-              {commandBar}
-            </div>
-          </section>
-        )}
 
         {secondaryNavigation && (
           <section

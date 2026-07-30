@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { FormField, formControlClassName } from "@/components/form-field";
+import {
+  FormField,
+  formControlClassName,
+  formPrimaryButtonClassName,
+} from "@/components/form-field";
+import { PortalDateInput } from "@/components/portal-date-input";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate, formatPortalDateTime } from "@/utils/portal-date-format";
@@ -95,7 +100,7 @@ export default function LeaveBalancesPage() {
       <SelectField id="balance-employee" label={t("leaveBalance.employee")} value={scope.employeeId} onChange={(employeeId) => changeScope({ ...scope, employeeId })} empty={t("leaveBalance.selectEmployee")} options={employees.map((employee) => ({ value: employee.publicId, label: `${employee.lastName}, ${employee.firstName} (${employee.employeeNumber})` }))} />
       <SelectField id="balance-leave-type" label={t("leaveBalance.leaveType")} value={scope.leaveTypeId} onChange={(leaveTypeId) => changeScope({ ...scope, leaveTypeId })} empty={t("leaveBalance.selectLeaveType")} options={leaveTypes.map((type) => ({ value: type.publicId, label: type.name }))} />
       <FormField id="balance-year" label={t("leaveBalance.year")}><input id="balance-year" type="number" min={1900} max={9999} value={scope.year} onChange={(event) => changeScope({ ...scope, year: Number(event.target.value) })} className={formControlClassName()} /></FormField>
-      <div className="self-end"><button type="button" disabled={loading} onClick={() => void load()} className="rounded-md bg-blue-700 px-4 py-2 text-white">{loading ? t("common.loading") : t("leaveBalance.load")}</button></div>
+      <div className="self-end"><button type="button" disabled={loading} onClick={() => void load()} className={formPrimaryButtonClassName()}>{loading ? t("common.loading") : t("leaveBalance.load")}</button></div>
     </div>
     {feedback && <div role={feedback.error ? "alert" : "status"} className={`mb-4 rounded-md border p-3 text-sm ${feedback.error ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>{t(feedback.key)}</div>}
     {loaded && <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -105,11 +110,26 @@ export default function LeaveBalancesPage() {
       <form onSubmit={submit} className="h-fit space-y-4 rounded-md border border-slate-300 bg-white p-5"><h2 className="text-lg font-semibold">{t("leaveBalance.createTitle")}</h2>
         <SelectField id="entry-kind" label={t("leaveBalance.entryKind")} value={form.kind} onChange={(kind) => setForm({ ...form, kind: kind as EntryForm["kind"] })} options={[{ value: "annual_entitlement", label: t("leaveBalance.kind.annual_entitlement") }, { value: "carry_over", label: t("leaveBalance.kind.carry_over") }, { value: "manual_adjustment", label: t("leaveBalance.kind.manual_adjustment") }]} />
         <FormField id="entry-quantity" label={t("leaveBalance.quantity")} required><input id="entry-quantity" type="number" step="0.5" required value={form.quantityDays} onChange={(event) => setForm({ ...form, quantityDays: Number(event.target.value) })} className={formControlClassName()} /></FormField>
-        <FormField id="entry-effective" label={t("leaveBalance.effective")} required><input id="entry-effective" type="date" required value={form.effectiveDate} onChange={(event) => setForm({ ...form, effectiveDate: event.target.value })} className={formControlClassName()} /></FormField>
+        <FormField id="entry-effective" label={t("leaveBalance.effective")} required hint={t("dateInput.hint")}>
+          <PortalDateInput
+            id="entry-effective"
+            value={form.effectiveDate || null}
+            nullable={false}
+            disabled={saving}
+            onChange={(value) => setForm({ ...form, effectiveDate: value ?? "" })}
+            invalidLabel={t("dateInput.invalid")}
+            incompleteLabel={t("dateInput.incomplete")}
+            todayLabel={t("dateInput.today")}
+            clearLabel={t("dateInput.clear")}
+            openCalendarLabel={t("dateInput.openCalendar")}
+            previousMonthLabel={t("dateInput.previousMonth")}
+            nextMonthLabel={t("dateInput.nextMonth")}
+          />
+        </FormField>
         <FormField id="entry-reason" label={t("leaveBalance.reason")} required><input id="entry-reason" maxLength={200} required value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} className={formControlClassName()} /></FormField>
         <FormField id="entry-explanation" label={t("leaveBalance.explanation")}><textarea id="entry-explanation" maxLength={1000} value={form.explanation ?? ""} onChange={(event) => setForm({ ...form, explanation: event.target.value || null })} className={`${formControlClassName()} min-h-20`} /></FormField>
         <FormField id="entry-source" label={t("leaveBalance.source")} required><input id="entry-source" maxLength={100} required value={form.sourceReference} onChange={(event) => setForm({ ...form, sourceReference: event.target.value })} className={formControlClassName()} /></FormField>
-        <button disabled={saving} className="rounded-md bg-blue-700 px-4 py-2 text-white">{saving ? t("leaveBalance.saving") : t("leaveBalance.save")}</button>
+        <button disabled={saving} className={formPrimaryButtonClassName()}>{saving ? t("leaveBalance.saving") : t("leaveBalance.save")}</button>
       </form>
     </div>}
   </VacationWorkspace>;

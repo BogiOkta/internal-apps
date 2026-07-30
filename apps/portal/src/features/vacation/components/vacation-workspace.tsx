@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
+import { PortalSectionHeader } from "@/components/portal-section-header";
 import {
   WorkspaceNavigation,
   type WorkspaceNavigationItem,
@@ -12,19 +13,28 @@ import { usersManagePermission } from "@/types/auth";
 import { vacationRequestsManagePermission } from "@/types/vacation";
 
 type VacationWorkspaceProps = {
+  /** Active section title, rendered below the tab navigation. */
   title: string;
+  /** Active section description, rendered below the tab navigation. */
   description?: string;
-  commandBar?: ReactNode;
-  headerActions?: ReactNode;
+  /** Primary actions that belong only to the active section. */
+  sectionActions?: ReactNode;
+  /** Secondary actions (refresh, export, …) of the active section. */
+  sectionSecondaryActions?: ReactNode;
   contentFillsViewport?: boolean;
   children: ReactNode;
 };
 
+/**
+ * Canonical tabbed-screen hierarchy (UI_GUIDELINES §2.5): stable module
+ * header, tab navigation, then the active section header. Tab-specific
+ * actions are rendered in the section header, never in the module header.
+ */
 export function VacationWorkspace({
   title,
   description,
-  commandBar,
-  headerActions,
+  sectionActions,
+  sectionSecondaryActions,
   contentFillsViewport,
   children,
 }: VacationWorkspaceProps) {
@@ -59,10 +69,8 @@ export function VacationWorkspace({
 
   return (
     <AppShell
-      title={title}
-      description={description}
-      commandBar={commandBar}
-      headerActions={headerActions}
+      title={t("vacation.workspace.title")}
+      description={t("vacation.workspace.description")}
       contentFillsViewport={contentFillsViewport}
       secondaryNavigation={
         <WorkspaceNavigation
@@ -71,6 +79,12 @@ export function VacationWorkspace({
         />
       }
     >
+      <PortalSectionHeader
+        title={title}
+        description={description}
+        actions={sectionActions}
+        secondaryActions={sectionSecondaryActions}
+      />
       {children}
     </AppShell>
   );

@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  FormField,
+  formControlClassName,
+  formPrimaryButtonClassName,
+  formSecondaryButtonClassName,
+} from "@/components/form-field";
 import {
   formatDate,
   formatDateTime,
   problemMessage,
-  secondaryButtonClass,
   statusLabel,
 } from "@/features/vacation/components/employee-vacation-dashboard";
 import { VacationStatusBadge } from "@/features/vacation/components/vacation-status-badge";
@@ -100,7 +106,7 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
 
   return <VacationWorkspace title={t("vacation.admin.detailsTitle")}
     description={t("vacation.admin.detailsDescription")}>
-    <div className="mb-4"><Link href="/vacation/admin/requests" className={secondaryButtonClass}>
+    <div className="mb-4"><Link href="/vacation/admin/requests" className={formSecondaryButtonClassName()}>
       {t("vacation.admin.back")}
     </Link></div>
     {success && <div role="status" className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">{success}</div>}
@@ -171,30 +177,27 @@ function AdminActions({ request, action, comment, isSubmitting, t, onChoose,
       {actions.map((item) => <button key={item} type="button"
         onClick={() => onChoose(item)}
         className={item === "approve"
-          ? "min-h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white"
-          : secondaryButtonClass}>
+          ? formPrimaryButtonClassName()
+          : formSecondaryButtonClassName()}>
         {t(`vacation.admin.action.${item}.button`)}
       </button>)}
-    </div> : <div className="rounded-md border border-amber-300 bg-amber-50 p-4">
-      <h3 className="font-semibold">{t(`vacation.admin.action.${action}.title`)}</h3>
-      <p className="mt-1 text-sm">{t(`vacation.admin.action.${action}.warning`)}</p>
-      <label className="mt-3 block text-sm font-medium">
-        {t("vacation.admin.action.comment")}
-        <textarea value={comment} maxLength={1000} rows={3}
+    </div> : <ConfirmDialog
+      title={t(`vacation.admin.action.${action}.title`)}
+      message={t(`vacation.admin.action.${action}.warning`)}
+      confirmLabel={isSubmitting
+        ? t(`vacation.admin.action.${action}.loading`)
+        : t(`vacation.admin.action.${action}.confirm`)}
+      cancelLabel={t("vacation.admin.action.keep")}
+      pending={isSubmitting}
+      onConfirm={onSubmit}
+      onCancel={onClose}
+    >
+      <FormField id="admin-action-comment" label={t("vacation.admin.action.comment")}>
+        <textarea id="admin-action-comment" value={comment} maxLength={1000} rows={3}
           disabled={isSubmitting} onChange={(event) => onComment(event.target.value)}
-          className="mt-1 block w-full resize-y rounded-md border border-slate-300 bg-white p-2 focus:outline-none focus:ring-2 focus:ring-blue-600" />
-      </label>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" onClick={onSubmit} disabled={isSubmitting}
-          className="min-h-10 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
-          {isSubmitting
-            ? t(`vacation.admin.action.${action}.loading`)
-            : t(`vacation.admin.action.${action}.confirm`)}
-        </button>
-        <button type="button" onClick={onClose} disabled={isSubmitting}
-          className={secondaryButtonClass}>{t("vacation.admin.action.keep")}</button>
-      </div>
-    </div>}
+          className={`${formControlClassName()} resize-y`} />
+      </FormField>
+    </ConfirmDialog>}
   </div>;
 }
 

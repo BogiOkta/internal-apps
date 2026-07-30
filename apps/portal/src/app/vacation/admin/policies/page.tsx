@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AdministrativeGridShell, GridStateRows } from "@/components/admin-data-grid";
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
@@ -41,6 +42,8 @@ export default function LeavePoliciesPage() {
   const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingDeletePolicy, setPendingDeletePolicy] = useState<LeavePolicy | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -104,16 +107,19 @@ export default function LeavePoliciesPage() {
     }
   }
 
-  async function remove(policy: LeavePolicy) {
-    if (!accessToken || !window.confirm(t("leavePolicy.deleteConfirm",
-      { employee: policy.employeeName, year: policy.leaveYear }))) return;
+  async function confirmDelete() {
+    if (!accessToken || !pendingDeletePolicy || isDeleting) return;
+    setIsDeleting(true);
     try {
-      await deleteLeavePolicy(accessToken, policy.policyId);
-      if (editingId === policy.policyId) reset();
+      await deleteLeavePolicy(accessToken, pendingDeletePolicy.policyId);
+      if (editingId === pendingDeletePolicy.policyId) reset();
       await load();
       setFeedback({ error: false, text: t("leavePolicy.deleted") });
+      setPendingDeletePolicy(null);
     } catch {
       setFeedback({ error: true, text: t("leavePolicy.deleteError") });
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -123,9 +129,12 @@ export default function LeavePoliciesPage() {
     </div>
   </VacationWorkspace>;
 
-  return <VacationWorkspace title={t("leavePolicy.title")} description={t("leavePolicy.description")} contentFillsViewport headerActions={<div className="flex gap-2"><button type="button" onClick={reset} className={formPrimaryButtonClassName()}>{t("leavePolicy.new")}</button><button type="button" onClick={() => void load()} disabled={loading} className={formSecondaryButtonClassName()}>{loading ? t("leavePolicy.refreshing") : t("leavePolicy.refresh")}</button></div>}>
+  return <VacationWorkspace title={t("leavePolicy.title")} description={t("leavePolicy.description")} contentFillsViewport
+    sectionActions={<button type="button" onClick={reset} className={formPrimaryButtonClassName()}>{t("leavePolicy.new")}</button>}
+    sectionSecondaryActions={<button type="button" onClick={() => void load()} disabled={loading} className={formSecondaryButtonClassName()}>{loading ? t("leavePolicy.refreshing") : t("leavePolicy.refresh")}</button>}>
     <AdministrationPageBody>
     {feedback && <div role={feedback.error ? "alert" : "status"} className={`rounded-md border p-3 text-sm ${feedback.error ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>{feedback.text}</div>}
+    {pendingDeletePolicy && <ConfirmDialog destructive message={t("leavePolicy.deleteConfirm", { employee: pendingDeletePolicy.employeeName, year: pendingDeletePolicy.leaveYear })} confirmLabel={t("leavePolicy.delete")} cancelLabel={t("leavePolicy.cancel")} pending={isDeleting} onConfirm={() => void confirmDelete()} onCancel={() => setPendingDeletePolicy(null)} />}
     <AdministrativeGridShell ariaLabel={t("leavePolicy.tableLabel")} fillViewport
       toolbar={<AdministrativeGridToolbar search={search} searchLabel={t("leavePolicy.searchLabel")} searchPlaceholder={t("leavePolicy.searchPlaceholder")} onSearchChange={setSearch} activeFilterCount={employeeFilter ? 1 : 0} areFiltersVisible exportDisabled filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={() => undefined} onClearFilters={() => { setEmployeeFilter(""); setYear(currentYear); }} onExportCsv={() => undefined} onExportExcel={() => undefined} />}
       viewport={<><div className="grid gap-3 border-b border-slate-200 bg-slate-50 p-3 sm:grid-cols-2"><FormField id="policy-year-filter" label={t("leavePolicy.year")}><input id="policy-year-filter" type="number" min={1900} max={9999} value={year} onChange={(e) => setYear(Number(e.target.value))} className={formControlClassName()} /></FormField><FormField id="policy-employee-filter" label={t("leavePolicy.employee")}><select id="policy-employee-filter" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className={formControlClassName()}><option value="">{t("leavePolicy.allEmployees")}</option>{employees.map((employee) => <option key={employee.publicId} value={employee.publicId}>{employee.lastName}, {employee.firstName} ({employee.employeeNumber})</option>)}</select></FormField></div><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-slate-100 text-xs font-semibold text-slate-600"><tr>
@@ -150,7 +159,7 @@ export default function LeavePoliciesPage() {
                       manualAdjustmentDays: policy.manualAdjustmentDays, notes: policy.notes,
                     });
                   }}>{t("leavePolicy.edit")}</button>
-                  <button className="text-red-700 underline" onClick={() => void remove(policy)}>
+                  <button className="text-red-700 underline" onClick={() => setPendingDeletePolicy(policy)}>
                     {t("leavePolicy.delete")}</button>
                 </td>
               </tr>)}</tbody>

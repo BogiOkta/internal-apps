@@ -74,3 +74,7 @@ export function formSecondaryButtonClassName() {
 export function formDangerButtonClassName() {
   return "inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 }
+
+export function formDangerSolidButtonClassName() {
+  return "inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-red-700 px-3 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppCalendar } from "@/components/calendar";
 import { useAuth } from "@/components/auth-provider";
+import { formPrimaryButtonClassName } from "@/components/form-field";
 import { VacationStatusBadge } from "@/features/vacation/components/vacation-status-badge";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import {
@@ -91,9 +92,9 @@ export function EmployeeVacationDashboard() {
     .slice(0, 6);
 
   return (
-    <VacationWorkspace title={t("vacation.employeePortal.title")}
+    <VacationWorkspace title={t("vacation.workspace.overview")}
       description={t("vacation.employeePortal.description")}
-      commandBar={<Link href="/vacation/requests/new" className={primaryButtonClass}>
+      sectionActions={<Link href="/vacation/requests/new" className={formPrimaryButtonClassName()}>
         {t("vacation.employeePortal.newRequest")}
       </Link>}>
       {errorCode === "current_user_employee_not_linked" ? <UnlinkedState />
@@ -156,11 +157,6 @@ export function EmployeeVacationDashboard() {
     </VacationWorkspace>
   );
 }
-
-export const primaryButtonClass =
-  "inline-flex min-h-10 items-center justify-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
-export const secondaryButtonClass =
-  "inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function statusLabel(status: VacationRequestStatus, t: Translate) {
   return t(`vacation.employeePortal.status.${status.toLowerCase()}` as TranslationKey);

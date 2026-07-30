@@ -120,7 +120,6 @@ const englishTranslations = {
   "navigation.applications": "Applications",
   "navigation.administration": "Administration",
   "navigation.companyAdministration": "Company administration",
-  "navigation.pageCommands": "Page commands",
   "navigation.pageNavigation": "Page navigation",
   "shell.loadingPortal": "Loading portal…",
   "shell.loadingApplications": "Loading applications…",
@@ -172,6 +171,9 @@ const englishTranslations = {
   "vacation.configuration": "Configuration",
   "vacation.configurationDescription": "Vacation types and module settings.",
   "vacation.workspace.navigationLabel": "Vacation workspace navigation",
+  "vacation.workspace.title": "Vacation",
+  "vacation.workspace.description":
+    "Leave requests, leave types, and vacation administration.",
   "vacation.workspace.overview": "Overview",
   "vacation.workspace.employees": "Employees",
   "vacation.workspace.departments": "Departments",
@@ -944,7 +946,6 @@ const serbianLatinTranslations: TranslationDictionary = {
   "navigation.applications": "Aplikacije",
   "navigation.administration": "Administracija",
   "navigation.companyAdministration": "Administracija firme",
-  "navigation.pageCommands": "Komande stranice",
   "navigation.pageNavigation": "Navigacija stranice",
   "shell.loadingPortal": "Učitavanje portala…",
   "shell.loadingApplications": "Učitavanje aplikacija…",
@@ -1003,6 +1004,9 @@ const serbianLatinTranslations: TranslationDictionary = {
     "Vrste odmora i podešavanja modula.",
   "vacation.workspace.navigationLabel":
     "Navigacija radnog prostora Odmori i odsustva",
+  "vacation.workspace.title": "Odmori",
+  "vacation.workspace.description":
+    "Zahtevi za odsustvo, vrste odsustava i administracija odmora.",
   "vacation.workspace.overview": "Pregled",
   "vacation.workspace.employees": "Zaposleni",
   "vacation.workspace.departments": "Organizacione jedinice",

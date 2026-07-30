@@ -1,5 +1,63 @@
 # Internal Apps Platform change history
 
+## 2026-07-30 — Canonical tabbed-screen hierarchy for the Portal platform
+
+- Established `docs/standards/UI_GUIDELINES.md` §2.5 as the canonical layout
+  for every current and future Portal screen with tab navigation: module
+  header (title, description, only truly module-global actions) → tab
+  navigation → active section header (section title, description, and the
+  actions that belong only to that tab) → filters → section content.
+  Tab-specific actions must never be placed in the module header; the tabs
+  answer “Where am I?” and the active section header answers “What can I do
+  here?”. The rule was added to the §1.5 new-screen checklist.
+- Added the shared `PortalSectionHeader` control
+  (`apps/portal/src/components/portal-section-header.tsx`; registered in
+  §1.4): `h2` section title, optional description, primary and secondary
+  action slots, right-aligned actions on desktop that wrap below the
+  description on narrow screens, no feature-specific behavior.
+- Migrated the Vacation workspace to the hierarchy. `VacationWorkspace` now
+  renders a stable module header (`vacation.workspace.title` /
+  `vacation.workspace.description`) and the active section header below the
+  tabs; its `commandBar` / `headerActions` pass-through was replaced by
+  `sectionActions` / `sectionSecondaryActions`. “Novi zahtev” moved to the
+  Requests (and Overview) section header, “Nova vrsta” and “Osveži” to the
+  Leave Types section header, “Evidentiraj odsustvo” to the Request
+  Administration section header, and “Novo pravo” / “Osveži” to the Leave
+  Policies section header. Permissions and business behavior are unchanged.
+- Removed the shell command band between the module header and the tabs
+  (`AppShell` `commandBar`), which had no remaining consumer and is now a
+  prohibited ambiguous layout. Single-section administration pages keep
+  their module-header New/Refresh placement.
+- Extended `PortalAdministrationUiContractTests` with a tabbed-screen
+  contract: migrated Vacation screens must render the canonical active
+  section header, place known tab-specific actions in it, and must not pass
+  actions to the module-level header; `PortalSectionHeader` joined the
+  shared-control ownership and anti-duplication registry checks.
+- Added controlled Playwright smoke
+  `scripts/smoke/tabbed-screen-hierarchy.mjs` for the hierarchy matrix.
+
+## 2026-07-30 — Portal canonical control platform standard
+
+- Established `docs/standards/UI_GUIDELINES.md` §1.3–§1.5 as the Portal
+  platform control standard for every current and future application module:
+  single registry, prohibition on feature-specific copies of approved
+  controls, demonstrated-need rule for new shared components, exact temporary
+  exceptions, and a new-screen checklist.
+- Shared Portal controls under `apps/portal/src/components` now include
+  `ConfirmDialog`, `StatusBadge`, `PortalDateInput`, form-field helpers
+  (`formControlClassName`, primary/secondary/danger/danger-solid buttons),
+  administration shell/toolbar/pagination helpers, and related date utilities.
+- Migrated mechanical consumers across Organization, Identity, Business
+  Calendar, Vacation administration, and Vacation self-service off
+  `window.confirm`, local button/input class constants, and native date
+  inputs.
+- Portal-wide contract tests reject native date inputs, browser confirm/alert,
+  forbidden local class constants, feature-local date display formatters, and
+  known naming patterns for module-prefixed copies of canonical controls.
+- Remaining non-mechanical exceptions remain documented in §1.4 (Vacation
+  request admin pagination/shell, Leave Balances shell, calendar toolbar
+  chrome, domain `VacationStatusBadge`).
+
 ## 2026-07-30 — Vacation administrative absence recording
 
 - Reused `vacation.leave_requests` with one immutable `source` column:

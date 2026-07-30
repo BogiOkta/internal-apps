@@ -11,6 +11,7 @@ import {
   fieldDescriptionIds,
   FormField,
   formControlClassName,
+  formPrimaryButtonClassName,
 } from "@/components/form-field";
 
 type LoginForm = {
@@ -115,7 +116,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting || isLoading}
-            className="w-full rounded-lg bg-blue-700 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`${formPrimaryButtonClassName()} w-full py-2.5`}
           >
             {isSubmitting ? t("login.submitting") : t("login.submit")}
           </button>

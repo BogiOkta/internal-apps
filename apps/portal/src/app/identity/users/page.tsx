@@ -14,6 +14,7 @@ import {
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { useAuth } from "@/components/auth-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import {
   FormField,
@@ -559,29 +560,17 @@ export default function UsersPage() {
                         : t("identity.users.activate")}
                     </button>
                     {isConfirmingStatus && (
-                      <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-                        <p className="text-sm text-amber-900">
-                          {selectedUser.isActive
+                      <ConfirmDialog
+                        message={
+                          selectedUser.isActive
                             ? t("identity.users.deactivateConfirm")
-                            : t("identity.users.activateConfirm")}
-                        </p>
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void changeStatus()}
-                            className={formPrimaryButtonClassName()}
-                          >
-                            {t("identity.users.confirm")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsConfirmingStatus(false)}
-                            className={formSecondaryButtonClassName()}
-                          >
-                            {t("identity.users.cancel")}
-                          </button>
-                        </div>
-                      </div>
+                            : t("identity.users.activateConfirm")
+                        }
+                        confirmLabel={t("identity.users.confirm")}
+                        cancelLabel={t("identity.users.cancel")}
+                        onConfirm={() => void changeStatus()}
+                        onCancel={() => setIsConfirmingStatus(false)}
+                      />
                     )}
                   </div>
                 </div>
