@@ -1,5 +1,30 @@
 # Internal Apps Platform change history
 
+## 2026-08-02 — Vacation leave balance compatibility mirror
+
+- Added an atomic compatibility-mirror upsert to the existing entitlement,
+  carry-over, and manual-adjustment ledger posting transaction. The matching
+  `vacation.leave_balances` credit buckets are derived from accepted ledger
+  entries, so clean scopes are created, retries do not double-apply, and audit,
+  ledger, and mirror changes roll back together.
+- Migration 034 widens the three compatibility credit columns to half-day
+  precision. Existing request approval and cancellation continue to own
+  `used_days` and their linked ledger consumption/reversal behavior.
+- Added focused runtime-database integration coverage for clean-scope creation,
+  all three credit commands, idempotent replay, ANNUAL_LEAVE approval and
+  cancellation agreement, and failed-post rollback. Ledger-only cutover
+  remains deferred.
+- Validation applied/discovered all 34 migrations with no pending scripts,
+  built the API with zero warnings/errors, passed the database-enabled mirror
+  tests 2/2 and focused non-database Vacation model/contract tests 9/9, and
+  ran the database-enabled Leave Request ledger class 3 tests (2 passed, 1
+  failed for the known absent retained runtime fixture). The full
+  database-enabled API suite ran 109 tests: 107 passed, 2 failed, and 0
+  skipped. Both failures reproduced against clean HEAD
+  `d2b5f7f3d882dc2ab80ef29699e31652a54ba0b4`: the Organization employee
+  Portal source-contract assertion and the missing `LV2SMOKE-% sufficient`
+  submitted-fixture query are pre-existing and unrelated.
+
 ## 2026-08-02 — Vacation Request Administration shell migration
 
 - Migrated `/vacation/admin/requests` to the canonical administration

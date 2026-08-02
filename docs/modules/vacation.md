@@ -41,9 +41,9 @@ balance and employee history derive from those entries. Categories, separate
 entitlement periods, dual-control workflows, annual closing, buckets,
 allocations, and generic extensibility are explicitly deferred. ADR-0005 and
 [`ADR-0006`](../adr/ADR-0006-leave-balance-ledger-logical-persistence.md) are
-normative. The LV.2 database and API foundation is implemented; projections
-and cutover remain open. The existing mutable yearly balance remains the
-implemented baseline until a separate cutover is approved.
+normative. The LV.2 database and API foundation is implemented; ledger-only
+cutover remains open. The existing mutable yearly balance is maintained as a
+derived compatibility mirror until a separate cutover is approved.
 
 Migration 020 adds the LV.2 append-only entry foundation. It records the
 five approved entry kinds in the employee + Leave Type + calendar-year scope,
@@ -59,11 +59,17 @@ derived current balance and acceptance-ordered history, and appends annual
 entitlement, carry-over, or reasoned manual-adjustment entries. It reuses the
 temporary `identity.users.manage` permission and mirrors only input-shape
 validation; API authorization and ledger invariants remain authoritative.
+Annual-entitlement, carry-over, and manual-adjustment posting creates or
+updates the matching `vacation.leave_balances` compatibility row in the same
+service-owned transaction as the append-only entry and audit. Its three credit
+buckets are recalculated from accepted entries with half-day precision, so a
+duplicate idempotent source cannot double-apply the mirror.
 Balance-consuming request approval posts one request-consumption entry using
 the request's stored working-day quantity; cancelling an approved request posts
-its exact linked reversal. The request transition, legacy baseline mutation,
+its exact linked reversal. The request transition, compatibility-mirror
+used-day mutation,
 ledger posting, request history, and platform audit commit together. Annual
-closing, expiry, buckets, allocation, and balance projection remain excluded.
+closing, expiry, buckets, allocation, and ledger-only cutover remain excluded.
 
 The Administrator Portal includes the request list and request details
 workspace. Submitted requests can be approved, rejected, or cancelled;

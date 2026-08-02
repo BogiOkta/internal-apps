@@ -47,6 +47,46 @@ internal sealed class LeaveBalanceLedgerRepository(NpgsqlDataSource dataSource)
                 transaction, cancellationToken: token));
     }
 
+    public async Task UpsertCompatibilityBalanceAsync(NpgsqlConnection connection,
+        NpgsqlTransaction transaction, PostLeaveBalanceEntryCommand command,
+        CancellationToken token)
+    {
+        const string sql = """
+            INSERT INTO vacation.leave_balances
+                (employee_id, leave_type_id, year, entitlement_days,
+                 carry_over_days, adjustment_days)
+            SELECT employees.id, leave_types.id, @LeaveYear,
+                   coalesce(sum(entries.quantity_days)
+                       FILTER (WHERE entries.entry_kind = 'annual_entitlement'), 0),
+                   coalesce(sum(entries.quantity_days)
+                       FILTER (WHERE entries.entry_kind = 'carry_over'), 0),
+                   coalesce(sum(entries.quantity_days)
+                       FILTER (WHERE entries.entry_kind = 'manual_adjustment'), 0)
+            FROM organization.employees AS employees
+            CROSS JOIN vacation.leave_types AS leave_types
+            INNER JOIN vacation.leave_balance_entries AS entries
+                ON entries.employee_id = employees.id
+               AND entries.leave_type_id = leave_types.id
+               AND entries.leave_year = @LeaveYear
+            WHERE employees.public_id = @EmployeeId
+              AND leave_types.public_id = @LeaveTypeId
+            GROUP BY employees.id, leave_types.id
+            ON CONFLICT (employee_id, leave_type_id, year) DO UPDATE
+            SET entitlement_days = excluded.entitlement_days,
+                carry_over_days = excluded.carry_over_days,
+                adjustment_days = excluded.adjustment_days,
+                updated_at = now()
+            """;
+        var affected = await connection.ExecuteAsync(new CommandDefinition(sql, new
+        {
+            command.EmployeeId,
+            command.LeaveTypeId,
+            command.LeaveYear
+        }, transaction, cancellationToken: token));
+        if (affected != 1)
+            throw new InvalidOperationException("The leave balance scope could not be resolved.");
+    }
+
     public Task InsertRequestConsumptionAsync(NpgsqlConnection connection,
         NpgsqlTransaction transaction, LeaveRequestEntity request, Guid actor,
         CancellationToken token) => InsertRequestEntryAsync(connection, transaction, request,

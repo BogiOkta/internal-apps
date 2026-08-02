@@ -492,9 +492,9 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         public string LeaveTypeNameSr { get; set; } = "";
         public string LeaveTypeNameEn { get; set; } = "";
         public int Year { get; set; }
-        public int EntitlementDays { get; set; }
-        public int CarryOverDays { get; set; }
-        public int AdjustmentDays { get; set; }
+        public decimal EntitlementDays { get; set; }
+        public decimal CarryOverDays { get; set; }
+        public decimal AdjustmentDays { get; set; }
         public int UsedDays { get; set; }
     }
 

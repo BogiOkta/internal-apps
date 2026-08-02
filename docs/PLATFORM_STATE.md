@@ -83,7 +83,13 @@
 
 ## Vacation module
 
-- Database foundation: complete; migrations 012–017 are applied and validated.
+- Database foundation: complete; migrations through 034 are applied and validated.
+- Leave balance compatibility mirror: annual-entitlement, carry-over, and
+  manual-adjustment ledger commands now create or refresh the matching
+  `vacation.leave_balances` credit buckets from accepted entries in the same
+  transaction. Request approval/cancellation retain their established
+  `used_days`, consumption, and reversal behavior. Half-day precision is
+  preserved; ledger-only cutover remains deferred.
 - Administrative absence recording: implemented on the existing leave-request
   domain. Migration 033 adds immutable request source values; administrative
   entries are immediately approved and reuse balance, ledger, history, audit,
@@ -120,6 +126,20 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- Vacation leave balance compatibility mirror: migration 034 applied to the
+  configured development database (34 migrations discovered, no pending
+  scripts); focused database-enabled compatibility-mirror tests passed 2/2,
+  focused non-database Vacation model/contract tests passed 9/9, and the
+  Leave Request ledger integration class ran 3 tests (2 passed, 1 failed for
+  the known absent runtime fixture). API Debug build passed with zero
+  warnings/errors; `git diff --check` clean. The full database-enabled API
+  suite ran 109 tests: 107 passed, 2 failed, and 0 skipped. Both failures were
+  reproduced against clean HEAD `d2b5f7f3d882dc2ab80ef29699e31652a54ba0b4`
+  before the compatibility-mirror changes and are unrelated
+  (`OrganizationEmployeeDeletionTests.PortalContract_HasCompactGridSafeDependenciesAndConfirmedDelete`
+  and `LeaveRequestLedgerIntegrationTests.RequestConsumption_ExecutesAgainstTheConfiguredRuntimeDatabaseContract`).
+  Vacation v1 is not newly claimed complete by this increment.
 
 - Vacation Request Administration shell migration: Portal strict TypeScript
   passed; Portal production build passed (`/vacation/admin/requests`

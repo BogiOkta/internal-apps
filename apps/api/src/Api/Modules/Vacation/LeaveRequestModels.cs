@@ -83,11 +83,11 @@ internal sealed record LeaveBalanceResponse(
     string LeaveTypeCode,
     string LeaveTypeName,
     int Year,
-    int EntitlementDays,
-    int CarryOverDays,
-    int AdjustmentDays,
+    decimal EntitlementDays,
+    decimal CarryOverDays,
+    decimal AdjustmentDays,
     int UsedDays,
-    int AvailableDays);
+    decimal AvailableDays);
 
 internal sealed record PagedLeaveRequestsResponse(
     IReadOnlyList<LeaveRequestResponse> Items,
@@ -156,11 +156,11 @@ internal sealed record LeaveTypeEntity(
 internal sealed record LeaveBalanceEntity(
     long Id,
     Guid PublicId,
-    int EntitlementDays,
-    int CarryOverDays,
-    int AdjustmentDays,
+    decimal EntitlementDays,
+    decimal CarryOverDays,
+    decimal AdjustmentDays,
     int UsedDays)
 {
-    public int AvailableDays =>
+    public decimal AvailableDays =>
         EntitlementDays + CarryOverDays + AdjustmentDays - UsedDays;
 }

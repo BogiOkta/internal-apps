@@ -116,18 +116,22 @@ exact approved-cancellation reversal.
 
 ### Leave balances
 
-`vacation.leave_balances` persists entitlement, carry-over, adjustment, and
-used days for one employee, leave type, and year. That combination is unique.
-The current request application logic changes `used_days` transactionally on
-approval and approved cancellation.
+`vacation.leave_balances` is a derived compatibility mirror for one employee,
+leave type, and year; that combination is unique. Existing annual-entitlement,
+carry-over, and manual-adjustment ledger commands recalculate the matching
+credit columns from accepted `vacation.leave_balance_entries` in the same
+service-owned transaction as the new entry and audit event. Request approval
+and approved cancellation continue to update `used_days` transactionally while
+posting consumption and exact reversal entries. Credit columns use half-day
+precision so employee and ledger reads preserve the ledger quantity contract.
 
-This mutable yearly balance is the implemented baseline, not the approved
-future source of truth for a Leave Balance Ledger. The target ownership,
+This mutable yearly balance remains a compatibility model, not the approved
+source of truth for the Leave Balance Ledger. The target ownership,
 responsibility boundaries, and invariants are defined by
 [ADR-0005](../adr/ADR-0005-leave-balance-ledger-boundaries.md), and the logical
 persistence model is defined by
 [ADR-0006](../adr/ADR-0006-leave-balance-ledger-logical-persistence.md). No
-physical schema, migration, or cutover has been approved.
+ledger-only cutover has been approved.
 
 ### Leave policies
 
@@ -171,10 +175,13 @@ posts one negative request-consumption entry from the request's persisted
 working-day quantity, and cancellation of an approved request posts one exact,
 linked positive reversal. The request row lock plus the ledger's scoped
 transaction lock and unique business causes prevent duplicate posting and
-concurrent negative ledger balances. Transition, legacy baseline mutation,
-ledger entry, transition history, and platform audit commit atomically; a
-ledger insufficiency rolls the transition back. The mutable `leave_balances`
-baseline remains in place pending a separately approved cutover.
+concurrent negative ledger balances. Transition, compatibility-mirror
+mutation, ledger entry, transition history, and platform audit commit
+atomically; a ledger insufficiency rolls the transition back. Credit-side
+ledger posting also creates or refreshes the matching `leave_balances` row and
+derives each credit bucket from accepted entries, so idempotent replay cannot
+double-apply the mirror. The compatibility mirror remains in place pending a
+separately approved ledger-only cutover.
 
 For request-derived entries, migration 020 stores the internal bigint request
 key in `leave_request_id` and its decimal text in `source_reference`; the
