@@ -4,12 +4,12 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Leave Balances administration-shell migration.
-  `/vacation/admin/leave-balances` uses `AdministrationPageBody`,
+- Latest functional milestone: Vacation Request Administration shell migration.
+  `/vacation/admin/requests` uses `AdministrationPageBody`,
   `AdministrativeGridToolbar`, `AdministrativeGridShell` with `fillViewport`,
-  `GridPagination`, right-rail append form, and `PortalNotification` via
-  `detailsNotification`, while preserving explicit scope load, ledger posting,
-  permissions, and API contracts.
+  `GridPagination` (server-backed 20/50/100), a read-only selection side panel,
+  and `PortalNotification` via `detailsNotification`, while preserving filters,
+  details-route workflow actions, permissions, and API contracts.
 
 ## Platform foundation
 
@@ -45,17 +45,17 @@
   `AdministrativeGridToolbar`, and `GridPagination`. Locale and appearance
   are owned by `LocaleProvider` and `AppearanceProvider` (`/settings`).
   Organization Employees and Departments, Identity Users, User–Employee
-  links, Vacation Leave Types, Leave Policies, Leave Balances, and Business
-  Calendar non-working days share stable right-rail operation feedback.
-  Portal-wide regression tests reject native `type="date"`, `window.confirm` /
-  `window.alert`, forbidden local input/button class constants,
-  feature-local date display formatters, known module-prefixed copies of
-  canonical controls, feature-local tab separator chrome, layout-shifting
-  operation banners above migrated administration grids, feature-local
-  notification dismiss timers, and text Close/Zatvori dismiss controls
-  inside operation notifications. Documented remaining non-mechanical
-  exceptions: Vacation request administration pagination/shell, calendar
-  toolbar chrome, and domain `VacationStatusBadge` (§1.4 / §7.5).
+  links, Vacation Leave Types, Leave Policies, Leave Balances, Vacation
+  Request Administration, and Business Calendar non-working days share
+  stable right-rail operation feedback. Portal-wide regression tests reject
+  native `type="date"`, `window.confirm` / `window.alert`, forbidden local
+  input/button class constants, feature-local date display formatters, known
+  module-prefixed copies of canonical controls, feature-local tab separator
+  chrome, layout-shifting operation banners above migrated administration
+  grids, feature-local notification dismiss timers, and text Close/Zatvori
+  dismiss controls inside operation notifications. Documented remaining
+  non-mechanical exceptions: calendar toolbar chrome and domain
+  `VacationStatusBadge` (§1.4 / §7.5).
 - Tabbed screen hierarchy (platform rule, §2.5): every Portal screen with
   multiple tabs uses module header (stable `h1` + module description; only
   genuinely module-global actions) → tab navigation via
@@ -103,7 +103,10 @@
   the dashboard, balances, own request list and creation, calendar, details and
   transition history, cancellation, and the ownership-scoped history endpoint.
 - Administrator Portal: request list, filters, details, history, approval,
-  rejection, and administrator cancellation are implemented.
+  rejection, and administrator cancellation are implemented. The request
+  administration list is migrated to the canonical administration shell with
+  server-backed `GridPagination`; approve/reject/cancel remain on the details
+  route with `ConfirmDialog`.
 - Annual leave entitlement administration: the existing employee/year CRUD
   route presents current-year entitlement, carry-over, expiry, manual
   adjustment, and a non-persisted derived total. It uses `PortalDateInput` and
@@ -118,9 +121,18 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
-- Leave Balances administration-shell migration: Portal strict TypeScript
-  passed; Portal production build passed (`/vacation/admin/leave-balances`
-  included); focused
+- Vacation Request Administration shell migration: Portal strict TypeScript
+  passed; Portal production build passed (`/vacation/admin/requests`
+  included); focused `PortalAdministrationUiContractTests`,
+  `VacationRequestAdministrationAuthorizationTests`, and
+  `AdministrativeAbsenceContractTests` passed (35/35), including canonical
+  shell ownership, `GridPagination`, `detailsNotification`, Record/Refresh
+  section actions, preserved server filters/paging, and details-route
+  workflow actions. `git diff --check` clean.
+
+- Leave Balances administration-shell migration (prior): Portal strict
+  TypeScript passed; Portal production build passed
+  (`/vacation/admin/leave-balances` included); focused
   `PortalAdministrationUiContractTests` and `LeaveBalancePortalContractTests`
   passed (28/28), including canonical shell ownership, `detailsNotification`,
   Load/Refresh section actions, preserved ledger validation, and no deferred
@@ -360,13 +372,12 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Leave Balances administration-shell migration to the canonical Portal Design
+Vacation Request Administration shell migration to the canonical Portal Design
 System. Complete.
 
 ## Next task
 
-No follow-on scope is approved. Remaining non-mechanical work is Vacation
-request administration full administration-shell migration.
+No follow-on scope is approved.
 
 ## Session instruction
 

@@ -330,20 +330,13 @@ public sealed class PortalAdministrationUiContractTests
             new[] { "apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "admin", "leave-balances", "page.tsx" },
+            new[] { "apps", "portal", "src", "features", "vacation", "components", "admin-vacation-request-list.tsx" },
         })
         {
             var source = Read(parts);
             Assert.Contains("GridPagination", source);
             Assert.DoesNotContain("GridFooter", source);
         }
-
-        // Documented temporary exception: vacation request admin list.
-        var adminList = Read("apps", "portal", "src", "features", "vacation",
-            "components", "admin-vacation-request-list.tsx");
-        Assert.DoesNotContain("GridPagination", adminList);
-        Assert.Contains("pageSize = 25", adminList);
-        Assert.Contains("formControlClassName", adminList);
-        Assert.Contains("formPrimaryButtonClassName", adminList);
     }
 
     private static List<string> ScanPortalSource(Func<string, string, string?> match)
@@ -408,6 +401,8 @@ public sealed class PortalAdministrationUiContractTests
             "components", "admin-vacation-request-list.tsx");
         Assert.Contains("sectionActions", adminList);
         Assert.Contains("vacation.admin.record", adminList);
+        Assert.Contains("sectionSecondaryActions", adminList);
+        Assert.Contains("vacation.admin.refresh", adminList);
 
         var policies = Read("apps", "portal", "src", "app", "vacation",
             "admin", "policies", "page.tsx");
@@ -525,6 +520,8 @@ public sealed class PortalAdministrationUiContractTests
         {
             Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx"),
             Read("apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx"),
+            Read("apps", "portal", "src", "features", "vacation",
+                "components", "admin-vacation-request-list.tsx"),
             Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx"),
             Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx"),
             Read("apps", "portal", "src", "app", "identity", "users", "page.tsx"),
@@ -587,6 +584,7 @@ public sealed class PortalAdministrationUiContractTests
             "apps/portal/src/app/organization/user-employee-links/page.tsx",
             "apps/portal/src/app/vacation/admin/policies/page.tsx",
             "apps/portal/src/app/vacation/admin/leave-balances/page.tsx",
+            "apps/portal/src/features/vacation/components/admin-vacation-request-list.tsx",
         };
 
         foreach (var relative in shellPages)
@@ -918,6 +916,51 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("\"leaveBalance.refresh\": \"Osveži\"", translations);
         Assert.Contains("\"leaveBalance.tableLabel\":", translations);
         Assert.Contains("\"leaveBalance.selectScope\":", translations);
+    }
+
+    [Fact]
+    public void VacationRequestAdministration_UsesCanonicalShellAndPreservesWorkflowNavigation()
+    {
+        var list = Read("apps", "portal", "src", "features", "vacation",
+            "components", "admin-vacation-request-list.tsx");
+        var details = Read("apps", "portal", "src", "features", "vacation",
+            "components", "admin-vacation-request-details.tsx");
+        var translations = Read("apps", "portal", "src", "i18n", "translations.ts");
+
+        Assert.Contains("AdministrationPageBody", list);
+        Assert.Contains("AdministrativeGridShell", list);
+        Assert.Contains("AdministrativeGridToolbar", list);
+        Assert.Contains("GridPagination", list);
+        Assert.Contains("GridStateRows", list);
+        Assert.Contains("fillViewport", list);
+        Assert.Contains("contentFillsViewport", list);
+        Assert.Contains("PortalNotification", list);
+        Assert.Contains("detailsNotification", list);
+        Assert.Contains("portalActionContent", list);
+        Assert.Contains("sectionActions", list);
+        Assert.Contains("sectionSecondaryActions", list);
+        Assert.Contains("VacationStatusBadge", list);
+        Assert.DoesNotContain("GridFooter", list);
+        Assert.DoesNotContain("headerActions", list);
+        Assert.DoesNotContain("pageSize = 25", list);
+        Assert.DoesNotContain("type=\"date\"", list, StringComparison.Ordinal);
+
+        // Server-backed filters and paging remain; workflow actions stay on details.
+        Assert.Contains("includes(vacationRequestsManagePermission)", list);
+        Assert.Contains("listAdminVacationRequests", list);
+        Assert.Contains("pageSize", list);
+        Assert.Contains("requests/record", list);
+        Assert.Contains("/vacation/admin/requests/${request.publicId}", list);
+        Assert.Contains("ConfirmDialog", details);
+        Assert.Contains("approveAdminVacationRequest", details);
+        Assert.Contains("rejectAdminVacationRequest", details);
+        Assert.Contains("cancelAdminVacationRequest", details);
+
+        Assert.Contains("\"vacation.admin.refresh\": \"Refresh\"", translations);
+        Assert.Contains("\"vacation.admin.refresh\": \"Osveži\"", translations);
+        Assert.Contains("\"vacation.admin.tableLabel\":", translations);
+        Assert.Contains("\"vacation.admin.selectForDetails\":", translations);
+        Assert.Contains("\"vacation.admin.emptyDescription\":", translations);
     }
 
     private static string Read(params string[] parts)

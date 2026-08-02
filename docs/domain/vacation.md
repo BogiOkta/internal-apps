@@ -382,10 +382,11 @@ transition attempts write no successful history or audit record.
 The permission-aware Administrator Portal uses
 `/vacation/admin/requests` for the paginated request workspace and
 `/vacation/admin/requests/{requestId}` for details and history.
-It supports server-backed status, Leave Type, employee text, and year filters,
-with a responsive table/card presentation. Submitted requests expose approval,
-rejection, and administrator cancellation; approved requests expose
-administrator cancellation; terminal requests expose no transition actions.
+The list uses the canonical administration shell with server-backed status,
+Leave Type, source, employee text, and year filters and `GridPagination`.
+Submitted requests expose approval, rejection, and administrator cancellation
+on the details route; approved requests expose administrator cancellation;
+terminal requests expose no transition actions.
 
 No Vacation-owned public-holiday calendar, notification, background job,
 manager hierarchy, configurable workflow, or physical delete is implemented.

@@ -1,5 +1,19 @@
 # Internal Apps Platform change history
 
+## 2026-08-02 — Vacation Request Administration shell migration
+
+- Migrated `/vacation/admin/requests` to the canonical administration
+  foundation: `AdministrationPageBody`, `AdministrativeGridToolbar`,
+  `AdministrativeGridShell` with `fillViewport`, server-backed
+  `GridPagination` (20/50/100), selection side panel, and right-rail
+  `PortalNotification` via `detailsNotification`.
+- Preserved status/source/leave-type/year filters, employee search, Record
+  absence navigation, details-route approve/reject/cancel with
+  `ConfirmDialog`, permissions, and API contracts. Removed the temporary
+  fixed `pageSize` 25 prev/next exception from `UI_GUIDELINES` §1.4 / §7.5.
+- Extended `PortalAdministrationUiContractTests` with focused Vacation request
+  administration shell coverage.
+
 ## 2026-08-02 — Leave Balances administration-shell migration
 
 - Migrated `/vacation/admin/leave-balances` to the canonical administration
