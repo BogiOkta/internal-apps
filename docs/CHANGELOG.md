@@ -1,5 +1,41 @@
 # Internal Apps Platform change history
 
+## 2026-08-02 — Portal feedback visual language polish
+
+- Polished `WorkspaceNavigation`: higher-contrast inactive medium/semibold
+  labels and subtle tile-like inter-tab separators (Microsoft 365 / Azure
+  Portal style), keeping the active underline, compact horizontal layout,
+  keyboard navigation, and overflow scrolling. Feature pages still must not
+  restyle tabs locally.
+- Softened `PortalNotification` surfaces (soft green / blue / amber / rose),
+  refined spacing, radius, shadow, icon alignment, dismiss hover, and
+  progress-indicator styling while preserving auto-dismiss, X dismiss, pause
+  on hover/focus, and AA contrast.
+- Softened `ConfirmDialog` to a calm rose decision surface with clearer title
+  and description spacing; solid danger confirm remains strong, cancel stays
+  neutral.
+- Added `UI_GUIDELINES` §1.7 Visual language for navigation appearance,
+  notification color philosophy, ConfirmDialog philosophy, and the
+  validation / confirmation / notification concept separation.
+
+## 2026-07-30 — Canonical transient Portal notification behavior
+
+- Extended `PortalNotification` as the single canonical operation-feedback
+  command: soft success/warning/error/info surfaces, X-only dismiss (no text
+  Close/Zatvori button), centralized default durations
+  (`PORTAL_NOTIFICATION_DEFAULT_DURATION_MS`: success 5s, info 6s, warning 8s,
+  error 10s), pause on hover and keyboard focus with remaining-time resume,
+  timer cleanup on unmount/replacement, accessible dismiss labeling, and a
+  subtle expiration progress indicator owned by the shared component.
+- Refined `ConfirmDialog` destructive styling to a restrained rose warning
+  surface while keeping the solid danger confirm button visually strong;
+  confirmations remain non-transient and separate from operation notifications.
+- Documented persistent versus transient modes, validation-vs-notification
+  rules, and the new-screen checklist updates in `UI_GUIDELINES` §1.4 / §1.6 /
+  §1.5 / §9.1 / §9.2. Extended `PortalAdministrationUiContractTests` for
+  duration centralization, X-only dismiss, no feature-local dismiss timers,
+  and non-transient `ConfirmDialog`.
+
 ## 2026-07-30 — Portal navigation, action-icon, and notification polish
 
 - Extended `WorkspaceNavigation` as the canonical tab control: medium/semibold

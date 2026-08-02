@@ -46,7 +46,7 @@ export function WorkspaceNavigation({
               key={item.label}
               className={`flex items-stretch ${
                 showLeadingSeparator
-                  ? "before:mx-0.5 before:my-2.5 before:w-px before:shrink-0 before:self-stretch before:bg-slate-200 before:content-[''] dark:before:bg-slate-600"
+                  ? "before:mx-1 before:my-2.5 before:w-[3px] before:shrink-0 before:self-stretch before:rounded-[2px] before:bg-slate-200/80 before:content-[''] dark:before:bg-slate-600/55"
                   : ""
               }`}
             >
@@ -57,7 +57,7 @@ export function WorkspaceNavigation({
                   className={`flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 ${
                     isActive
                       ? "border-blue-700 font-semibold text-blue-800 dark:border-blue-400 dark:text-blue-300"
-                      : "border-transparent font-medium text-slate-600 hover:border-slate-300 hover:text-slate-950 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-50"
+                      : "border-transparent font-medium text-slate-700 hover:border-slate-300 hover:text-slate-950 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-slate-50"
                   }`}
                 >
                   {item.label}

@@ -167,7 +167,7 @@ unless a row says otherwise.
 | Icon-only button | Compact icon commands | Semantic `<button>` + accessible name; `PortalActionIcon` | Shared/calendar toolbars | Visible focus; `aria-label` | Icon buttons without accessible names | `calendar-toolbar` keeps local sizing for calendar chrome | None |
 | Field wrapper | Label, required, hint, error | `FormField`, `fieldDescriptionIds` | `@/components/form-field` | Stable IDs; hint/error wiring | Divergent hand-rolled label/error blocks for ordinary fields | Dense grid filter cells may use `sr-only` labels | None beyond consumer contracts |
 | Confirmation dialog | Destructive/consequential confirm | `ConfirmDialog` | `@/components/confirm-dialog` | Message; optional title/children; confirm/cancel; destructive tone; no browser `confirm` | `window.confirm` / `confirm()`; duplicated amber/red panels | None | Yes — rejects `window.confirm` / `window.alert` |
-| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` | `@/components/portal-notification` | Variants; dismiss; aria-live; stable placement that does not shift the primary grid | Full-width operation banners above administration grids; parallel toast stacks | Field/form validation stays beside the field (§1.6) | Yes — migrated admin pages |
+| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` | `@/components/portal-notification` | Variants; X-only dismiss; canonical auto-dismiss durations; pause on hover/focus; aria-live; stable placement that does not shift the primary grid; optional progress indicator owned by the shared component | Full-width operation banners above administration grids; parallel toast stacks; feature-local toast timers; text “Close” / “Zatvori” dismiss buttons | Field/form validation stays beside the field (§1.6); `ConfirmDialog` is not a notification | Yes — migrated admin pages |
 | Modal/dialog | Overlay dialogs beyond inline confirm | Not yet a shared overlay primitive | — | Prefer `ConfirmDialog` for confirmations | Ad-hoc full-screen modal frameworks | Calendar popovers owned by date controls | None |
 | Status badge | Compact status labels | `StatusBadge` for active/inactive/yes-no; `VacationStatusBadge` for leave-request statuses | `@/components/status-badge`; `@/features/vacation/components/vacation-status-badge` | Non-color indicators remain with text labels | Parallel active/inactive chip chrome | Domain request statuses stay in `VacationStatusBadge` | Partial |
 | Loading state | In-progress data | `GridStateRows` inside admin grids; localized page pulse/message elsewhere | `@/components/admin-data-grid` | Stable shell geometry | Full-page spinners that collapse admin chrome | Self-service pages keep localized loading blocks | Admin pages via existing contracts |
@@ -176,7 +176,7 @@ unless a row says otherwise.
 | Pagination | Admin list footers | `GridPagination` (20/50/100) | `@/components/grid-pagination` | Range summary; page size; first/prev/next/last | Second count rows; `GridFooter` on Organization-aligned pages | Vacation request administration retains server-driven prev/next with API `pageSize` 25 until that shell is migrated | Yes for migrated admin pages; allowlisted exception file for vacation admin list |
 | Administration page header/body | Title, description, New/Refresh; viewport fill chain | Shell `headerActions`; `AdministrationPageBody` | `@/components/administration-page-body` (+ header via shell) | Title left; New then Refresh right | Duplicate header chrome | Dashboard and pure self-service | Migrated admin pages |
 | Active section header | Section title, description, and tab-specific actions on screens with tab navigation (§2.5) | `PortalSectionHeader` | `@/components/portal-section-header` | Rendered below the tabs; `h2` title left; optional description; primary then secondary actions right on desktop, wrapping below on narrow screens | Tab-specific actions in the module header or in a command band above the tabs; page-local section-header chrome | None | Yes — tabbed Vacation screens contract test |
-| Tab navigation | Secondary section tabs under the module header | `WorkspaceNavigation` | `@/components/workspace-navigation` | Medium/semibold labels; subtle separators between adjacent tabs only; active underline; hover/focus; overflow scroll; light/dark | Feature-local tab separator chrome; boxed/pill tabs for this navigation purpose | Unrelated segmented controls/filters | Yes — Vacation workspace + anti-duplication |
+| Tab navigation | Secondary section tabs under the module header | `WorkspaceNavigation` | `@/components/workspace-navigation` | Medium/semibold labels; higher-contrast inactive labels; subtle tile-like separators between adjacent tabs only; active underline; hover/focus; overflow scroll; light/dark | Feature-local tab separator chrome; boxed/pill tabs for this navigation purpose | Unrelated segmented controls/filters | Yes — Vacation workspace + anti-duplication |
 | Administration toolbar | Search, filters, export | `AdministrativeGridToolbar` | `@/components/administrative-grid-toolbar` | Search → filters → export (export uses canonical export icon) | Parallel filter command bars on admin grids | Vacation request admin filter form remains until shell migration | Migrated admin pages |
 | Administrative grid shell | Bordered grid + optional side panel | `AdministrativeGridShell` | `@/components/admin-data-grid` | Internal scroll; stable states; optional `detailsNotification` below right-rail details/confirmation; `fillViewport` only with body chain | Parallel bordered grid/panel frames; operation banners above the grid | Non-tabular forms; Leave Balances / Vacation request admin pending shell rollout | Migrated admin pages |
 | Calendar | Month/week/day/agenda | `AppCalendar` | `@/components/calendar` | Platform locale/appearance; list/agenda alternative | Forked FullCalendar setup in features | None | Demo/consumer contracts |
@@ -198,6 +198,8 @@ and error messages MUST use `PortalNotification` in a stable region that does
 not shift the primary grid, filters, or page chrome. Full-width operation
 banners above administration grids are prohibited. Field and form validation
 messages remain beside the relevant control and may participate in layout.
+Feature modules MUST NOT implement local toast timers, duplicate dismiss
+buttons, or a second notification/toast component.
 
 ### 1.6 Validation messages vs operation notifications
 
@@ -206,6 +208,8 @@ Two distinct message categories:
 1. **Field or form validation** — stays next to the relevant field or form
    (`FormField` error, form-level summary when needed). May change local
    layout around the form. Uses `aria-invalid` / `aria-describedby` for fields.
+   Validation messages are not `PortalNotification` instances and MUST NOT
+   auto-dismiss via the notification timer.
 2. **Operation feedback** — create/update/delete/activate results, delete
    conflicts, refresh failures, export failures, and similar page-operation
    outcomes. Uses `PortalNotification` only. Placement:
@@ -216,9 +220,76 @@ Two distinct message categories:
    - pages without a right rail: a stable non-layout-shifting host owned by
      the shared notification pattern (do not invent a second toast stack).
 
+**`PortalNotification` modes (normative):**
+
+| Mode | When | Behavior |
+|---|---|---|
+| Transient (default when `onDismiss` is provided) | Completed operation results | Auto-dismiss after the variant default duration (or `durationMs`); X-only dismiss; pause while hovered or keyboard-focused inside the card; resume with remaining time; replacing the notification content resets the timer |
+| Persistent | Rare explicit `autoDismiss={false}` | Remains until dismissed via X (when `onDismiss` is provided); no auto-dismiss timer |
+
+Default transient durations (centralized in
+`PORTAL_NOTIFICATION_DEFAULT_DURATION_MS`):
+
+| Variant | Duration |
+|---|---|
+| `success` | 5000 ms |
+| `info` | 6000 ms |
+| `warning` | 8000 ms |
+| `error` | 10000 ms |
+
+Dismiss control: X icon only, with an accessible `dismissLabel` (`aria-label`).
+Do not render a separate text “Close” / “Zatvori” button when the X control
+exists. Soft variant colors (soft green / amber / rose / blue) must remain
+readable in light and dark mode. Any expiration progress indicator is owned
+by `PortalNotification`, not by feature pages.
+
 Confirmation (`ConfirmDialog`) and completed-operation notification remain
-separate visual blocks. Do not auto-dismiss destructive or important error
-guidance too quickly; always offer dismiss where the message is transient.
+separate visual blocks. `ConfirmDialog` MUST NOT auto-dismiss and MUST keep
+explicit confirm and cancel actions. Do not turn confirmations into transient
+notifications.
+
+### 1.7 Visual language (Portal feedback and navigation)
+
+These three feedback concepts MUST remain visually distinct. Improving one
+shared control improves every consumer; feature pages MUST NOT restyle them.
+
+**WorkspaceNavigation**
+
+- Compact horizontal underline tabs, never boxed or pill-shaped.
+- Active tab keeps the platform blue underline and semibold label.
+- Inactive labels use medium/semibold weight with higher contrast so tabs
+  remain readable as enterprise navigation, not muted chrome.
+- Adjacent tabs are divided by subtle tile-like separators (soft short
+  vertical tiles), not hairline borders. Separators appear only between
+  tabs—never before the first or after the last.
+- Only `WorkspaceNavigation` owns this appearance.
+
+**Notification color philosophy (`PortalNotification`)**
+
+- Calm, temporary information. Soft surfaces, subtle borders, dark readable
+  text, and a matching icon. Avoid saturated alarm colors.
+- Success: soft green surface, subtle green border, dark green text.
+- Info: soft blue surface, subtle blue border, dark blue text.
+- Warning: soft amber surface, subtle amber border, dark amber text.
+- Error: soft rose surface, subtle rose border, dark red text.
+- Spacing, radius, shadow, progress indicator, and dismiss hover stay
+  restrained and elegant. Contrast remains AA-compliant in light and dark.
+
+**ConfirmDialog philosophy**
+
+- A decision surface, not a toast. Soft rose (or amber for non-destructive)
+  warning background with a subtle border; clear title; readable description.
+- The danger confirm button stays visually strong; cancel stays neutral.
+- Never a dark burgundy or heavily saturated block that overwhelms the rail.
+- Never auto-dismisses; always requires an explicit button choice.
+
+**Concept separation**
+
+| Concept | Role | Character |
+|---|---|---|
+| Validation | Local, inline, persistent field/form guidance | Adjacent to controls; not a toast |
+| Confirmation | Decision with calm warning and explicit buttons | Non-transient `ConfirmDialog` |
+| Notification | Calm temporary operation result | Minimal elegant `PortalNotification` |
 
 Documented temporary exceptions (exact file + reason + removal condition):
 
@@ -257,6 +328,10 @@ Before merging a new Portal screen or form:
 - [ ] Use `PortalNotification` for operation feedback in a stable region
       (`detailsNotification` on right-rail admin pages). Do not place
       operation success/error banners above the primary grid.
+- [ ] Rely on canonical `PortalNotification` transient behavior (variant
+      default durations, X-only dismiss, pause on hover/focus). Do not add
+      feature-local `setTimeout` dismissals or text Close/Zatvori buttons.
+      Do not auto-dismiss field validation or `ConfirmDialog`.
 - [ ] If introducing a new shared control category, document it in §1.4
       (behavior, import path, ownership) and add or update Portal contract
       protection in the same change.
@@ -381,12 +456,12 @@ Region purposes:
   “Where am I?”. Tabs stay in one consistent position on every section of
   the module and mark the active section. The shared `WorkspaceNavigation`
   (`@/components/workspace-navigation`) owns presentation: medium or
-  semibold labels, subtle vertical separators between adjacent tabs only
-  (never before the first or after the last), the canonical active
-  underline/accent, hover and focus states for light and dark appearance,
-  and horizontal overflow scrolling. Keep the compact underline pattern;
-  do not convert tabs into boxed pills or recreate separator styling in
-  feature pages.
+  semibold labels with higher-contrast inactive text, subtle tile-like
+  separators between adjacent tabs only (never before the first or after
+  the last), the canonical active underline/accent, hover and focus states
+  for light and dark appearance, and horizontal overflow scrolling. Keep
+  the compact underline pattern; do not convert tabs into boxed pills or
+  recreate separator styling in feature pages. See §1.7.
 - **Active section header** — the shared `PortalSectionHeader`
   (`@/components/portal-section-header`). It renders the active section
   title (`h2`), an optional section description, and the actions that
@@ -905,7 +980,10 @@ in the shared picker or `AppCalendar`.
 
 ### 9.1 Confirmation dialogs
 
-Use an Alert Dialog for actions that are destructive, irreversible, security-sensitive, or likely to cause significant workflow change.
+Use `ConfirmDialog` for actions that are destructive, irreversible,
+security-sensitive, or likely to cause significant workflow change. Confirmations
+MUST NOT auto-dismiss and MUST keep explicit confirm and cancel actions. Do not
+turn confirmations into transient `PortalNotification` cards.
 
 A confirmation states:
 
@@ -917,26 +995,39 @@ A confirmation states:
 Good: `Cancel vacation request`  
 Avoid: `Are you sure?`
 
+Destructive confirmations use a restrained soft-rose warning surface; the
+solid danger confirm button remains visually strong while the container stays
+calm. The confirmation container must not dominate the entire right rail as a
+large saturated red or burgundy block. See §1.7.
+
 Do not require confirmation for harmless navigation or easily reversible changes. Do not use browser-native `confirm`.
 
-### 9.2 Toast notifications
+### 9.2 Operation notifications (`PortalNotification`)
 
-Use toasts for brief confirmation of completed background UI actions:
+`PortalNotification` is the single canonical Portal operation-feedback
+command. Do not introduce a third-party toast library or a second local toast
+stack.
+
+Use it for brief confirmation of completed page operations:
 
 - saved successfully;
 - request submitted;
-- comment added;
-- action could not complete, with a safe retry direction.
+- delete succeeded or delete conflict;
+- activate/deactivate succeeded;
+- refresh or export could not complete, with a safe retry direction.
 
-Do not use a toast as the only place for:
+Do not use `PortalNotification` for:
 
-- validation errors;
-- permission denial;
-- long instructions;
-- critical persistent failures;
-- information the user must copy or review.
+- field or form validation errors (stay beside the control; §1.6);
+- pre-operation confirmation (`ConfirmDialog`);
+- permission denial page states;
+- long instructions the user must keep open indefinitely (prefer page content);
+- information the user must copy or review without a dismiss path.
 
-Toasts use concise text, appropriate severity, and an accessible live region. Avoid duplicate toasts when the page already shows the result clearly.
+Notifications use concise text, soft calm severity colors (§1.7), an
+accessible live region, X-only dismiss, and the canonical transient durations
+in §1.6. Avoid duplicate notifications when the page already shows the result
+clearly.
 
 ## 10. Loading, Empty, Error, and Success States
 

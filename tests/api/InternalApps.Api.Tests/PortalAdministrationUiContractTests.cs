@@ -445,7 +445,8 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("export function WorkspaceNavigation", tabs);
         Assert.Contains("font-semibold", tabs);
         Assert.Contains("font-medium", tabs);
-        Assert.Contains("before:w-px", tabs);
+        Assert.Contains("before:w-[3px]", tabs);
+        Assert.Contains("before:rounded-[2px]", tabs);
         Assert.Contains("showLeadingSeparator", tabs);
         Assert.Contains("border-b-2", tabs);
         Assert.Contains("aria-current", tabs);
@@ -469,7 +470,8 @@ public sealed class PortalAdministrationUiContractTests
                 return null;
             }
 
-            return source.Contains("before:w-px", StringComparison.Ordinal)
+            return source.Contains("before:w-[3px]", StringComparison.Ordinal) ||
+                   source.Contains("before:w-px", StringComparison.Ordinal)
                 ? relative
                 : null;
         });
@@ -543,14 +545,32 @@ public sealed class PortalAdministrationUiContractTests
         var notification = Read("apps", "portal", "src", "components",
             "portal-notification.tsx");
         Assert.Contains("export function PortalNotification", notification);
+        Assert.Contains("PORTAL_NOTIFICATION_DEFAULT_DURATION_MS", notification);
+        Assert.Contains("success: 5000", notification);
+        Assert.Contains("info: 6000", notification);
+        Assert.Contains("warning: 8000", notification);
+        Assert.Contains("error: 10000", notification);
         Assert.Contains("aria-live", notification);
+        Assert.Contains("aria-label={dismissLabel}", notification);
+        Assert.Contains("prefers-reduced-motion", notification);
         Assert.Contains("success", notification);
         Assert.Contains("warning", notification);
         Assert.Contains("error", notification);
         Assert.Contains("info", notification);
+        // X-only dismiss: no text Close / secondary button chrome inside the card.
+        Assert.DoesNotContain("formSecondaryButtonClassName", notification);
+        Assert.DoesNotContain(">Close<", notification);
+        Assert.DoesNotContain(">Zatvori<", notification);
+        Assert.Contains("<DismissGlyph", notification);
 
         var shell = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
         Assert.Contains("detailsNotification", shell);
+
+        var confirm = Read("apps", "portal", "src", "components", "confirm-dialog.tsx");
+        Assert.Contains("export function ConfirmDialog", confirm);
+        Assert.DoesNotContain("setTimeout", confirm);
+        Assert.DoesNotContain("PORTAL_NOTIFICATION_DEFAULT_DURATION_MS", confirm);
+        Assert.Contains("formDangerSolidButtonClassName", confirm);
 
         var shellPages = new[]
         {
@@ -572,6 +592,14 @@ public sealed class PortalAdministrationUiContractTests
             var beforeShell = source.Split("AdministrativeGridShell", 2)[0];
             Assert.DoesNotContain("border-emerald-200 bg-emerald-50 px-4 py-3", beforeShell);
             Assert.DoesNotContain("border-red-200 bg-red-50 px-4 py-3", beforeShell);
+
+            // No feature-local dismiss timers for operation notifications.
+            Assert.DoesNotContain("setTimeout(() => setFeedback(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setSuccessMessage(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setOperationError(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setWriteError(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setExportError(false)", source);
+            Assert.DoesNotContain("setTimeout(() => setExportError(null)", source);
         }
 
         var businessCalendar = Read("apps", "portal", "src", "app", "business-calendar",
@@ -579,10 +607,33 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("PortalNotification", businessCalendar);
         Assert.Contains("portalActionContent", businessCalendar);
         Assert.Contains("\"create\"", businessCalendar);
+        Assert.DoesNotContain("setTimeout(() => setFeedback(null)", businessCalendar);
         // Feedback must live in the aside, not above the grid section.
         var beforeAside = businessCalendar.Split("<aside", 2)[0];
         Assert.DoesNotContain("<PortalNotification", beforeAside);
         Assert.DoesNotContain("border-emerald-200 bg-emerald-50", beforeAside);
+    }
+
+    [Fact]
+    public void PortalNotification_RemainsOwnedUnderSharedComponents()
+    {
+        var root = Path.Combine(RepositoryRoot(), "apps", "portal", "src");
+        var owners = Directory.EnumerateFiles(root, "portal-notification.tsx",
+                SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(root, path).Replace('\\', '/'))
+            .ToArray();
+
+        Assert.Equal(
+            new[] { "components/portal-notification.tsx" },
+            owners);
+
+        var confirmOwners = Directory.EnumerateFiles(root, "confirm-dialog.tsx",
+                SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(root, path).Replace('\\', '/'))
+            .ToArray();
+        Assert.Equal(
+            new[] { "components/confirm-dialog.tsx" },
+            confirmOwners);
     }
 
     [Fact]

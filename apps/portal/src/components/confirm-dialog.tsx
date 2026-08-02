@@ -11,6 +11,9 @@ import {
  * Portal shared confirmation control (apps/portal/src/components).
  * Canonical inline confirmation for destructive or consequential actions.
  * Replaces browser-native confirm/alert dialogs and duplicated page-local panels.
+ *
+ * ConfirmDialog is not a notification: it must not auto-dismiss. Transient
+ * operation results belong in PortalNotification.
  */
 export function ConfirmDialog({
   title,
@@ -37,34 +40,34 @@ export function ConfirmDialog({
     <div
       role={destructive ? "alertdialog" : "status"}
       aria-modal={destructive || undefined}
-      className={`rounded-md border p-3 ${
+      className={`rounded-lg border px-3.5 py-3.5 shadow-sm ${
         destructive
-          ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950"
-          : "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950"
+          ? "border-rose-200/70 bg-rose-50/55 dark:border-rose-900/40 dark:bg-rose-950/20"
+          : "border-amber-200/70 bg-amber-50/55 dark:border-amber-800/45 dark:bg-amber-950/20"
       }`}
     >
       {title && (
         <h3
-          className={`font-semibold ${
+          className={`text-sm font-semibold tracking-tight ${
             destructive
-              ? "text-red-900 dark:text-red-100"
-              : "text-amber-900 dark:text-amber-100"
+              ? "text-rose-950 dark:text-rose-50"
+              : "text-amber-950 dark:text-amber-50"
           }`}
         >
           {title}
         </h3>
       )}
       <p
-        className={`${title ? "mt-1 " : ""}text-sm ${
+        className={`${title ? "mt-1.5 " : ""}text-sm leading-snug ${
           destructive
-            ? "text-red-900 dark:text-red-100"
+            ? "text-rose-900 dark:text-rose-100"
             : "text-amber-900 dark:text-amber-100"
         }`}
       >
         {message}
       </p>
       {children && <div className="mt-3">{children}</div>}
-      <div className="mt-2 flex gap-2">
+      <div className="mt-3.5 flex flex-wrap gap-2">
         <button
           type="button"
           disabled={pending}

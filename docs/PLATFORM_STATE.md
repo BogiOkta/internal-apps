@@ -4,13 +4,13 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Portal-wide navigation, action-icon, and
-  operation-notification polish. `WorkspaceNavigation` owns tab separators
-  and label weight; `PortalActionIcon` / `portalActionContent` own create /
-  refresh / export / delete glyphs; `PortalNotification` plus
-  `AdministrativeGridShell` `detailsNotification` keep operation feedback in
-  the right rail without shifting administration grids. Documented in
-  `docs/standards/UI_GUIDELINES.md` §1.4 / §1.6 / §2.5 / §4.3.
+- Latest functional milestone: Portal feedback visual language polish.
+  `WorkspaceNavigation` uses higher-contrast medium/semibold labels and
+  subtle tile-like inter-tab separators; `PortalNotification` uses calm soft
+  variant surfaces with refined spacing/radius/shadow and retained transient
+  behavior (X dismiss, durations, pause on hover/focus, progress indicator);
+  `ConfirmDialog` uses a soft-rose decision surface. Documented in
+  `docs/standards/UI_GUIDELINES.md` §1.4 / §1.6 / §1.7 / §2.5 / §9.1 / §9.2.
 
 ## Platform foundation
 
@@ -38,37 +38,43 @@
   `apps/portal/src/components` and include `PortalDateInput`,
   `DateRangePicker`, `ConfirmDialog`, `StatusBadge`, `PortalSectionHeader`,
   `WorkspaceNavigation`, `PortalActionIcon` / `portalActionContent`,
-  `PortalNotification`, `FormField` / `formControlClassName` /
-  primary·secondary·danger·danger-solid button helpers, `SearchableCombobox`,
-  `AppCalendar`, `AdministrationPageBody`, `AdministrativeGridShell` (with
-  optional `detailsNotification`), `AdministrativeGridToolbar`, and
-  `GridPagination`. Locale and appearance are owned by `LocaleProvider` and
-  `AppearanceProvider` (`/settings`). Organization Employees and Departments,
-  Identity Users, User–Employee links, Vacation Leave Types, Leave Policies,
-  and Business Calendar non-working days share stable right-rail operation
-  feedback. Portal-wide regression tests reject native `type="date"`,
-  `window.confirm` / `window.alert`, forbidden local input/button class
-  constants, feature-local date display formatters, known module-prefixed
-  copies of canonical controls, feature-local tab separator chrome, and
-  layout-shifting operation banners above migrated administration grids.
-  Documented remaining non-mechanical exceptions: Vacation request
-  administration pagination/shell, Leave Balances shell migration, calendar
-  toolbar chrome, and domain `VacationStatusBadge` (§1.4 / §7.5).
+  `PortalNotification` (canonical transient operation feedback with
+  `PORTAL_NOTIFICATION_DEFAULT_DURATION_MS`), `FormField` /
+  `formControlClassName` / primary·secondary·danger·danger-solid button
+  helpers, `SearchableCombobox`, `AppCalendar`, `AdministrationPageBody`,
+  `AdministrativeGridShell` (with optional `detailsNotification`),
+  `AdministrativeGridToolbar`, and `GridPagination`. Locale and appearance
+  are owned by `LocaleProvider` and `AppearanceProvider` (`/settings`).
+  Organization Employees and Departments, Identity Users, User–Employee
+  links, Vacation Leave Types, Leave Policies, and Business Calendar
+  non-working days share stable right-rail operation feedback. Portal-wide
+  regression tests reject native `type="date"`, `window.confirm` /
+  `window.alert`, forbidden local input/button class constants,
+  feature-local date display formatters, known module-prefixed copies of
+  canonical controls, feature-local tab separator chrome, layout-shifting
+  operation banners above migrated administration grids, feature-local
+  notification dismiss timers, and text Close/Zatvori dismiss controls
+  inside operation notifications. Documented remaining non-mechanical
+  exceptions: Vacation request administration pagination/shell, Leave
+  Balances shell migration, calendar toolbar chrome, and domain
+  `VacationStatusBadge` (§1.4 / §7.5).
 - Tabbed screen hierarchy (platform rule, §2.5): every Portal screen with
   multiple tabs uses module header (stable `h1` + module description; only
   genuinely module-global actions) → tab navigation via
-  `WorkspaceNavigation` (medium/semibold labels, subtle inter-tab
-  separators, active underline) → `PortalSectionHeader` active section
-  title/description and tab-specific actions → filters → section content.
+  `WorkspaceNavigation` (medium/semibold labels, higher-contrast inactive
+  tabs, subtle tile-like inter-tab separators, active underline) →
+  `PortalSectionHeader` active section title/description and tab-specific
+  actions → filters → section content.
   The shell no longer offers a command band between the module header and
   the tabs. Vacation workspace routes (`/vacation`, `/vacation/requests`,
   `/vacation/leave-types`, `/vacation/admin/requests`,
   `/vacation/admin/policies`, `/vacation/admin/leave-balances`, and related
   detail/create flows) follow this layout via `VacationWorkspace`.
 - Operation feedback (platform rule, §1.6): field validation stays beside
-  fields; operation success/error/warning uses `PortalNotification` in the
-  right-rail `detailsNotification` region (or equivalent aside placement)
-  and must not push the primary grid down.
+  fields; operation success/error/warning uses transient
+  `PortalNotification` in the right-rail `detailsNotification` region (or
+  equivalent aside placement) and must not push the primary grid down.
+  `ConfirmDialog` remains a separate non-transient confirmation control.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation
@@ -110,16 +116,39 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
-- Canonical tabbed-screen hierarchy: Portal strict TypeScript passed; Portal
-  production build passed; focused `PortalAdministrationUiContractTests`
-  passed (20/20), including
+- Portal feedback visual language polish: Portal strict TypeScript passed;
+  Portal production build passed; focused `PortalAdministrationUiContractTests`
+  passed (24/24), including tile-like `WorkspaceNavigation` separators,
+  duration centralization, X-only dismiss, no feature-local dismiss timers,
+  non-transient `ConfirmDialog`, and shared component ownership.
+  `git diff --check` clean. Controlled Playwright smoke
+  `scripts/smoke/portal-nav-action-notification.mjs` passed 79/79 for tab
+  chrome, Leave Types delete success/conflict (auto-dismiss, hover/focus
+  pause, X dismiss, no text Close), Departments and Leave Policies operation
+  notices, ConfirmDialog persistence, sr-Latn/dark/mobile, grid geometry
+  stability, and clean relevant console.
+
+- Canonical transient Portal notification (prior): Portal strict TypeScript
+  passed; Portal production build passed; focused
+  `PortalAdministrationUiContractTests` passed (24/24), including duration
+  centralization, X-only dismiss, no feature-local dismiss timers,
+  non-transient `ConfirmDialog`, and shared component ownership.
+  Controlled Playwright smoke `scripts/smoke/portal-nav-action-notification.mjs`
+  passed 79/79 for Leave Types delete success/conflict (auto-dismiss,
+  hover/focus pause, X dismiss, no text Close), Departments and Leave Policies
+  operation notices, ConfirmDialog persistence, sr-Latn/dark/mobile, grid
+  geometry stability, and clean relevant console.
+
+- Canonical tabbed-screen hierarchy (prior): Portal strict TypeScript passed;
+  Portal production build passed; focused `PortalAdministrationUiContractTests`
+  passed, including
   `TabbedVacationScreens_UseCanonicalActiveSectionHeader` and
-  `PortalSectionHeader` registry ownership. `git diff --check` clean.
-  Controlled Playwright smoke `scripts/smoke/tabbed-screen-hierarchy.mjs`
-  passed 82/82 for My Requests, Leave Types, Request Administration, Leave
-  Balances, and Leave Policies (sr-Latn/en; light/dark; desktop/mobile;
-  section-header action ownership; filters below section header; visible
-  focus; no document overflow; clean relevant console).
+  `PortalSectionHeader` registry ownership. Controlled Playwright smoke
+  `scripts/smoke/tabbed-screen-hierarchy.mjs` passed 82/82 for My Requests,
+  Leave Types, Request Administration, Leave Balances, and Leave Policies
+  (sr-Latn/en; light/dark; desktop/mobile; section-header action ownership;
+  filters below section header; visible focus; no document overflow; clean
+  relevant console).
 
 - Portal canonical control platform standard (prior): Portal strict TypeScript
   passed; Portal production build passed; focused Portal UI contract tests
@@ -321,9 +350,10 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Canonical tabbed-screen hierarchy for the Portal platform: §2.5 standard,
-`PortalSectionHeader`, Vacation workspace migration, contract protection.
-Complete.
+Portal feedback visual language polish: `WorkspaceNavigation` tile-like
+separators and label contrast, calm soft `PortalNotification` surfaces,
+restrained `ConfirmDialog` rose decision surface, `UI_GUIDELINES` §1.7 Visual
+language, and validation. Complete.
 
 ## Next task
 
