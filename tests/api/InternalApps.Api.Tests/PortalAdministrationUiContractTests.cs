@@ -329,6 +329,7 @@ public sealed class PortalAdministrationUiContractTests
             new[] { "apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "vacation", "admin", "leave-balances", "page.tsx" },
         })
         {
             var source = Read(parts);
@@ -414,6 +415,13 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("leavePolicy.new", policies);
         Assert.Contains("sectionSecondaryActions", policies);
 
+        var leaveBalances = Read("apps", "portal", "src", "app", "vacation",
+            "admin", "leave-balances", "page.tsx");
+        Assert.Contains("sectionActions", leaveBalances);
+        Assert.Contains("leaveBalance.load", leaveBalances);
+        Assert.Contains("sectionSecondaryActions", leaveBalances);
+        Assert.Contains("leaveBalance.refresh", leaveBalances);
+
         var dashboard = Read("apps", "portal", "src", "features", "vacation",
             "components", "employee-vacation-dashboard.tsx");
         Assert.Contains("sectionActions", dashboard);
@@ -422,9 +430,7 @@ public sealed class PortalAdministrationUiContractTests
         // or resurrect a command band above the tabs.
         foreach (var source in new[]
         {
-            requests, leaveTypes, adminList, policies, dashboard,
-            Read("apps", "portal", "src", "app", "vacation", "admin",
-                "leave-balances", "page.tsx"),
+            requests, leaveTypes, adminList, policies, leaveBalances, dashboard,
             Read("apps", "portal", "src", "app", "vacation", "requests",
                 "new", "page.tsx"),
             Read("apps", "portal", "src", "features", "vacation",
@@ -580,6 +586,7 @@ public sealed class PortalAdministrationUiContractTests
             "apps/portal/src/app/identity/users/page.tsx",
             "apps/portal/src/app/organization/user-employee-links/page.tsx",
             "apps/portal/src/app/vacation/admin/policies/page.tsx",
+            "apps/portal/src/app/vacation/admin/leave-balances/page.tsx",
         };
 
         foreach (var relative in shellPages)
@@ -871,6 +878,46 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("\"leavePolicy.title\": \"Godišnje pravo na odmor\"", translations);
         Assert.Contains("\"leavePolicy.total\": \"Total allocated\"", translations);
         Assert.Contains("\"leavePolicy.total\": \"Ukupno raspoloživo\"", translations);
+    }
+
+    [Fact]
+    public void LeaveBalanceAdministration_UsesCanonicalShellAndPreservesLedgerBehavior()
+    {
+        var page = Read("apps", "portal", "src", "app", "vacation", "admin",
+            "leave-balances", "page.tsx");
+        var translations = Read("apps", "portal", "src", "i18n", "translations.ts");
+
+        Assert.Contains("AdministrationPageBody", page);
+        Assert.Contains("AdministrativeGridShell", page);
+        Assert.Contains("AdministrativeGridToolbar", page);
+        Assert.Contains("GridPagination", page);
+        Assert.Contains("GridStateRows", page);
+        Assert.Contains("fillViewport", page);
+        Assert.Contains("contentFillsViewport", page);
+        Assert.Contains("PortalDateInput", page);
+        Assert.Contains("PortalNotification", page);
+        Assert.Contains("detailsNotification", page);
+        Assert.Contains("portalActionContent", page);
+        Assert.Contains("sectionActions", page);
+        Assert.Contains("sectionSecondaryActions", page);
+        Assert.DoesNotContain("GridFooter", page);
+        Assert.DoesNotContain("headerActions", page);
+        Assert.DoesNotContain("type=\"date\"", page, StringComparison.Ordinal);
+
+        // Existing ledger behavior remains page-owned.
+        Assert.Contains("includes(leaveBalanceManagePermission)", page);
+        Assert.Contains("form.quantityDays * 2", page);
+        Assert.Contains("form.effectiveDate.slice(0, 4)", page);
+        Assert.Contains("changeScope({ ...scope", page);
+        Assert.Contains("setLoaded(false)", page);
+        Assert.DoesNotContain("chart", page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(".csv", page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("projection", page, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("\"leaveBalance.refresh\": \"Refresh\"", translations);
+        Assert.Contains("\"leaveBalance.refresh\": \"Osveži\"", translations);
+        Assert.Contains("\"leaveBalance.tableLabel\":", translations);
+        Assert.Contains("\"leaveBalance.selectScope\":", translations);
     }
 
     private static string Read(params string[] parts)

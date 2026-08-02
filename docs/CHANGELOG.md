@@ -1,5 +1,18 @@
 # Internal Apps Platform change history
 
+## 2026-08-02 — Leave Balances administration-shell migration
+
+- Migrated `/vacation/admin/leave-balances` to the canonical administration
+  foundation: `AdministrationPageBody`, `AdministrativeGridToolbar`,
+  `AdministrativeGridShell` with `fillViewport`, `GridPagination`, and
+  right-rail `PortalNotification` via `detailsNotification`.
+- Preserved explicit employee/Leave Type/year scope loading, ledger history,
+  append posting, permissions, API contracts, and validation rules. Client-side
+  history search and pagination use the shared grid footer (20/50/100).
+- Removed the Leave Balances temporary shell exception from
+  `UI_GUIDELINES` §1.4 / §7.5 and extended `PortalAdministrationUiContractTests`
+  plus Leave Balance portal contract coverage for the migrated shell.
+
 ## 2026-08-02 — Portal feedback visual language polish
 
 - Polished `WorkspaceNavigation`: higher-contrast inactive medium/semibold

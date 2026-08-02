@@ -4,13 +4,12 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Portal feedback visual language polish.
-  `WorkspaceNavigation` uses higher-contrast medium/semibold labels and
-  subtle tile-like inter-tab separators; `PortalNotification` uses calm soft
-  variant surfaces with refined spacing/radius/shadow and retained transient
-  behavior (X dismiss, durations, pause on hover/focus, progress indicator);
-  `ConfirmDialog` uses a soft-rose decision surface. Documented in
-  `docs/standards/UI_GUIDELINES.md` §1.4 / §1.6 / §1.7 / §2.5 / §9.1 / §9.2.
+- Latest functional milestone: Leave Balances administration-shell migration.
+  `/vacation/admin/leave-balances` uses `AdministrationPageBody`,
+  `AdministrativeGridToolbar`, `AdministrativeGridShell` with `fillViewport`,
+  `GridPagination`, right-rail append form, and `PortalNotification` via
+  `detailsNotification`, while preserving explicit scope load, ledger posting,
+  permissions, and API contracts.
 
 ## Platform foundation
 
@@ -46,18 +45,17 @@
   `AdministrativeGridToolbar`, and `GridPagination`. Locale and appearance
   are owned by `LocaleProvider` and `AppearanceProvider` (`/settings`).
   Organization Employees and Departments, Identity Users, User–Employee
-  links, Vacation Leave Types, Leave Policies, and Business Calendar
-  non-working days share stable right-rail operation feedback. Portal-wide
-  regression tests reject native `type="date"`, `window.confirm` /
+  links, Vacation Leave Types, Leave Policies, Leave Balances, and Business
+  Calendar non-working days share stable right-rail operation feedback.
+  Portal-wide regression tests reject native `type="date"`, `window.confirm` /
   `window.alert`, forbidden local input/button class constants,
   feature-local date display formatters, known module-prefixed copies of
   canonical controls, feature-local tab separator chrome, layout-shifting
   operation banners above migrated administration grids, feature-local
   notification dismiss timers, and text Close/Zatvori dismiss controls
   inside operation notifications. Documented remaining non-mechanical
-  exceptions: Vacation request administration pagination/shell, Leave
-  Balances shell migration, calendar toolbar chrome, and domain
-  `VacationStatusBadge` (§1.4 / §7.5).
+  exceptions: Vacation request administration pagination/shell, calendar
+  toolbar chrome, and domain `VacationStatusBadge` (§1.4 / §7.5).
 - Tabbed screen hierarchy (platform rule, §2.5): every Portal screen with
   multiple tabs uses module header (stable `h1` + module description; only
   genuinely module-global actions) → tab navigation via
@@ -110,18 +108,30 @@
   route presents current-year entitlement, carry-over, expiry, manual
   adjustment, and a non-persisted derived total. It uses `PortalDateInput` and
   preserves the existing API, persistence, permissions, and calculations.
+- Leave Balance administration: migrated to the canonical administration
+  shell. Scope selectors remain in the grid filter strip with explicit Load;
+  history uses client-side search and `GridPagination`; append posting stays
+  in the side panel; operation feedback uses right-rail `PortalNotification`.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
 
-- Portal feedback visual language polish: Portal strict TypeScript passed;
-  Portal production build passed; focused `PortalAdministrationUiContractTests`
-  passed (24/24), including tile-like `WorkspaceNavigation` separators,
-  duration centralization, X-only dismiss, no feature-local dismiss timers,
-  non-transient `ConfirmDialog`, and shared component ownership.
-  `git diff --check` clean. Controlled Playwright smoke
+- Leave Balances administration-shell migration: Portal strict TypeScript
+  passed; Portal production build passed (`/vacation/admin/leave-balances`
+  included); focused
+  `PortalAdministrationUiContractTests` and `LeaveBalancePortalContractTests`
+  passed (28/28), including canonical shell ownership, `detailsNotification`,
+  Load/Refresh section actions, preserved ledger validation, and no deferred
+  chart/export/projection capabilities. `git diff --check` clean.
+
+- Portal feedback visual language polish (prior): Portal strict TypeScript
+  passed; Portal production build passed; focused
+  `PortalAdministrationUiContractTests` passed (24/24), including tile-like
+  `WorkspaceNavigation` separators, duration centralization, X-only dismiss,
+  no feature-local dismiss timers, non-transient `ConfirmDialog`, and shared
+  component ownership. `git diff --check` clean. Controlled Playwright smoke
   `scripts/smoke/portal-nav-action-notification.mjs` passed 79/79 for tab
   chrome, Leave Types delete success/conflict (auto-dismiss, hover/focus
   pause, X dismiss, no text Close), Departments and Leave Policies operation
@@ -350,15 +360,13 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Portal feedback visual language polish: `WorkspaceNavigation` tile-like
-separators and label contrast, calm soft `PortalNotification` surfaces,
-restrained `ConfirmDialog` rose decision surface, `UI_GUIDELINES` §1.7 Visual
-language, and validation. Complete.
+Leave Balances administration-shell migration to the canonical Portal Design
+System. Complete.
 
 ## Next task
 
 No follow-on scope is approved. Remaining non-mechanical work is Vacation
-request administration and Leave Balances full administration-shell migration.
+request administration full administration-shell migration.
 
 ## Session instruction
 

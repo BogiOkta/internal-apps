@@ -178,7 +178,7 @@ unless a row says otherwise.
 | Active section header | Section title, description, and tab-specific actions on screens with tab navigation (§2.5) | `PortalSectionHeader` | `@/components/portal-section-header` | Rendered below the tabs; `h2` title left; optional description; primary then secondary actions right on desktop, wrapping below on narrow screens | Tab-specific actions in the module header or in a command band above the tabs; page-local section-header chrome | None | Yes — tabbed Vacation screens contract test |
 | Tab navigation | Secondary section tabs under the module header | `WorkspaceNavigation` | `@/components/workspace-navigation` | Medium/semibold labels; higher-contrast inactive labels; subtle tile-like separators between adjacent tabs only; active underline; hover/focus; overflow scroll; light/dark | Feature-local tab separator chrome; boxed/pill tabs for this navigation purpose | Unrelated segmented controls/filters | Yes — Vacation workspace + anti-duplication |
 | Administration toolbar | Search, filters, export | `AdministrativeGridToolbar` | `@/components/administrative-grid-toolbar` | Search → filters → export (export uses canonical export icon) | Parallel filter command bars on admin grids | Vacation request admin filter form remains until shell migration | Migrated admin pages |
-| Administrative grid shell | Bordered grid + optional side panel | `AdministrativeGridShell` | `@/components/admin-data-grid` | Internal scroll; stable states; optional `detailsNotification` below right-rail details/confirmation; `fillViewport` only with body chain | Parallel bordered grid/panel frames; operation banners above the grid | Non-tabular forms; Leave Balances / Vacation request admin pending shell rollout | Migrated admin pages |
+| Administrative grid shell | Bordered grid + optional side panel | `AdministrativeGridShell` | `@/components/admin-data-grid` | Internal scroll; stable states; optional `detailsNotification` below right-rail details/confirmation; `fillViewport` only with body chain | Parallel bordered grid/panel frames; operation banners above the grid | Non-tabular forms; Vacation request admin pending shell rollout | Migrated admin pages |
 | Calendar | Month/week/day/agenda | `AppCalendar` | `@/components/calendar` | Platform locale/appearance; list/agenda alternative | Forked FullCalendar setup in features | None | Demo/consumer contracts |
 | Localization | User-visible text | `LocaleProvider`, `useTranslations` | `@/i18n/…` | sr-Latn default; en; typed keys | Hardcoded labels | None | Navigation/locale contracts |
 | Appearance/theme | Light/Dark/System | `AppearanceProvider` | `@/components/appearance-provider` | Semantic tokens; settings-owned preference | Page-local theme state | None | Settings/shell contracts |
@@ -296,7 +296,6 @@ Documented temporary exceptions (exact file + reason + removal condition):
 | File | Reason | Removal condition |
 |---|---|---|
 | `apps/portal/src/features/vacation/components/admin-vacation-request-list.tsx` | Custom server-paged prev/next UI with fixed API `pageSize` 25; not yet on `AdministrativeGridShell` / `GridPagination` | When Vacation request administration is migrated to the canonical administration shell |
-| `apps/portal/src/app/vacation/admin/leave-balances/page.tsx` | Tabular history + posting form outside the administration grid shell | Dedicated Leave Balances administration-shell task |
 | `apps/portal/src/components/calendar/calendar-toolbar.tsx` | Calendar-specific navigation chrome sizing | Remains calendar-owned unless a second non-calendar toolbar needs the same control |
 | `apps/portal/src/features/vacation/components/vacation-status-badge.tsx` | Domain leave-request status vocabulary (`SUBMITTED`/`APPROVED`/…); not a copy of generic `StatusBadge` | Remains domain-owned; do not replace with generic `StatusBadge` tones |
 
@@ -905,18 +904,20 @@ it:
 
 | Area | Gap relative to the canonical contract |
 |---|---|
-| Vacation Leave Balances | Uses `PortalDateInput` and shared form helpers; still outside the full administration grid shell |
 | Vacation request employee self-service | Outside administration shell; uses canonical buttons/`FormField`/`DateRangePicker` |
 | Vacation request administration | Filter form and fixed `pageSize` 25 prev/next pagination remain until shell migration; form controls and confirmations use shared helpers |
 | Dashboard | Outside scope; launcher surface, not an administration grid |
 
-Identity user administration, User–Employee links, and Vacation Leave Types now
-reuse the same Organization administration contract as Employees and
-Departments: `AdministrationPageHeader` (via the shell),
+Identity user administration, User–Employee links, Vacation Leave Types, Leave
+Policies, and Leave Balances now reuse the same Organization administration
+contract as Employees and Departments: `AdministrationPageHeader` (via the
+shell / active section header on tabbed Vacation screens),
 `AdministrationPageBody`, `AdministrativeGridToolbar`,
 `AdministrativeGridShell` with `fillViewport`, `GridPagination`, shared form
 controls and button helpers, and the shared side panel. Client-side pagination
-applies because those list APIs remain bounded and unpaged.
+applies because those list APIs remain bounded and unpaged. Leave Balances
+keeps its explicit employee/Leave Type/year load scope and ledger posting
+behavior while presenting history in the canonical shell.
 
 Leave Types is the first migrated administration grid with an explicit Actions
 column. Its grid columns are Code, Name, Counts Against Balance, Requires
