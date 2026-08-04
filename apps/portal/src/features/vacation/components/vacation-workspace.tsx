@@ -9,7 +9,7 @@ import {
 } from "@/components/workspace-navigation";
 import { useTranslations } from "@/i18n/use-translations";
 import { useAuth } from "@/components/auth-provider";
-import { usersManagePermission } from "@/types/auth";
+import { leaveBalanceManagePermission } from "@/types/leave-balance";
 import { vacationRequestsManagePermission } from "@/types/vacation";
 
 type VacationWorkspaceProps = {
@@ -56,7 +56,7 @@ export function VacationWorkspace({
           href: "/vacation/admin/requests",
         }]
       : []),
-    ...(user?.permissions.includes(usersManagePermission)
+    ...(user?.permissions.includes(leaveBalanceManagePermission)
       ? [{
           label: t("leavePolicy.navigation"),
           href: "/vacation/admin/policies",

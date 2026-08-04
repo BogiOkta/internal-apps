@@ -98,8 +98,8 @@ inherently non-working; explicit entries add official non-working dates.
 
 ### Leave Balance Ledger LV.2 endpoints
 
-All LV.2 ledger routes require the existing temporary Vacation-administrator
-policy, `identity.users.manage`. The three posting commands require employee
+All LV.2 ledger routes require the Vacation-owned administration policy,
+`vacation.leave-balances.manage`. The three posting commands require employee
 and Leave Type public IDs, leave year, non-zero half-day quantity, an
 effective date within that year, reason, and source reference. Entitlement and
 carry-over quantities must be positive. Successful writes return `201`, are

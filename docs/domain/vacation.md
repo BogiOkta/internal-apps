@@ -309,7 +309,7 @@ Administrators may list, retrieve, create, update, and delete annual Leave
 Policies through `/api/v1/vacation/leave-policies`. The list filters by leave
 year and employee and sorts by employee name. The unique employee/year
 constraint is enforced by PostgreSQL and returned as stable Problem Details.
-Administration temporarily reuses `identity.users.manage` and every successful
+Administration requires `vacation.leave-balances.manage` and every successful
 write is audited atomically.
 
 The minimal administrator Portal route `/vacation/admin/policies` provides
@@ -375,7 +375,7 @@ race-safe overlap protection for submitted and approved requests.
 
 Administrator operations require the dedicated
 `vacation.requests.manage` permission, without username or role-name checks.
-Leave Policies and Leave Balances continue to use `identity.users.manage`.
+Leave Policies and Leave Balances use `vacation.leave-balances.manage`.
 Approval locks the request and any required employee/Leave Type/year balance.
 It increments `used_days` only when sufficient balance exists. Cancelling an
 approved request reverses that use; cancelling a submitted request and

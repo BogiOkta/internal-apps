@@ -51,13 +51,13 @@ with non-negative balance enforcement and exact request-cancellation reversal
 integrity. The administrator-only API posts annual entitlement, carry-over,
 and reasoned manual-adjustment entries and reads the derived current balance
 or ordered history for one employee, Leave Type, and leave year. It uses the
-existing temporary `identity.users.manage` authorization convention, requires
+the Vacation-owned `vacation.leave-balances.manage` authorization policy, requires
 an idempotent source reference, and atomically appends the required platform
 audit event. The administrator Portal route `/vacation/admin/leave-balances`
 selects one employee, balance-consuming Leave Type, and year; it displays the
 derived current balance and acceptance-ordered history, and appends annual
 entitlement, carry-over, or reasoned manual-adjustment entries. It reuses the
-temporary `identity.users.manage` permission and mirrors only input-shape
+same `vacation.leave-balances.manage` permission and mirrors only input-shape
 validation; API authorization and ledger invariants remain authoritative.
 Annual-entitlement, carry-over, and manual-adjustment posting creates or
 updates the matching `vacation.leave_balances` compatibility row in the same
@@ -82,9 +82,15 @@ Migration 031 introduces `vacation.requests.manage` and assigns it to the
 Administrator role. It protects only Vacation request administration (list,
 detail, history, approval, rejection, and cancellation). Existing
 Administrator access tokens must be refreshed after the migration to receive
-the new permission claim. Employee self-service and the temporary
-`identity.users.manage` authorization of Leave Policies and Leave Balances are
-unchanged.
+the new permission claim. Employee self-service is unchanged. Leave Policy and
+Leave Balance authorization is independently governed by
+`vacation.leave-balances.manage`.
+
+Migration 035 introduces `vacation.leave-balances.manage`, assigns it to the
+existing Administrator role, and protects Leave Policy and Leave Balance
+Ledger administration. Existing Administrator access tokens must be refreshed
+or the user must sign in again after the migration to receive the new claim.
+`identity.users.manage` alone does not grant access to these Vacation routes.
 
 Controlled Administrator browser smoke validated authorized navigation,
 localized direct-route denial and API `403` responses for an unauthorized user,

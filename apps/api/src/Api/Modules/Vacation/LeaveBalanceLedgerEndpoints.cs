@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using InternalApps.Api.Modules.Identity;
 
 namespace InternalApps.Api.Modules.Vacation;
 
@@ -8,7 +7,7 @@ internal static class LeaveBalanceLedgerEndpoints
     public static IEndpointRouteBuilder MapLeaveBalanceLedgerEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/v1/vacation/leave-balances")
-            .RequireAuthorization(IdentityPermissions.ManageUsers)
+            .RequireAuthorization(VacationPermissions.ManageLeaveBalances)
             .WithTags("Vacation Leave Balance Ledger");
         group.MapGet("", GetBalanceAsync);
         group.MapGet("/history", ListHistoryAsync);

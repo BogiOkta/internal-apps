@@ -127,6 +127,15 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current validation
 
+- Vacation leave-balance authorization hardening: migration 035 applied and a
+  second migrator pass found no pending scripts; the focused source-contract
+  suite passed 23/23 and the database-enabled permission class passed 5/5.
+  API Debug build, Portal strict TypeScript, and Portal production build
+  passed. The full database-enabled API suite ran 114 tests: 112 passed and
+  the two documented unrelated tests failed. Runtime HTTP-host authorization
+  tests are not available in the current test infrastructure; endpoint-policy
+  behavior was verified through focused source contracts.
+
 - Vacation leave balance compatibility mirror: migration 034 applied to the
   configured development database (34 migrations discovered, no pending
   scripts); focused database-enabled compatibility-mirror tests passed 2/2,
@@ -381,7 +390,8 @@ Detailed state: [Vacation module](modules/vacation.md) and
   recurrence, multi-country, or multi-calendar support.
 - Vacation request administration uses `vacation.requests.manage`; refreshed
   Administrator tokens are required after migration 031. Leave Policies and
-  Leave Balances continue to use `identity.users.manage`. Leave Type
+  Leave Balances use `vacation.leave-balances.manage`; refreshed Administrator
+  tokens or re-login are required after migration 035. Leave Type
   administration reuses the existing `vacation.leave-types.manage` permission,
   so migration 032 requires no token refresh.
 - No frontend automated-test framework is currently present.

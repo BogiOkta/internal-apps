@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using InternalApps.Api.Modules.Identity;
 
 namespace InternalApps.Api.Modules.Vacation;
 
@@ -8,7 +7,7 @@ internal static class LeavePolicyEndpoints
     public static IEndpointRouteBuilder MapLeavePolicyEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/v1/vacation/leave-policies")
-            .RequireAuthorization(IdentityPermissions.ManageUsers)
+            .RequireAuthorization(VacationPermissions.ManageLeaveBalances)
             .WithTags("Vacation Leave Policies");
         group.MapGet("", ListAsync);
         group.MapGet("/{policyId:guid}", GetAsync);

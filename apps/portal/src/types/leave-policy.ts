@@ -1,4 +1,4 @@
-export const leavePolicyManagePermission = "identity.users.manage";
+export const leavePolicyManagePermission = "vacation.leave-balances.manage";
 
 export type LeavePolicy = {
   policyId: string;

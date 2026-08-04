@@ -41,7 +41,8 @@ public sealed class LeaveBalanceLedgerServiceTests
         Assert.Contains("MapPost(\"/carry-overs\"", source);
         Assert.Contains("MapPost(\"/manual-adjustments\"", source);
         Assert.Contains("MapGet(\"/history\"", source);
-        Assert.Contains("RequireAuthorization(IdentityPermissions.ManageUsers)", source);
+        Assert.Contains("RequireAuthorization(VacationPermissions.ManageLeaveBalances)", source);
+        Assert.DoesNotContain("IdentityPermissions.ManageUsers", source);
         Assert.DoesNotContain("request-consumption", source, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("cancellation-reversal", source, StringComparison.OrdinalIgnoreCase);
     }

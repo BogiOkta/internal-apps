@@ -1,5 +1,23 @@
 # Internal Apps Platform change history
 
+## 2026-08-04 — Vacation leave-balance administration permission
+
+- Added idempotent migration 035 to seed `vacation.leave-balances.manage` and
+  assign it to the existing Administrator role without changing users, roles,
+  or existing role assignments.
+- Leave Balance Ledger and Leave Policy endpoint groups and Portal gates now
+  require the Vacation-owned permission. `identity.users.manage` alone no
+  longer grants these capabilities; request administration remains governed
+  by `vacation.requests.manage`.
+- Existing Administrator access tokens must be refreshed or the user must sign
+  in again after migration 035 to receive the new permission claim.
+- Validation applied migration 035 and confirmed a second migrator pass had no
+  pending scripts; API build, Portal strict TypeScript, Portal production
+  build, and focused authorization/contract tests passed (23/23 source-contract
+  tests and 5/5 database-enabled permission tests). The full database-enabled
+  API suite ran 114 tests: 112 passed and only the two documented unrelated
+  tests failed.
+
 ## 2026-08-02 — Vacation leave balance compatibility mirror
 
 - Added an atomic compatibility-mirror upsert to the existing entitlement,
