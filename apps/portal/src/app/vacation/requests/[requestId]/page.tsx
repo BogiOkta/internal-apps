@@ -85,6 +85,7 @@ export default function VacationRequestDetailsPage() {
   }
 
   return <VacationWorkspace title={t("vacation.employeePortal.detailsTitle")}
+    breadcrumbRecordLabel={t("vacation.employeePortal.detailsTitle")}
     description={t("vacation.employeePortal.detailsDescription")}>
     <div className="mb-4"><Link href="/vacation/requests" className={formSecondaryButtonClassName()}>
       {t("vacation.employeePortal.backToRequests")}

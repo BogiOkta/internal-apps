@@ -20,7 +20,7 @@ public sealed class BusinessCalendarPortalContractTests
     [Fact]
     public void Page_GuardsPermissionAndValidatesRequiredFields()
     {
-        var source = ReadRepositoryFile("apps", "portal", "src", "app",
+        var source = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
             "business-calendar", "admin", "non-working-days", "page.tsx");
         Assert.Contains("includes(businessCalendarManagePermission)", source);
         Assert.Contains("if (!allowed)", source);
@@ -35,16 +35,22 @@ public sealed class BusinessCalendarPortalContractTests
     [Fact]
     public void Navigation_IsPermissionAware()
     {
-        var source = ReadRepositoryFile("apps", "portal", "src", "components",
+        var shell = ReadRepositoryFile("apps", "portal", "src", "components",
             "app-shell.tsx");
-        Assert.Contains("user.permissions.includes(usersManagePermission)", source);
-        Assert.Contains("/business-calendar/admin/non-working-days", source);
+        var registry = ReadRepositoryFile("apps", "portal", "src", "navigation",
+            "organization.ts");
+        var companyLayout = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
+            "layout.tsx");
+        Assert.Contains("user.permissions.includes(usersManagePermission)", shell);
+        Assert.Contains("/business-calendar/admin/non-working-days", registry);
+        Assert.Contains("businessCalendarManagePermission", registry);
+        Assert.Contains("OrganizationPersistentShell", companyLayout);
     }
 
     [Fact]
     public void Page_DoesNotIntroduceUnsupportedCalendarControls()
     {
-        var source = ReadRepositoryFile("apps", "portal", "src", "app",
+        var source = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
             "business-calendar", "admin", "non-working-days", "page.tsx");
         Assert.DoesNotContain("recurrence", source, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("working saturday", source, StringComparison.OrdinalIgnoreCase);

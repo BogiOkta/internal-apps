@@ -9,9 +9,9 @@ public sealed class PortalAdministrationUiContractTests
     {
         foreach (var parts in new[]
         {
-            new[] { "apps", "portal", "src", "app", "organization", "employees", "page.tsx" },
-            new[] { "apps", "portal", "src", "app", "organization", "departments", "page.tsx" },
-            new[] { "apps", "portal", "src", "app", "business-calendar", "admin", "non-working-days", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "organization", "employees", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "business-calendar", "admin", "non-working-days", "page.tsx" },
             new[] { "apps", "portal", "src", "features", "vacation", "components", "employee-form.tsx" },
             new[] { "apps", "portal", "src", "features", "organization", "components", "department-form.tsx" },
             new[] { "apps", "portal", "src", "features", "vacation", "components", "admin-record-absence.tsx" },
@@ -23,7 +23,7 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("type='date'", source, StringComparison.Ordinal);
         }
 
-        var businessCalendar = Read("apps", "portal", "src", "app", "business-calendar",
+        var businessCalendar = Read("apps", "portal", "src", "app", "(company)", "business-calendar",
             "admin", "non-working-days", "page.tsx");
         Assert.Contains("PortalDateInput", businessCalendar);
         Assert.Contains("nullable={false}", businessCalendar);
@@ -190,6 +190,7 @@ public sealed class PortalAdministrationUiContractTests
             "export function WorkspaceNavigation",
             "export function PortalActionIcon",
             "export function PortalNotification",
+            "export function PortalNotificationHost",
         };
 
         var canonicalOwners = new HashSet<string>(StringComparer.Ordinal)
@@ -208,6 +209,7 @@ public sealed class PortalAdministrationUiContractTests
             "components/workspace-navigation.tsx",
             "components/portal-action-icon.tsx",
             "components/portal-notification.tsx",
+            "components/portal-notification-host.tsx",
         };
 
         var filenamePatterns = new[]
@@ -283,6 +285,7 @@ public sealed class PortalAdministrationUiContractTests
             "components/workspace-navigation.tsx",
             "components/portal-action-icon.tsx",
             "components/portal-notification.tsx",
+            "components/portal-notification-host.tsx",
         })
         {
             var parts = relative.Split('/');
@@ -306,9 +309,9 @@ public sealed class PortalAdministrationUiContractTests
 
         foreach (var parts in new[]
         {
-            new[] { "apps", "portal", "src", "app", "business-calendar", "admin", "non-working-days", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "business-calendar", "admin", "non-working-days", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx" },
-            new[] { "apps", "portal", "src", "app", "organization", "departments", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx" },
         })
         {
@@ -323,10 +326,10 @@ public sealed class PortalAdministrationUiContractTests
     {
         foreach (var parts in new[]
         {
-            new[] { "apps", "portal", "src", "app", "organization", "employees", "page.tsx" },
-            new[] { "apps", "portal", "src", "app", "organization", "departments", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "organization", "employees", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "identity", "users", "page.tsx" },
-            new[] { "apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx" },
+            new[] { "apps", "portal", "src", "app", "(company)", "organization", "user-employee-links", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx" },
             new[] { "apps", "portal", "src", "app", "vacation", "admin", "leave-balances", "page.tsx" },
@@ -367,24 +370,27 @@ public sealed class PortalAdministrationUiContractTests
     [Fact]
     public void TabbedVacationScreens_UseCanonicalActiveSectionHeader()
     {
-        // UI_GUIDELINES §2.5: on tabbed screens the module header stays
-        // stable, tab-specific actions live in the active section header
-        // below the tabs, and nothing is passed to the module-level header.
+        // Vacation IA pilot: capability tabs moved to the sidebar. PortalSectionHeader
+        // remains the page header (h1 via asPageTitle) and still owns page actions.
         var sectionHeader = Read("apps", "portal", "src", "components",
             "portal-section-header.tsx");
         Assert.Contains("export function PortalSectionHeader", sectionHeader);
-        Assert.Contains("<h2", sectionHeader);
+        Assert.Contains("asPageTitle", sectionHeader);
         Assert.Contains("secondaryActions", sectionHeader);
 
         var workspace = Read("apps", "portal", "src", "features", "vacation",
             "components", "vacation-workspace.tsx");
+        var vacationShell = Read("apps", "portal", "src", "features", "vacation",
+            "components", "vacation-shell.tsx");
         Assert.Contains("PortalSectionHeader", workspace);
-        Assert.Contains("t(\"vacation.workspace.title\")", workspace);
+        Assert.Contains("asPageTitle", workspace);
+        Assert.Contains("layoutMode=\"workspace\"", vacationShell);
+        Assert.DoesNotContain("WorkspaceNavigation", workspace);
         Assert.Contains("sectionActions", workspace);
         Assert.DoesNotContain("headerActions", workspace);
         Assert.DoesNotContain("commandBar", workspace);
 
-        // Known tab-specific actions and their owning section screens.
+        // Known page-specific actions and their owning screens.
         var requests = Read("apps", "portal", "src", "app", "vacation",
             "requests", "page.tsx");
         Assert.Contains("sectionActions", requests);
@@ -455,7 +461,7 @@ public sealed class PortalAdministrationUiContractTests
 
         var workspace = Read("apps", "portal", "src", "features", "vacation",
             "components", "vacation-workspace.tsx");
-        Assert.Contains("WorkspaceNavigation", workspace);
+        Assert.DoesNotContain("WorkspaceNavigation", workspace);
 
         // Feature pages must not recreate inter-tab separator chrome.
         var violations = ScanPortalSource((relative, source) =>
@@ -502,11 +508,11 @@ public sealed class PortalAdministrationUiContractTests
             Read("apps", "portal", "src", "features", "vacation",
                 "components", "admin-vacation-request-list.tsx"),
             Read("apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx"),
-            Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx"),
-            Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx"),
+            Read("apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx"),
+            Read("apps", "portal", "src", "app", "(company)", "organization", "employees", "page.tsx"),
             Read("apps", "portal", "src", "app", "identity", "users", "page.tsx"),
-            Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx"),
-            Read("apps", "portal", "src", "app", "business-calendar", "admin",
+            Read("apps", "portal", "src", "app", "(company)", "organization", "user-employee-links", "page.tsx"),
+            Read("apps", "portal", "src", "app", "(company)", "business-calendar", "admin",
                 "non-working-days", "page.tsx"),
         };
 
@@ -522,11 +528,11 @@ public sealed class PortalAdministrationUiContractTests
             Read("apps", "portal", "src", "app", "vacation", "admin", "policies", "page.tsx"),
             Read("apps", "portal", "src", "features", "vacation",
                 "components", "admin-vacation-request-list.tsx"),
-            Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx"),
-            Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx"),
+            Read("apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx"),
+            Read("apps", "portal", "src", "app", "(company)", "organization", "employees", "page.tsx"),
             Read("apps", "portal", "src", "app", "identity", "users", "page.tsx"),
-            Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx"),
-            Read("apps", "portal", "src", "app", "business-calendar", "admin",
+            Read("apps", "portal", "src", "app", "(company)", "organization", "user-employee-links", "page.tsx"),
+            Read("apps", "portal", "src", "app", "(company)", "business-calendar", "admin",
                 "non-working-days", "page.tsx"),
         };
 
@@ -539,11 +545,11 @@ public sealed class PortalAdministrationUiContractTests
         var toolbar = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
         Assert.Contains("PortalActionIcon kind=\"export\"", toolbar);
         Assert.DoesNotContain("function PlusIcon", Read("apps", "portal", "src", "app",
-            "organization", "employees", "page.tsx"));
+            "(company)", "organization", "employees", "page.tsx"));
     }
 
     [Fact]
-    public void PortalOperationNotifications_UseStableRightRailRegion()
+    public void PortalOperationNotifications_UseStableTopCenterHostOnVacation()
     {
         var notification = Read("apps", "portal", "src", "components",
             "portal-notification.tsx");
@@ -566,6 +572,18 @@ public sealed class PortalAdministrationUiContractTests
         Assert.DoesNotContain(">Zatvori<", notification);
         Assert.Contains("<DismissGlyph", notification);
 
+        var host = Read("apps", "portal", "src", "components",
+            "portal-notification-host.tsx");
+        Assert.Contains("export function PortalNotificationHost", host);
+        Assert.Contains("data-portal-notification-host", host);
+        Assert.Contains("lg:left-[240px]", host);
+        Assert.Contains("max-w-[560px]", host);
+        Assert.Contains("fixed", host);
+        Assert.Contains("z-30", host);
+        Assert.DoesNotContain("z-40", host);
+        Assert.Contains("lg:top-[7.5rem]", host);
+        Assert.DoesNotContain("bottom-", host);
+
         var shell = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
         Assert.Contains("detailsNotification", shell);
 
@@ -575,30 +593,64 @@ public sealed class PortalAdministrationUiContractTests
         Assert.DoesNotContain("PORTAL_NOTIFICATION_DEFAULT_DURATION_MS", confirm);
         Assert.Contains("formDangerSolidButtonClassName", confirm);
 
-        var shellPages = new[]
+        var vacationHostPages = new[]
         {
             "apps/portal/src/app/vacation/leave-types/page.tsx",
-            "apps/portal/src/app/organization/departments/page.tsx",
-            "apps/portal/src/app/organization/employees/page.tsx",
-            "apps/portal/src/app/identity/users/page.tsx",
-            "apps/portal/src/app/organization/user-employee-links/page.tsx",
             "apps/portal/src/app/vacation/admin/policies/page.tsx",
             "apps/portal/src/app/vacation/admin/leave-balances/page.tsx",
             "apps/portal/src/features/vacation/components/admin-vacation-request-list.tsx",
+            "apps/portal/src/features/vacation/components/admin-vacation-request-details.tsx",
+            "apps/portal/src/features/vacation/components/admin-record-absence.tsx",
+            "apps/portal/src/app/(company)/organization/departments/page.tsx",
+            "apps/portal/src/app/(company)/organization/employees/page.tsx",
+            "apps/portal/src/app/(company)/organization/user-employee-links/page.tsx",
+            "apps/portal/src/app/(company)/business-calendar/admin/non-working-days/page.tsx",
         };
 
-        foreach (var relative in shellPages)
+        foreach (var relative in vacationHostPages)
+        {
+            var source = Read(relative.Split('/'));
+            Assert.Contains("PortalNotification", source);
+            Assert.Contains("PortalNotificationHost", source);
+            Assert.DoesNotContain("detailsNotification", source);
+
+            // No layout-shifting operation banners on migrated workspace surfaces.
+            Assert.DoesNotContain(
+                "mb-4 rounded-md border border-emerald-300 bg-emerald-50", source);
+            Assert.DoesNotContain(
+                "mb-4 rounded-md border border-red-300 bg-red-50", source);
+            Assert.DoesNotContain(
+                "mb-4 rounded border border-emerald-300 bg-emerald-50", source);
+            Assert.DoesNotContain(
+                "mb-4 rounded border border-red-300 bg-red-50", source);
+
+            // No feature-local dismiss timers for operation notifications.
+            Assert.DoesNotContain("setTimeout(() => setFeedback(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setSuccessMessage(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setOperationError(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setSuccess(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setError(null)", source);
+            Assert.DoesNotContain("setTimeout(() => setExportError(false)", source);
+            Assert.DoesNotContain("setTimeout(() => setExportError(null)", source);
+        }
+
+        // Transitional right-rail hosts remain for unmigrated Identity.
+        var transitionalPages = new[]
+        {
+            "apps/portal/src/app/identity/users/page.tsx",
+        };
+
+        foreach (var relative in transitionalPages)
         {
             var source = Read(relative.Split('/'));
             Assert.Contains("PortalNotification", source);
             Assert.Contains("detailsNotification", source);
+            Assert.DoesNotContain("PortalNotificationHost", source);
 
-            // Operation banners must not sit above AdministrativeGridShell.
             var beforeShell = source.Split("AdministrativeGridShell", 2)[0];
             Assert.DoesNotContain("border-emerald-200 bg-emerald-50 px-4 py-3", beforeShell);
             Assert.DoesNotContain("border-red-200 bg-red-50 px-4 py-3", beforeShell);
 
-            // No feature-local dismiss timers for operation notifications.
             Assert.DoesNotContain("setTimeout(() => setFeedback(null)", source);
             Assert.DoesNotContain("setTimeout(() => setSuccessMessage(null)", source);
             Assert.DoesNotContain("setTimeout(() => setOperationError(null)", source);
@@ -606,17 +658,6 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("setTimeout(() => setExportError(false)", source);
             Assert.DoesNotContain("setTimeout(() => setExportError(null)", source);
         }
-
-        var businessCalendar = Read("apps", "portal", "src", "app", "business-calendar",
-            "admin", "non-working-days", "page.tsx");
-        Assert.Contains("PortalNotification", businessCalendar);
-        Assert.Contains("portalActionContent", businessCalendar);
-        Assert.Contains("\"create\"", businessCalendar);
-        Assert.DoesNotContain("setTimeout(() => setFeedback(null)", businessCalendar);
-        // Feedback must live in the aside, not above the grid section.
-        var beforeAside = businessCalendar.Split("<aside", 2)[0];
-        Assert.DoesNotContain("<PortalNotification", beforeAside);
-        Assert.DoesNotContain("border-emerald-200 bg-emerald-50", beforeAside);
     }
 
     [Fact]
@@ -631,6 +672,14 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Equal(
             new[] { "components/portal-notification.tsx" },
             owners);
+
+        var hostOwners = Directory.EnumerateFiles(root, "portal-notification-host.tsx",
+                SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(root, path).Replace('\\', '/'))
+            .ToArray();
+        Assert.Equal(
+            new[] { "components/portal-notification-host.tsx" },
+            hostOwners);
 
         var confirmOwners = Directory.EnumerateFiles(root, "confirm-dialog.tsx",
                 SearchOption.AllDirectories)
@@ -660,10 +709,10 @@ public sealed class PortalAdministrationUiContractTests
     [Fact]
     public void OrganizationAdministration_UsesSharedLayoutContracts()
     {
-        var employees = Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx");
-        var departments = Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx");
+        var employees = Read("apps", "portal", "src", "app", "(company)", "organization", "employees", "page.tsx");
+        var departments = Read("apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx");
         var users = Read("apps", "portal", "src", "app", "identity", "users", "page.tsx");
-        var links = Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx");
+        var links = Read("apps", "portal", "src", "app", "(company)", "organization", "user-employee-links", "page.tsx");
         var leaveTypes = Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx");
 
         foreach (var page in new[] { employees, departments, users, links, leaveTypes })
@@ -677,13 +726,18 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("GridFooter", page);
         }
 
-        // Single-section administration pages keep New/Refresh in the module
-        // page header; the tabbed Leave Types screen uses the active section
-        // header instead (UI_GUIDELINES §2.5).
-        foreach (var page in new[] { employees, departments, users, links })
+        // Organization workspace pages and tabbed Leave Types use page-header
+        // sectionActions; Identity Users remains on CompanyAdministrationWorkspace
+        // headerActions until migrated.
+        foreach (var page in new[] { employees, departments, links })
         {
-            Assert.Contains("headerActions", page);
+            Assert.Contains("sectionActions", page);
+            Assert.Contains("OrganizationWorkspace", page);
+            Assert.DoesNotContain("headerActions", page);
         }
+
+        Assert.Contains("headerActions", users);
+        Assert.Contains("CompanyAdministrationWorkspace", users);
 
         Assert.Contains("sectionActions", leaveTypes);
         Assert.DoesNotContain("headerActions", leaveTypes);
@@ -711,7 +765,7 @@ public sealed class PortalAdministrationUiContractTests
     [Fact]
     public void UserEmployeeLinksAdministration_PreservesShellGeometryStates()
     {
-        var links = Read("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx");
+        var links = Read("apps", "portal", "src", "app", "(company)", "organization", "user-employee-links", "page.tsx");
         Assert.Contains("AdministrationPageBody", links);
         Assert.Contains("fillViewport", links);
         Assert.Contains("GridStateRows", links);
@@ -744,7 +798,7 @@ public sealed class PortalAdministrationUiContractTests
     [Fact]
     public void DepartmentsPage_PreservesShellGeometryStates()
     {
-        var page = Read("apps", "portal", "src", "app", "organization", "departments", "page.tsx");
+        var page = Read("apps", "portal", "src", "app", "(company)", "organization", "departments", "page.tsx");
         Assert.Contains("AdministrationPageBody", page);
         Assert.Contains("fillViewport", page);
         Assert.Contains("GridStateRows", page);
@@ -846,15 +900,18 @@ public sealed class PortalAdministrationUiContractTests
     [Fact]
     public void BusinessCalendarAdministration_UsesCanonicalChrome()
     {
-        var page = Read("apps", "portal", "src", "app", "business-calendar",
+        var page = Read("apps", "portal", "src", "app", "(company)", "business-calendar",
             "admin", "non-working-days", "page.tsx");
-        Assert.Contains("CompanyAdministrationWorkspace", page);
-        Assert.Contains("headerActions", page);
+        Assert.Contains("OrganizationWorkspace", page);
+        Assert.Contains("PortalNotificationHost", page);
+        Assert.Contains("sectionActions", page);
         Assert.Contains("PortalDateInput", page);
         Assert.Contains("formControlClassName", page);
         Assert.Contains("formPrimaryButtonClassName", page);
         Assert.Contains("rounded-xl border border-slate-300", page);
         Assert.DoesNotContain("type=\"date\"", page);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", page);
+        Assert.DoesNotContain("detailsNotification", page);
     }
 
     [Fact]
@@ -894,7 +951,8 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("contentFillsViewport", page);
         Assert.Contains("PortalDateInput", page);
         Assert.Contains("PortalNotification", page);
-        Assert.Contains("detailsNotification", page);
+        Assert.Contains("PortalNotificationHost", page);
+        Assert.DoesNotContain("detailsNotification", page);
         Assert.Contains("portalActionContent", page);
         Assert.Contains("sectionActions", page);
         Assert.Contains("sectionSecondaryActions", page);
@@ -935,7 +993,8 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("fillViewport", list);
         Assert.Contains("contentFillsViewport", list);
         Assert.Contains("PortalNotification", list);
-        Assert.Contains("detailsNotification", list);
+        Assert.Contains("PortalNotificationHost", list);
+        Assert.DoesNotContain("detailsNotification", list);
         Assert.Contains("portalActionContent", list);
         Assert.Contains("sectionActions", list);
         Assert.Contains("sectionSecondaryActions", list);
@@ -952,6 +1011,11 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("requests/record", list);
         Assert.Contains("/vacation/admin/requests/${request.publicId}", list);
         Assert.Contains("ConfirmDialog", details);
+        Assert.Contains("PortalNotification", details);
+        Assert.Contains("PortalNotificationHost", details);
+        Assert.DoesNotContain("detailsNotification", details);
+        Assert.DoesNotContain(
+            "mb-4 rounded-md border border-emerald-300 bg-emerald-50", details);
         Assert.Contains("approveAdminVacationRequest", details);
         Assert.Contains("rejectAdminVacationRequest", details);
         Assert.Contains("cancelAdminVacationRequest", details);

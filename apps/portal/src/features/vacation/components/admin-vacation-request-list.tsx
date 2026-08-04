@@ -15,6 +15,7 @@ import {
 import { GridPagination } from "@/components/grid-pagination";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import {
   problemMessage,
   statusLabel,
@@ -172,6 +173,16 @@ export function AdminVacationRequestList() {
         </button>
       }
     >
+      <PortalNotificationHost>
+        {errorCode ? (
+          <PortalNotification
+            variant="error"
+            message={problemMessage(errorCode, t)}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setErrorCode(null)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("vacation.admin.tableLabel")}
@@ -386,16 +397,6 @@ export function AdminVacationRequestList() {
                 {t("vacation.admin.selectForDetails")}
               </p>
             )
-          }
-          detailsNotification={
-            errorCode ? (
-              <PortalNotification
-                variant="error"
-                message={problemMessage(errorCode, t)}
-                dismissLabel={t("common.dismissNotification")}
-                onDismiss={() => setErrorCode(null)}
-              />
-            ) : undefined
           }
         />
       </AdministrationPageBody>

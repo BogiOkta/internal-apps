@@ -13,7 +13,7 @@ import {
 } from "@/components/admin-data-grid";
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
-import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { OrganizationWorkspace } from "@/features/organization/components/organization-workspace";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   formDangerButtonClassName,
@@ -22,6 +22,7 @@ import {
 } from "@/components/form-field";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { GridPagination } from "@/components/grid-pagination";
 import { StatusBadge } from "@/components/status-badge";
 import { DepartmentForm } from "@/features/organization/components/department-form";
@@ -200,44 +201,72 @@ export default function DepartmentsPage() {
     }
   }
 
-  const headerActions = (
-    <div className="flex flex-wrap items-center gap-2">
-      {canManage && (
-        <button
-          type="button"
-          onClick={() => {
-            setFeedback(null);
-            setWriteError(null);
-            setPanelMode("create");
-          }}
-          className={formPrimaryButtonClassName()}
-        >
-          {portalActionContent("create", t("organization.departments.new"))}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => setRefreshVersion((value) => value + 1)}
-        disabled={isLoading}
-        className={formSecondaryButtonClassName()}
-      >
-        {portalActionContent(
-          "refresh",
-          isLoading
-            ? t("organization.departments.refreshing")
-            : t("organization.departments.refresh"),
-        )}
-      </button>
-    </div>
-  );
-
   return (
-    <CompanyAdministrationWorkspace
+    <OrganizationWorkspace
       title={t("organization.departments.title")}
       description={t("organization.departments.description")}
-      headerActions={headerActions}
+      sectionActions={
+        canManage ? (
+          <button
+            type="button"
+            onClick={() => {
+              setFeedback(null);
+              setWriteError(null);
+              setPanelMode("create");
+            }}
+            className={formPrimaryButtonClassName()}
+          >
+            {portalActionContent("create", t("organization.departments.new"))}
+          </button>
+        ) : undefined
+      }
+      sectionSecondaryActions={
+        <button
+          type="button"
+          onClick={() => setRefreshVersion((value) => value + 1)}
+          disabled={isLoading}
+          className={formSecondaryButtonClassName()}
+        >
+          {portalActionContent(
+            "refresh",
+            isLoading
+              ? t("organization.departments.refreshing")
+              : t("organization.departments.refresh"),
+          )}
+        </button>
+      }
       contentFillsViewport
     >
+      <PortalNotificationHost>
+        {feedback ? (
+          <PortalNotification
+            variant="success"
+            message={feedback}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : null}
+        {writeError ? (
+          <PortalNotification
+            variant="error"
+            message={writeError}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setWriteError(null)}
+          />
+        ) : null}
+        {exportError ? (
+          <PortalNotification
+            variant="error"
+            message={
+              departments.length === 0
+                ? t("grid.noExportRows")
+                : t("grid.exportFailure")
+            }
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setExportError(false)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("organization.departments.tableLabel")}
@@ -444,43 +473,9 @@ export default function DepartmentsPage() {
               )}
             </div>
           }
-          detailsNotification={
-            feedback || writeError || exportError ? (
-              <>
-                {feedback && (
-                  <PortalNotification
-                    variant="success"
-                    message={feedback}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setFeedback(null)}
-                  />
-                )}
-                {writeError && (
-                  <PortalNotification
-                    variant="error"
-                    message={writeError}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setWriteError(null)}
-                  />
-                )}
-                {exportError && (
-                  <PortalNotification
-                    variant="error"
-                    message={
-                      departments.length === 0
-                        ? t("grid.noExportRows")
-                        : t("grid.exportFailure")
-                    }
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setExportError(false)}
-                  />
-                )}
-              </>
-            ) : undefined
-          }
         />
       </AdministrationPageBody>
-    </CompanyAdministrationWorkspace>
+    </OrganizationWorkspace>
   );
 }
 

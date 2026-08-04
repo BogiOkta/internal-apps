@@ -5,15 +5,33 @@ namespace InternalApps.Api.Tests;
 public sealed class PortalNavigationContractTests
 {
     [Fact]
-    public void CompanyAdministration_UsesCanonicalOrganizationAndCalendarRoutes()
+    public void CompanyAdministration_UsesOrganizationWorkspaceRegistry()
     {
         var shell = ReadRepositoryFile("apps", "portal", "src", "components", "app-shell.tsx");
+        var registry = ReadRepositoryFile("apps", "portal", "src", "navigation", "organization.ts");
+        var index = ReadRepositoryFile("apps", "portal", "src", "navigation", "index.ts");
 
         Assert.Contains("navigation.companyAdministration", shell);
-        Assert.Contains("/organization/departments", shell);
-        Assert.Contains("/organization/employees", shell);
-        Assert.Contains("/business-calendar/admin/non-working-days", shell);
+        Assert.Contains("getCompanyWorkspaces", shell);
+        Assert.Contains("WorkspaceNavBlock", shell);
+        Assert.Contains("/identity/users", shell);
         Assert.Contains("user.permissions.includes(usersManagePermission)", shell);
+
+        Assert.DoesNotContain("href=\"/organization/departments\"", shell);
+        Assert.DoesNotContain("href=\"/organization/employees\"", shell);
+        Assert.DoesNotContain("href=\"/business-calendar/admin/non-working-days\"", shell);
+        Assert.DoesNotContain("href=\"/organization/user-employee-links\"", shell);
+
+        Assert.Contains("organizationWorkspace", index);
+        Assert.Contains("getCompanyWorkspaces", index);
+        Assert.Contains("/organization", registry);
+        Assert.Contains("/organization/departments", registry);
+        Assert.Contains("/organization/employees", registry);
+        Assert.Contains("/business-calendar/admin/non-working-days", registry);
+        Assert.Contains("/organization/user-employee-links", registry);
+        Assert.Contains("organization.nav.administration", registry);
+        Assert.Contains("businessCalendarManagePermission", registry);
+        Assert.Contains("userEmployeeLinksManagePermission", registry);
     }
 
     [Fact]
@@ -30,8 +48,9 @@ public sealed class PortalNavigationContractTests
         Assert.Contains("shell.logout", shell);
         Assert.DoesNotContain("useAppearance()", shell);
         Assert.DoesNotContain("setLocale(", shell);
-        Assert.DoesNotContain("user.displayName", shell);
-        Assert.DoesNotContain("user.username", shell);
+        // Identity belongs in the workspace profile menu, not a permanent sidebar card.
+        Assert.Contains("WorkspaceProfileMenu", shell);
+        Assert.DoesNotContain("shell.noRole", shell);
 
         Assert.Contains("useAppearance()", settings);
         Assert.Contains("setLocale(", settings);
@@ -44,37 +63,120 @@ public sealed class PortalNavigationContractTests
     }
 
     [Fact]
-    public void VacationWorkspace_ContainsOnlyVacationNavigation()
+    public void VacationWorkspace_UsesSidebarSectionsWithoutModuleTabStrip()
     {
         var workspace = ReadRepositoryFile("apps", "portal", "src", "features", "vacation",
             "components", "vacation-workspace.tsx");
+        var shell = ReadRepositoryFile("apps", "portal", "src", "features", "vacation",
+            "components", "vacation-shell.tsx");
+        var layout = ReadRepositoryFile("apps", "portal", "src", "app", "vacation",
+            "layout.tsx");
+        var registry = ReadRepositoryFile("apps", "portal", "src", "navigation", "vacation.ts");
+        var appShell = ReadRepositoryFile("apps", "portal", "src", "components", "app-shell.tsx");
 
-        Assert.Contains("/vacation/requests", workspace);
-        Assert.Contains("/vacation/leave-types", workspace);
-        Assert.Contains("/vacation/admin/requests", workspace);
-        Assert.Contains("/vacation/admin/policies", workspace);
-        Assert.Contains("/vacation/admin/leave-balances", workspace);
+        Assert.DoesNotContain("WorkspaceNavigation", workspace);
+        Assert.DoesNotContain("AppShell", workspace);
+        Assert.Contains("PortalSectionHeader", workspace);
+        Assert.Contains("asPageTitle", workspace);
+        Assert.Contains("useVacationShellChrome", workspace);
+
+        Assert.Contains("layoutMode=\"workspace\"", shell);
+        Assert.Contains("buildWorkspaceBreadcrumbs", shell);
+        Assert.Contains("VacationPersistentShell", layout);
+        Assert.Contains("breadcrumbRecordLabel", workspace);
+
+        Assert.Contains("/vacation", registry);
+        Assert.Contains("/vacation/requests", registry);
+        Assert.Contains("/vacation/leave-types", registry);
+        Assert.Contains("/vacation/admin/requests", registry);
+        Assert.Contains("/vacation/admin/policies", registry);
+        Assert.Contains("/vacation/admin/leave-balances", registry);
+        Assert.Contains("vacation.nav.administration", registry);
+        Assert.Contains("leaveTypesManagePermission", registry);
+        Assert.Contains("vacationRequestsManagePermission", registry);
+        Assert.Contains("leaveBalanceManagePermission", registry);
+
+        Assert.Contains("WorkspaceNavBlock", appShell);
+        Assert.Contains("AdministrationNavGroup", appShell);
+        Assert.Contains("getWorkspaceByApplicationCode", appShell);
+
         Assert.DoesNotContain("/organization/employees", workspace);
         Assert.DoesNotContain("/organization/departments", workspace);
         Assert.DoesNotContain("/business-calendar/admin/non-working-days", workspace);
     }
 
     [Fact]
-    public void CompanyAdministrationPages_DoNotUseTheVacationWorkspace()
+    public void OrganizationWorkspace_UsesPersistentShellWithoutModuleTabStrip()
     {
-        var employees = ReadRepositoryFile("apps", "portal", "src", "app", "organization", "employees", "page.tsx");
-        var departments = ReadRepositoryFile("apps", "portal", "src", "app", "organization", "departments", "page.tsx");
-        var links = ReadRepositoryFile("apps", "portal", "src", "app", "organization", "user-employee-links", "page.tsx");
+        var workspace = ReadRepositoryFile("apps", "portal", "src", "features", "organization",
+            "components", "organization-workspace.tsx");
+        var shell = ReadRepositoryFile("apps", "portal", "src", "features", "organization",
+            "components", "organization-shell.tsx");
+        var companyLayout = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
+            "layout.tsx");
+        var employees = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
+            "organization", "employees", "page.tsx");
+        var departments = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
+            "organization", "departments", "page.tsx");
+        var links = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
+            "organization", "user-employee-links", "page.tsx");
+        var nonWorkingDays = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
+            "business-calendar", "admin", "non-working-days", "page.tsx");
         var users = ReadRepositoryFile("apps", "portal", "src", "app", "identity", "users", "page.tsx");
+        var vacationLayout = ReadRepositoryFile("apps", "portal", "src", "app", "vacation",
+            "layout.tsx");
 
-        Assert.Contains("CompanyAdministrationWorkspace", employees);
-        Assert.Contains("CompanyAdministrationWorkspace", departments);
-        Assert.Contains("CompanyAdministrationWorkspace", links);
-        Assert.Contains("CompanyAdministrationWorkspace", users);
+        Assert.DoesNotContain("WorkspaceNavigation", workspace);
+        Assert.DoesNotContain("AppShell", workspace);
+        Assert.Contains("PortalSectionHeader", workspace);
+        Assert.Contains("asPageTitle", workspace);
+        Assert.Contains("useOrganizationShellChrome", workspace);
+        Assert.Contains("layoutMode=\"workspace\"", shell);
+        Assert.Contains("OrganizationPersistentShell", companyLayout);
+        Assert.DoesNotContain("VacationPersistentShell", companyLayout);
+
+        // Shared Company layout owns AppShell once; pages must not wrap it.
+        Assert.DoesNotContain("AppShell", employees);
+        Assert.DoesNotContain("AppShell", departments);
+        Assert.DoesNotContain("AppShell", links);
+        Assert.DoesNotContain("AppShell", nonWorkingDays);
+        Assert.DoesNotContain("OrganizationPersistentShell", employees);
+        Assert.DoesNotContain("OrganizationPersistentShell", departments);
+        Assert.DoesNotContain("OrganizationPersistentShell", links);
+        Assert.DoesNotContain("OrganizationPersistentShell", nonWorkingDays);
+
+        Assert.Contains("OrganizationWorkspace", employees);
+        Assert.Contains("OrganizationWorkspace", departments);
+        Assert.Contains("OrganizationWorkspace", links);
+        Assert.Contains("OrganizationWorkspace", nonWorkingDays);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", employees);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", departments);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", links);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", nonWorkingDays);
         Assert.DoesNotContain("VacationWorkspace", employees);
         Assert.DoesNotContain("VacationWorkspace", departments);
         Assert.DoesNotContain("VacationWorkspace", links);
+        Assert.DoesNotContain("VacationWorkspace", nonWorkingDays);
+
+        Assert.Contains("CompanyAdministrationWorkspace", users);
+        Assert.DoesNotContain("OrganizationWorkspace", users);
         Assert.DoesNotContain("VacationWorkspace", users);
+
+        // Vacation remains an independent persistent shell owner.
+        Assert.Contains("VacationPersistentShell", vacationLayout);
+        Assert.False(Directory.Exists(Path.Combine(
+            RepositoryRoot(), "apps", "portal", "src", "app", "organization")));
+        Assert.False(Directory.Exists(Path.Combine(
+            RepositoryRoot(), "apps", "portal", "src", "app", "business-calendar")));
+    }
+
+    private static string RepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "internal.ps1")))
+            directory = directory.Parent;
+        Assert.NotNull(directory);
+        return directory!.FullName;
     }
 
     [Fact]
@@ -88,6 +190,15 @@ public sealed class PortalNavigationContractTests
         Assert.Contains("\"dashboard.assignedApplications\": \"My applications\"", translations);
         Assert.Contains("\"dashboard.assignedApplications\": \"Moje aplikacije\"", translations);
         Assert.DoesNotContain("getInitials", shell);
+        Assert.Contains("WorkspaceProfileMenu", shell);
+        Assert.Contains("\"vacation.nav.overview\": \"Overview\"", translations);
+        Assert.Contains("\"vacation.nav.overview\": \"Pregled\"", translations);
+        Assert.Contains("\"vacation.nav.myRequests\": \"My requests\"", translations);
+        Assert.Contains("\"vacation.nav.myRequests\": \"Moji zahtevi\"", translations);
+        Assert.Contains("\"organization.nav.overview\": \"Overview\"", translations);
+        Assert.Contains("\"organization.nav.overview\": \"Pregled\"", translations);
+        Assert.Contains("\"organization.workspace.name\": \"Organization\"", translations);
+        Assert.Contains("\"organization.workspace.name\": \"Organizacija\"", translations);
     }
 
     private static string ReadRepositoryFile(params string[] parts)

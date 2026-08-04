@@ -69,3 +69,24 @@ html[data-theme="dark"] select,
 html[data-theme="dark"] textarea {
   color-scheme: dark;
 }
+
+@keyframes portal-notification-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.portal-notification-host-stack > * {
+  animation: portal-notification-enter 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-notification-host-stack > * {
+    animation: none;
+  }
+}

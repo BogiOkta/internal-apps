@@ -53,7 +53,7 @@ public sealed class OrganizationEmployeeHistoricalDataTests
             "organization.ts");
         var form = ReadRepositoryFile("apps", "portal", "src", "features",
             "vacation", "components", "employee-form.tsx");
-        var page = ReadRepositoryFile("apps", "portal", "src", "app",
+        var page = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
             "organization", "employees", "page.tsx");
 
         Assert.Contains("middleName: string | null", types);

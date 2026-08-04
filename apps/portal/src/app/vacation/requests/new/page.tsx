@@ -116,6 +116,7 @@ export default function NewVacationRequestPage() {
   }
 
   return <VacationWorkspace title={t("vacation.employeePortal.createTitle")}
+    breadcrumbRecordLabel={t("vacation.employeePortal.createTitle")}
     description={t("vacation.employeePortal.createDescription")}>
     <form onSubmit={submit} className="mx-auto max-w-4xl space-y-6">
       {error && <div role="alert" className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">{error}</div>}

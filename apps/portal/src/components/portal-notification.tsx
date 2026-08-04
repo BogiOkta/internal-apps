@@ -237,28 +237,34 @@ export function PortalNotification({
       role={isError || isWarning ? "alert" : "status"}
       aria-live={isError || isWarning ? "assertive" : "polite"}
       data-portal-notification-paused={paused ? "true" : "false"}
-      className={`relative overflow-hidden rounded-lg border px-3.5 py-3 text-sm shadow-sm ${tone.container}`}
+      className="relative overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-md"
     >
-      <div className="flex items-start gap-2.5">
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-1 ${tone.accent}`}
+      />
+      <div className="flex items-start gap-3 pl-1.5">
         <span
           aria-hidden="true"
-          className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full ${tone.iconWrap}`}
+          className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center ${tone.icon}`}
         >
-          <ToneIcon variant={variant} className={tone.icon} />
+          <ToneIcon variant={variant} className="size-4" />
         </span>
         <div className="min-w-0 flex-1 leading-snug">
           {title && (
-            <p className={`text-sm font-semibold tracking-tight ${tone.title}`}>
+            <p className="text-[0.9375rem] font-semibold tracking-tight text-slate-950">
               {title}
             </p>
           )}
           <p
-            className={`${title ? "mt-1 " : ""}whitespace-pre-line ${tone.message}`}
+            className={`${title ? "mt-1 " : ""}whitespace-pre-line text-sm font-normal text-slate-600`}
           >
             {message}
           </p>
           {detail && (
-            <div className={`mt-2 ${tone.message}`}>{detail}</div>
+            <div className="mt-2 text-sm font-normal text-slate-600">
+              {detail}
+            </div>
           )}
         </div>
         {onDismiss && (
@@ -266,7 +272,7 @@ export function PortalNotification({
             type="button"
             onClick={onDismiss}
             aria-label={dismissLabel}
-            className={`-mr-0.5 -mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-md transition-colors ${tone.dismiss} focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent`}
+            className="-mr-1 -mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
           >
             <DismissGlyph />
           </button>
@@ -275,7 +281,7 @@ export function PortalNotification({
       {shouldAutoDismiss && !reduceMotion ? (
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2px] ${tone.progressTrack}`}
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-slate-100"
         >
           <div
             className={`h-full origin-left ${tone.progressBar}`}
@@ -383,59 +389,27 @@ function toneClasses(variant: PortalNotificationVariant) {
   switch (variant) {
     case "success":
       return {
-        container:
-          "border-emerald-200/70 bg-emerald-50/65 dark:border-emerald-800/45 dark:bg-emerald-950/25",
-        title: "text-emerald-950 dark:text-emerald-50",
-        message: "text-emerald-900 dark:text-emerald-100",
-        iconWrap:
-          "bg-emerald-100/70 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
-        icon: "size-3.5",
-        dismiss:
-          "text-emerald-800/70 hover:bg-emerald-100/80 hover:text-emerald-950 focus-visible:ring-emerald-600 dark:text-emerald-100/70 dark:hover:bg-emerald-900/50 dark:hover:text-emerald-50 dark:focus-visible:ring-emerald-400",
-        progressTrack: "bg-emerald-200/40 dark:bg-emerald-900/35",
-        progressBar: "bg-emerald-500/55 dark:bg-emerald-400/40",
+        accent: "bg-emerald-500",
+        icon: "text-emerald-600",
+        progressBar: "bg-emerald-500/70",
       };
     case "warning":
       return {
-        container:
-          "border-amber-200/70 bg-amber-50/65 dark:border-amber-800/45 dark:bg-amber-950/25",
-        title: "text-amber-950 dark:text-amber-50",
-        message: "text-amber-900 dark:text-amber-100",
-        iconWrap:
-          "bg-amber-100/70 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
-        icon: "size-3.5",
-        dismiss:
-          "text-amber-800/70 hover:bg-amber-100/80 hover:text-amber-950 focus-visible:ring-amber-600 dark:text-amber-100/70 dark:hover:bg-amber-900/50 dark:hover:text-amber-50 dark:focus-visible:ring-amber-400",
-        progressTrack: "bg-amber-200/40 dark:bg-amber-900/35",
-        progressBar: "bg-amber-500/55 dark:bg-amber-400/40",
+        accent: "bg-amber-500",
+        icon: "text-amber-600",
+        progressBar: "bg-amber-500/70",
       };
     case "error":
       return {
-        container:
-          "border-rose-200/70 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-950/22",
-        title: "text-red-950 dark:text-rose-50",
-        message: "text-red-900 dark:text-rose-100",
-        iconWrap:
-          "bg-rose-100/70 text-red-700 dark:bg-rose-900/40 dark:text-rose-200",
-        icon: "size-3.5",
-        dismiss:
-          "text-red-800/70 hover:bg-rose-100/80 hover:text-red-950 focus-visible:ring-rose-600 dark:text-rose-100/70 dark:hover:bg-rose-900/45 dark:hover:text-rose-50 dark:focus-visible:ring-rose-400",
-        progressTrack: "bg-rose-200/40 dark:bg-rose-900/35",
-        progressBar: "bg-rose-500/50 dark:bg-rose-400/35",
+        accent: "bg-rose-500",
+        icon: "text-rose-600",
+        progressBar: "bg-rose-500/70",
       };
     case "info":
       return {
-        container:
-          "border-sky-200/70 bg-sky-50/65 dark:border-sky-800/45 dark:bg-sky-950/25",
-        title: "text-sky-950 dark:text-sky-50",
-        message: "text-sky-900 dark:text-sky-100",
-        iconWrap:
-          "bg-sky-100/70 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200",
-        icon: "size-3.5",
-        dismiss:
-          "text-sky-800/70 hover:bg-sky-100/80 hover:text-sky-950 focus-visible:ring-sky-600 dark:text-sky-100/70 dark:hover:bg-sky-900/50 dark:hover:text-sky-50 dark:focus-visible:ring-sky-400",
-        progressTrack: "bg-sky-200/40 dark:bg-sky-900/35",
-        progressBar: "bg-sky-500/55 dark:bg-sky-400/40",
+        accent: "bg-sky-500",
+        icon: "text-sky-600",
+        progressBar: "bg-sky-500/70",
       };
   }
 }

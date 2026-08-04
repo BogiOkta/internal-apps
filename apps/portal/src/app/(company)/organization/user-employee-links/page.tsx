@@ -14,13 +14,14 @@ import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { OrganizationWorkspace } from "@/features/organization/components/organization-workspace";
 import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { GridPagination } from "@/components/grid-pagination";
 import { SearchableCombobox } from "@/components/searchable-combobox";
 import { useTranslations } from "@/i18n/use-translations";
@@ -330,49 +331,69 @@ export default function UserEmployeeLinksPage() {
 
   if (!canManage) {
     return (
-      <CompanyAdministrationWorkspace title={t("organization.links.title")}>
+      <OrganizationWorkspace title={t("organization.links.title")}>
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800"
         >
           {t("organization.links.forbidden")}
         </div>
-      </CompanyAdministrationWorkspace>
+      </OrganizationWorkspace>
     );
   }
 
-  const headerActions = (
-    <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={beginCreate}
-        className={formPrimaryButtonClassName()}
-      >
-        {portalActionContent("create", t("organization.links.new"))}
-      </button>
-      <button
-        type="button"
-        onClick={() => setRefreshVersion((value) => value + 1)}
-        disabled={isLoading}
-        className={formSecondaryButtonClassName()}
-      >
-        {portalActionContent(
-          "refresh",
-          isLoading
-            ? t("organization.links.refreshing")
-            : t("organization.links.refresh"),
-        )}
-      </button>
-    </div>
-  );
-
   return (
-    <CompanyAdministrationWorkspace
+    <OrganizationWorkspace
       title={t("organization.links.title")}
       description={t("organization.links.description")}
-      headerActions={headerActions}
+      sectionActions={
+        <button
+          type="button"
+          onClick={beginCreate}
+          className={formPrimaryButtonClassName()}
+        >
+          {portalActionContent("create", t("organization.links.new"))}
+        </button>
+      }
+      sectionSecondaryActions={
+        <button
+          type="button"
+          onClick={() => setRefreshVersion((value) => value + 1)}
+          disabled={isLoading}
+          className={formSecondaryButtonClassName()}
+        >
+          {portalActionContent(
+            "refresh",
+            isLoading
+              ? t("organization.links.refreshing")
+              : t("organization.links.refresh"),
+          )}
+        </button>
+      }
       contentFillsViewport
     >
+      <PortalNotificationHost>
+        {writeError ? (
+          <PortalNotification
+            variant="error"
+            message={writeError}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setWriteError(null)}
+          />
+        ) : null}
+        {exportError ? (
+          <PortalNotification
+            variant="error"
+            message={
+              links.length === 0
+                ? t("grid.noExportRows")
+                : t("grid.exportFailure")
+            }
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setExportError(false)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("organization.links.tableLabel")}
@@ -667,35 +688,9 @@ export default function UserEmployeeLinksPage() {
               )}
             </div>
           }
-          detailsNotification={
-            writeError || exportError ? (
-              <>
-                {writeError && (
-                  <PortalNotification
-                    variant="error"
-                    message={writeError}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setWriteError(null)}
-                  />
-                )}
-                {exportError && (
-                  <PortalNotification
-                    variant="error"
-                    message={
-                      links.length === 0
-                        ? t("grid.noExportRows")
-                        : t("grid.exportFailure")
-                    }
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setExportError(false)}
-                  />
-                )}
-              </>
-            ) : undefined
-          }
         />
       </AdministrationPageBody>
-    </CompanyAdministrationWorkspace>
+    </OrganizationWorkspace>
   );
 }
 

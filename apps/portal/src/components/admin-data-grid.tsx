@@ -26,7 +26,9 @@ export function AdministrativeGridShell({
   detailsPanel?: ReactNode;
   /**
    * Stable operation-feedback region in the right rail, below details /
-   * actions / confirmation. Must not be rendered above the primary grid.
+   * actions / confirmation. Retained for modules not yet migrated to the
+   * top-center `PortalNotificationHost`. Must not be rendered above the
+   * primary grid.
    */
   detailsNotification?: ReactNode;
   /**
@@ -39,7 +41,7 @@ export function AdministrativeGridShell({
   return (
     <div
       className={[
-        "grid min-h-0 gap-4",
+        "grid min-h-0 gap-5 lg:gap-6",
         fillViewport ? "lg:h-0 lg:flex-1" : "",
         detailsPanel ? "lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch" : "",
       ]
@@ -65,7 +67,7 @@ export function AdministrativeGridShell({
       {detailsPanel ? (
         <aside
           className={[
-            "flex min-h-0 flex-col overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 shadow-sm",
+            "flex min-h-0 flex-col overflow-y-auto rounded-xl border border-slate-300 bg-slate-50 p-5 shadow-md",
             fillViewport ? "lg:min-h-0" : "min-h-[24rem]",
           ].join(" ")}
         >

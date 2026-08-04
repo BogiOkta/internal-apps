@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { OrganizationWorkspace } from "@/features/organization/components/organization-workspace";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   fieldDescriptionIds,
@@ -13,6 +13,7 @@ import {
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalDateInput } from "@/components/portal-date-input";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { useAuth } from "@/components/auth-provider";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate } from "@/utils/portal-date-format";
@@ -127,44 +128,54 @@ export default function NonWorkingDaysPage() {
 
   if (!allowed) {
     return (
-      <CompanyAdministrationWorkspace title={t("businessCalendar.title")}>
+      <OrganizationWorkspace title={t("businessCalendar.title")}>
         <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
           {t("businessCalendar.forbidden")}
         </div>
-      </CompanyAdministrationWorkspace>
+      </OrganizationWorkspace>
     );
   }
 
   return (
-    <CompanyAdministrationWorkspace
+    <OrganizationWorkspace
       title={t("businessCalendar.title")}
       description={t("businessCalendar.description")}
-      headerActions={
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              resetForm();
-              setFeedback(null);
-            }}
-            className={formPrimaryButtonClassName()}
-          >
-            {portalActionContent("create", t("businessCalendar.createTitle"))}
-          </button>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={isLoading}
-            className={formSecondaryButtonClassName()}
-          >
-            {portalActionContent(
-              "refresh",
-              isLoading ? t("businessCalendar.refreshing") : t("businessCalendar.refresh"),
-            )}
-          </button>
-        </div>
+      sectionActions={
+        <button
+          type="button"
+          onClick={() => {
+            resetForm();
+            setFeedback(null);
+          }}
+          className={formPrimaryButtonClassName()}
+        >
+          {portalActionContent("create", t("businessCalendar.createTitle"))}
+        </button>
+      }
+      sectionSecondaryActions={
+        <button
+          type="button"
+          onClick={() => void load()}
+          disabled={isLoading}
+          className={formSecondaryButtonClassName()}
+        >
+          {portalActionContent(
+            "refresh",
+            isLoading ? t("businessCalendar.refreshing") : t("businessCalendar.refresh"),
+          )}
+        </button>
       }
     >
+      <PortalNotificationHost>
+        {feedback ? (
+          <PortalNotification
+            variant={feedback.kind === "error" ? "error" : "success"}
+            message={feedback.text}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
           <section
             aria-label={t("businessCalendar.title")}
@@ -337,17 +348,9 @@ export default function NonWorkingDaysPage() {
                   onCancel={() => setPendingDelete(null)}
                 />
               )}
-              {feedback && (
-                <PortalNotification
-                  variant={feedback.kind === "error" ? "error" : "success"}
-                  message={feedback.text}
-                  dismissLabel={t("common.dismissNotification")}
-                  onDismiss={() => setFeedback(null)}
-                />
-              )}
             </div>
           </aside>
       </div>
-    </CompanyAdministrationWorkspace>
+    </OrganizationWorkspace>
   );
 }

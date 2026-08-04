@@ -10,6 +10,8 @@ import {
   formSecondaryButtonClassName,
 } from "@/components/form-field";
 import { PortalDateInput } from "@/components/portal-date-input";
+import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
@@ -40,6 +42,7 @@ export function AdminRecordAbsence() {
   const [workingDays, setWorkingDays] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -79,8 +82,9 @@ export function AdminRecordAbsence() {
     if (!accessToken || submitting) return;
     setError(null);
     setSuccess(null);
+    setFormError(null);
     if (!employeeId || !leaveTypeId || !dateFrom || !dateTo) {
-      setError(t("vacation.admin.record.required"));
+      setFormError(t("vacation.admin.record.required"));
       return;
     }
     setSubmitting(true);
@@ -122,7 +126,26 @@ export function AdminRecordAbsence() {
     <VacationWorkspace
       title={t("vacation.admin.record")}
       description={t("vacation.admin.record.description")}
+      breadcrumbRecordLabel={t("vacation.admin.record")}
     >
+      <PortalNotificationHost>
+        {success ? (
+          <PortalNotification
+            variant="success"
+            message={success}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setSuccess(null)}
+          />
+        ) : null}
+        {error ? (
+          <PortalNotification
+            variant="error"
+            message={error}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <div className="mb-4">
         <Link
           href="/vacation/admin/requests"
@@ -131,26 +154,15 @@ export function AdminRecordAbsence() {
           {t("vacation.admin.back")}
         </Link>
       </div>
-      {success && (
-        <p
-          role="status"
-          className="mb-4 rounded border border-emerald-300 bg-emerald-50 p-3 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100"
-        >
-          {success}
-        </p>
-      )}
-      {error && (
-        <p
-          role="alert"
-          className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-100"
-        >
-          {error}
-        </p>
-      )}
       <form
         onSubmit={submit}
         className="max-w-2xl space-y-4 rounded-lg border border-slate-300 bg-white p-5 dark:border-slate-600 dark:bg-slate-900"
       >
+        {formError ? (
+          <p role="alert" className="text-sm text-red-700">
+            {formError}
+          </p>
+        ) : null}
         <FormField
           id="record-employee"
           label={t("vacation.admin.record.employee")}

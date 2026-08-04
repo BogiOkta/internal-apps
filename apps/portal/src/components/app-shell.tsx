@@ -15,8 +15,19 @@ import { getAssignedApplications } from "@/services/applications";
 import type { AssignedApplication } from "@/types/application";
 import type { CurrentUser } from "@/types/auth";
 import { usersManagePermission } from "@/types/auth";
-import { userEmployeeLinksManagePermission } from "@/types/organization";
 import { AdministrationPageHeader } from "@/components/administration-page-header";
+import { PortalBreadcrumb } from "@/components/portal-breadcrumb";
+import {
+  filterVisibleSections,
+  getCompanyWorkspaces,
+  getWorkspaceByApplicationCode,
+  isSectionRouteActive,
+  isWorkspaceRouteActive,
+  partitionSections,
+  type BreadcrumbNode,
+  type SectionDescriptor,
+  type WorkspaceDescriptor,
+} from "@/navigation";
 
 type AppShellContext = {
   applications: AssignedApplication[];
@@ -26,11 +37,17 @@ type AppShellContext = {
 };
 
 type AppShellProps = {
-  title: string;
+  title?: string;
   description?: string;
   headerActions?: ReactNode;
   secondaryNavigation?: ReactNode;
   contentFillsViewport?: boolean;
+  /**
+   * `workspace` = Vacation IA pilot layout: breadcrumb + profile header,
+   * no stacked module title band. Page title is owned by the child page header.
+   */
+  layoutMode?: "default" | "workspace";
+  breadcrumbs?: BreadcrumbNode[];
   children: ReactNode | ((context: AppShellContext) => ReactNode);
 };
 
@@ -51,6 +68,8 @@ export function AppShell({
   headerActions,
   secondaryNavigation,
   contentFillsViewport = false,
+  layoutMode = "default",
+  breadcrumbs,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -62,6 +81,7 @@ export function AppShell({
   const [areApplicationsLoading, setAreApplicationsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isWorkspaceLayout = layoutMode === "workspace";
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -148,11 +168,11 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] border-r border-slate-300 bg-white shadow-[1px_0_2px_rgba(15,23,42,0.04)] lg:flex lg:flex-col">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[240px] border-r border-slate-300 bg-white shadow-[1px_0_2px_rgba(15,23,42,0.04)] lg:flex lg:flex-col">
         <Navigation {...navigationProps} />
       </aside>
 
-      <div className={`lg:pl-[232px] ${contentFillsViewport ? "lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden" : ""}`}>
+      <div className={`lg:pl-[240px] ${contentFillsViewport ? "lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden" : ""}`}>
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-300 bg-white px-4 lg:hidden">
           <Link
             href="/dashboard"
@@ -200,39 +220,70 @@ export function AppShell({
           </div>
         )}
 
-        <header className="border-b border-slate-200 bg-white">
-          {headerActions ? (
-            <AdministrationPageHeader
-              title={title}
-              description={description}
-              actions={headerActions}
-            />
-          ) : (
-            <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6 lg:px-7">
-              <h1 className="text-xl font-semibold tracking-tight text-slate-950">
-                {title}
-              </h1>
-              {description && (
-                <p className="mt-0.5 max-w-3xl text-sm leading-5 text-slate-600">
-                  {description}
-                </p>
+        {isWorkspaceLayout ? (
+          <header className="sticky top-14 z-20 border-b border-slate-200 bg-white lg:top-0">
+            <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-7">
+              <div className="min-w-0 flex-1">
+                {breadcrumbs && breadcrumbs.length > 0 ? (
+                  <PortalBreadcrumb
+                    items={breadcrumbs}
+                    ariaLabel={t("navigation.breadcrumb")}
+                  />
+                ) : (
+                  <p className="truncate text-xs font-medium text-slate-500">
+                    {t("applications.vacation.name")}
+                  </p>
+                )}
+              </div>
+              <WorkspaceProfileMenu
+                displayName={user.displayName}
+                username={user.username}
+                settingsLabel={t("navigation.settings")}
+                profileMenuLabel={t("navigation.profileMenu")}
+              />
+            </div>
+          </header>
+        ) : (
+          <>
+            <header className="border-b border-slate-200 bg-white">
+              {headerActions ? (
+                <AdministrationPageHeader
+                  title={title ?? ""}
+                  description={description}
+                  actions={headerActions}
+                />
+              ) : (
+                <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6 lg:px-7">
+                  <h1 className="text-xl font-semibold tracking-tight text-slate-950">
+                    {title}
+                  </h1>
+                  {description && (
+                    <p className="mt-0.5 max-w-3xl text-sm leading-5 text-slate-600">
+                      {description}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-        </header>
+            </header>
 
-        {secondaryNavigation && (
-          <section
-            aria-label={t("navigation.pageNavigation")}
-            className="border-b border-slate-200 bg-white"
-          >
-            <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-7">
-              {secondaryNavigation}
-            </div>
-          </section>
+            {secondaryNavigation && (
+              <section
+                aria-label={t("navigation.pageNavigation")}
+                className="border-b border-slate-200 bg-white"
+              >
+                <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-7">
+                  {secondaryNavigation}
+                </div>
+              </section>
+            )}
+          </>
         )}
 
-        <main className={`mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-7 ${contentFillsViewport ? "lg:flex lg:min-h-0 lg:w-full lg:flex-1 lg:flex-col" : ""}`}>
+        <main
+          className={`mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-7 ${
+            isWorkspaceLayout ? "py-5" : "py-6"
+          } ${contentFillsViewport ? "lg:flex lg:min-h-0 lg:w-full lg:flex-1 lg:flex-col" : ""}`}
+        >
           {typeof children === "function" ? children(shellContext) : children}
         </main>
       </div>
@@ -320,6 +371,20 @@ function Navigation({
           !applicationsError &&
           applications.map((application) => {
             const localizedApplication = localizeApplication(application, t);
+            const workspace = getWorkspaceByApplicationCode(application.code);
+
+            if (workspace) {
+              return (
+                <WorkspaceNavBlock
+                  key={application.publicId}
+                  workspace={workspace}
+                  workspaceLabel={localizedApplication.name}
+                  currentPath={currentPath}
+                  permissions={user.permissions}
+                  onNavigate={onNavigate}
+                />
+              );
+            }
 
             return (
               <NavLink
@@ -336,44 +401,22 @@ function Navigation({
         <p className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
           {t("navigation.companyAdministration")}
         </p>
-        <NavLink
-          href="/organization/departments"
-          isActive={isRouteActive(currentPath, "/organization/departments")}
-          label={t("organization.departments.title")}
-          icon={<OrganizationIcon />}
-          onNavigate={onNavigate}
-        />
-        <NavLink
-          href="/organization/employees"
-          isActive={isRouteActive(currentPath, "/organization/employees")}
-          label={t("vacation.employees.title")}
-          icon={<UsersIcon />}
-          onNavigate={onNavigate}
-        />
+        {getCompanyWorkspaces().map((workspace) => (
+          <WorkspaceNavBlock
+            key={workspace.id}
+            workspace={workspace}
+            workspaceLabel={t(workspace.labelKey)}
+            currentPath={currentPath}
+            permissions={user.permissions}
+            onNavigate={onNavigate}
+          />
+        ))}
         {user.permissions.includes(usersManagePermission) && (
-          <>
-            <NavLink
-              href="/business-calendar/admin/non-working-days"
-              isActive={isRouteActive(currentPath, "/business-calendar/admin/non-working-days")}
-              label={t("businessCalendar.navigation")}
-              icon={<CalendarIcon />}
-              onNavigate={onNavigate}
-            />
-            <NavLink
-              href="/identity/users"
-              isActive={isRouteActive(currentPath, "/identity/users")}
-              label={t("identity.users.navigation")}
-              icon={<UsersIcon />}
-              onNavigate={onNavigate}
-            />
-          </>
-        )}
-        {user.permissions.includes(userEmployeeLinksManagePermission) && (
           <NavLink
-            href="/organization/user-employee-links"
-            isActive={isRouteActive(currentPath, "/organization/user-employee-links")}
-            label={t("organization.links.navigation")}
-            icon={<LinkIcon />}
+            href="/identity/users"
+            isActive={isRouteActive(currentPath, "/identity/users")}
+            label={t("identity.users.navigation")}
+            icon={<UsersIcon />}
             onNavigate={onNavigate}
           />
         )}
@@ -420,34 +463,278 @@ function Navigation({
   );
 }
 
+function WorkspaceNavBlock({
+  workspace,
+  workspaceLabel,
+  currentPath,
+  permissions,
+  onNavigate,
+}: {
+  workspace: WorkspaceDescriptor;
+  workspaceLabel: string;
+  currentPath: string;
+  permissions: readonly string[];
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslations();
+  const isExpanded = isWorkspaceRouteActive(currentPath, workspace);
+  const visibleSections = filterVisibleSections(workspace.sections, permissions);
+  const { operational, administrative, administrationLabelKey } =
+    partitionSections(visibleSections);
+  const adminChildActive = administrative.some((section) =>
+    isSectionRouteActive(currentPath, section.route),
+  );
+  const [adminExpanded, setAdminExpanded] = useState(adminChildActive);
+
+  useEffect(() => {
+    setAdminExpanded(adminChildActive);
+  }, [adminChildActive, currentPath]);
+
+  return (
+    <div className="mb-0.5">
+      <NavLink
+        href={workspace.routePrefix}
+        isActive={false}
+        isExpandedContext={isExpanded}
+        label={workspaceLabel}
+        icon={<ApplicationIcon code={workspace.applicationCode} />}
+        onNavigate={onNavigate}
+      />
+
+      {isExpanded && (
+        <div className="mb-1 mt-0.5 space-y-0.5 border-l border-slate-200 ml-5 pl-0">
+          {operational.map((section) => (
+            <SectionNavLink
+              key={section.id}
+              section={section}
+              label={t(section.labelKey)}
+              isActive={isSectionRouteActive(currentPath, section.route)}
+              onNavigate={onNavigate}
+            />
+          ))}
+
+          {administrative.length > 0 && administrationLabelKey && (
+            <AdministrationNavGroup
+              label={t(administrationLabelKey)}
+              isExpanded={adminExpanded}
+              onToggle={() => setAdminExpanded((value) => !value)}
+              sections={administrative}
+              currentPath={currentPath}
+              onNavigate={onNavigate}
+              translateLabel={(section) => t(section.labelKey)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdministrationNavGroup({
+  label,
+  isExpanded,
+  onToggle,
+  sections,
+  currentPath,
+  onNavigate,
+  translateLabel,
+}: {
+  label: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  sections: SectionDescriptor[];
+  currentPath: string;
+  onNavigate?: () => void;
+  translateLabel: (section: SectionDescriptor) => string;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={isExpanded}
+        onClick={onToggle}
+        className="mb-0.5 flex min-h-8 w-full items-center gap-2 rounded-md px-3 py-1 pl-5 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+      >
+        <span aria-hidden="true" className="w-3 shrink-0 text-slate-400">
+          {isExpanded ? "▾" : "▸"}
+        </span>
+        <span className="whitespace-nowrap">{label}</span>
+      </button>
+      {isExpanded &&
+        sections.map((section) => (
+          <SectionNavLink
+            key={section.id}
+            section={section}
+            label={translateLabel(section)}
+            isActive={isSectionRouteActive(currentPath, section.route)}
+            onNavigate={onNavigate}
+            nested
+          />
+        ))}
+    </div>
+  );
+}
+
+function SectionNavLink({
+  section,
+  label,
+  isActive,
+  onNavigate,
+  nested = false,
+}: {
+  section: SectionDescriptor;
+  label: string;
+  isActive: boolean;
+  onNavigate?: () => void;
+  nested?: boolean;
+}) {
+  return (
+    <Link
+      href={section.route}
+      aria-current={isActive ? "page" : undefined}
+      onClick={onNavigate}
+      title={label}
+      className={`mb-0.5 flex min-h-9 items-center rounded-md py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+        nested ? "pl-8 pr-3" : "pl-5 pr-3"
+      } ${
+        isActive
+          ? "bg-blue-50 font-semibold text-blue-800 ring-1 ring-inset ring-blue-200"
+          : "font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+      }`}
+    >
+      <span className="whitespace-nowrap">{label}</span>
+    </Link>
+  );
+}
+
+function WorkspaceProfileMenu({
+  displayName,
+  username,
+  settingsLabel,
+  profileMenuLabel,
+}: {
+  displayName: string;
+  username: string;
+  settingsLabel: string;
+  profileMenuLabel: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isOpen]);
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        aria-label={profileMenuLabel}
+        onClick={() => setIsOpen((value) => !value)}
+        className="inline-flex max-w-[220px] items-center gap-2 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-left hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+      >
+        <span
+          aria-hidden="true"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-semibold text-slate-700"
+        >
+          {profileInitials(displayName || username)}
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-slate-900">
+            {displayName}
+          </span>
+          <span className="block truncate text-[11px] text-slate-500">
+            {username}
+          </span>
+        </span>
+      </button>
+      {isOpen && (
+        <>
+          <button
+            type="button"
+            aria-label={profileMenuLabel}
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            role="menu"
+            className="absolute right-0 z-50 mt-1 w-52 rounded-md border border-slate-300 bg-white py-1 shadow-md"
+          >
+            <Link
+              href="/settings"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+              className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+            >
+              {settingsLabel}
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function profileInitials(value: string) {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "U";
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
 function NavLink({
   href,
   icon,
   isActive,
+  isExpandedContext = false,
   label,
   onNavigate,
 }: {
   href: string;
   icon: ReactNode;
   isActive: boolean;
+  /** Workspace is expanded: show containment, never page-selected chrome. */
+  isExpandedContext?: boolean;
   label: string;
   onNavigate?: () => void;
 }) {
+  const selected = isActive;
+  const expandedOnly = !selected && isExpandedContext;
+
   return (
     <Link
       href={href}
-      aria-current={isActive ? "page" : undefined}
+      aria-current={selected ? "page" : undefined}
       onClick={onNavigate}
-      className={`mb-0.5 flex min-h-10 items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
-        isActive
-          ? "border-blue-700 bg-blue-50 font-semibold text-blue-800"
-          : "border-transparent font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+      title={label}
+      className={`mb-0.5 flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+        selected
+          ? "bg-blue-50 font-semibold text-blue-800 ring-1 ring-inset ring-blue-200"
+          : expandedOnly
+            ? "font-semibold text-slate-900"
+            : "font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950"
       }`}
     >
       <span aria-hidden="true" className="shrink-0">
         {icon}
       </span>
-      <span className="truncate">{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
     </Link>
   );
 }
@@ -475,11 +762,13 @@ export function ApplicationIcon({
   code: string;
   className?: string;
 }) {
-  return code === "vacation" ? (
-    <CalendarIcon className={className} />
-  ) : (
-    <GridIcon className={className} />
-  );
+  if (code === "vacation") {
+    return <CalendarIcon className={className} />;
+  }
+  if (code === "organization") {
+    return <OrganizationIcon className={className} />;
+  }
+  return <GridIcon className={className} />;
 }
 
 function IconBase({
@@ -535,9 +824,9 @@ function GridIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function OrganizationIcon() {
+function OrganizationIcon(props: SVGProps<SVGSVGElement> = {}) {
   return (
-    <IconBase>
+    <IconBase {...props}>
       <path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M2 21h20M8 7h4M8 11h4M8 15h4M16 9h2M16 13h2" />
     </IconBase>
   );
@@ -547,14 +836,6 @@ function UsersIcon() {
   return (
     <IconBase>
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-    </IconBase>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <IconBase>
-      <path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15" />
     </IconBase>
   );
 }

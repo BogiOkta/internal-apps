@@ -2,9 +2,9 @@
 
 import { useLayoutEffect, type ReactNode } from "react";
 import { PortalSectionHeader } from "@/components/portal-section-header";
-import { useVacationShellChrome } from "@/features/vacation/components/vacation-shell";
+import { useOrganizationShellChrome } from "@/features/organization/components/organization-shell";
 
-type VacationWorkspaceProps = {
+type OrganizationWorkspaceProps = {
   /** Page title rendered as the single page `h1`. */
   title: string;
   /** Optional page description. */
@@ -20,12 +20,12 @@ type VacationWorkspaceProps = {
 };
 
 /**
- * Vacation IA pilot page chrome.
+ * Organization Portal v2 page chrome.
  * Capability navigation and the authenticated shell live in the persistent
- * `/vacation` layout. This component owns the page header and registers
+ * Organization layout. This component owns the page header and registers
  * page-level shell chrome.
  */
-export function VacationWorkspace({
+export function OrganizationWorkspace({
   title,
   description,
   sectionActions,
@@ -33,8 +33,8 @@ export function VacationWorkspace({
   breadcrumbRecordLabel,
   contentFillsViewport = false,
   children,
-}: VacationWorkspaceProps) {
-  const { setChrome } = useVacationShellChrome();
+}: OrganizationWorkspaceProps) {
+  const { setChrome } = useOrganizationShellChrome();
 
   useLayoutEffect(() => {
     setChrome({

@@ -1,5 +1,117 @@
 # Internal Apps Platform change history
 
+## 2026-08-04 — Portal v2 living-pilot final review corrections
+
+- Retained Portal Information Architecture at Draft v1 while recording the
+  implemented Vacation and bounded Company living pilot; Portal v2 remains the
+  default direction for new workspace work, not a universal platform rollout.
+- Aligned the Serbian Leave-types label to `Vrste odsustava` and aligned focused
+  English page titles with `Leave and absence`; the Business Calendar route now
+  uses the same Non-working-days page and sidebar label in both locales.
+- Corrected Design System and platform-state rollout text for the shared
+  top-center notification host on Vacation and Company surfaces, with Identity
+  remaining on the transitional right rail.
+
+## 2026-08-04 — Shared Company workspace layout for Organization and Non-working days
+
+- Introduced a pathless `(company)` App Router layout that owns one persistent
+  `OrganizationPersistentShell` for `/organization/*` and
+  `/business-calendar/admin/non-working-days`.
+- Removed the separate Organization and Business Calendar layout owners that
+  remounted AppShell on cross-prefix navigation. Public URLs, navigation
+  hierarchy, and Vacation layout ownership are unchanged.
+- Updated focused Portal navigation, administration UI, and Business Calendar
+  Portal contract tests for shared Company layout ownership.
+
+## 2026-08-04 — Organization Portal v2 Information Architecture migration
+
+- Migrated Organization to the Vacation-validated Portal v2 workspace model:
+  registry-driven sidebar sections (Overview, Departments, Employees,
+  Non-working days, Administration → User–employee links), persistent
+  Organization shell, breadcrumb + page-header hierarchy, and shared
+  `PortalNotificationHost` feedback.
+- Preserved all existing Organization and Business Calendar routes and left
+  Identity Users on `CompanyAdministrationWorkspace`. No API, permission,
+  or business-logic changes.
+- Updated focused Portal navigation and administration UI contract tests for
+  the Organization consumer.
+
+## 2026-08-04 — Vacation Portal v2 final static review
+
+- Corrected collection breadcrumb composition so the active section remains a
+  node, and supplied localized trailing nodes on Vacation request detail,
+  request creation, and administrative absence routes.
+- Kept the shared top-center notification host below the mobile drawer and
+  other blocking overlay layers while preserving pointer interaction on the
+  notification stack itself.
+- Portal strict TypeScript validation, Portal production build, focused
+  `PortalNavigationContractTests` and `PortalAdministrationUiContractTests`
+  (31/31), and `git diff --check` passed. Controlled browser validation is not
+  recorded as passed: both configured administrator smoke credentials were
+  rejected by the current development database, and no credential reset was
+  performed.
+
+## 2026-08-04 — Vacation PortalNotification top-center host
+
+- Added shared `PortalNotificationHost` (`@/components/portal-notification-host`)
+  as a fixed top-center overlay in the authenticated work area (max-width
+  560px, below the workspace header, no layout shift).
+- Migrated Vacation administration operation feedback from right-rail
+  `detailsNotification` / layout-shifting banners to that host: Leave Types,
+  Leave Policies, Leave Balances, Request Administration list, request details
+  actions, and administrative absence recording.
+- Preserved `PortalNotification` behavior (durations, pause, a11y) and left
+  Identity on the transitional right-rail host. Organization and the existing
+  Business Calendar Non-working-days route use the shared top-center host.
+  Updated `UI_GUIDELINES.md` §1.4 / §1.6 placement rules accordingly.
+
+## 2026-08-04 — PortalNotification visual redesign
+
+- Redesigned shared `PortalNotification` presentation for Portal v2: neutral
+  elevated white surface, subtle shadow, rounded corners, left severity accent
+  bar, leading icon, stronger title / secondary message hierarchy, X dismiss,
+  and a restrained progress indicator. Severity color is limited to accent,
+  icon, and progress; full-bleed green / amber / rose / blue surfaces are
+  removed.
+- Preserved the notification API, durations, auto-dismiss, hover/focus pause,
+  accessibility contract, and all feature call sites (including right-rail
+  `detailsNotification` placement).
+- Updated `docs/standards/UI_GUIDELINES.md` §1.6 / §1.7 / §9.2 to match the
+  neutral elevated visual language.
+
+## 2026-08-04 — Portal Information Architecture Draft v1 (documentation only)
+
+- Added `docs/architecture/PORTAL_INFORMATION_ARCHITECTURE.md` as
+  **Draft v1 — Vacation pilot approved; platform-wide adoption pending
+  validation**. It is not canonical: `UI_GUIDELINES.md` §2.2 / §2.3 / §2.5,
+  `ARCHITECTURE.md`, and `PLATFORM_ARCHITECTURE.md` §9 are unchanged and remain
+  authoritative outside the pilot.
+- Resolved four architectural decisions. One Vacation workspace
+  (`Odmori i odsustva`) with `Pregled`, `Moji zahtevi`, and an expandable,
+  non-routed `Administracija` group holding `Zahtevi`, `Vrste odsustava`,
+  `Godišnja prava`, and `Stanja odsustva`; employee self-service and
+  administration are not split. The Portal owns a typed section/navigation
+  registry for the pilot and the assigned-applications API is not extended;
+  application assignment still determines workspace availability. Tabs are
+  views of one subject under five conditions with a recommended maximum of two.
+  The approved page hierarchy preserves a distinct page-title level, and
+  `PortalSectionHeader` is retained rather than declared obsolete.
+- Added a bounded six-phase Vacation pilot plan (registry foundation, sidebar
+  pilot, workspace header and page hierarchy, local tab validation,
+  notification visual review, controlled validation), each with intended
+  files, invariants, risks, validation, recommended AI tool, and stop
+  condition. The pilot requires no API, schema, migration, permission, or
+  business-logic change and preserves every existing route.
+- Recorded the same status in `docs/PLATFORM_STATE.md`. Remaining open
+  questions carry explicit non-blocking recommendations; the
+  `UI_GUIDELINES.md` amendments and an ADR are deferred until pilot Phase 6
+  validation passes.
+- No Portal or API code, navigation, or migration was changed. Validation for
+  this increment was documentation review only: cross-reference check against
+  the cited `PROJECT_INSTRUCTIONS.md`, `ARCHITECTURE.md`,
+  `PLATFORM_ARCHITECTURE.md`, and `UI_GUIDELINES.md` sections, and against the
+  current Vacation routes, permissions, and localized navigation labels.
+
 ## 2026-08-04 — Vacation leave-balance administration permission
 
 - Added idempotent migration 035 to seed `vacation.leave-balances.manage` and

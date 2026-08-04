@@ -4,12 +4,10 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Vacation Request Administration shell migration.
-  `/vacation/admin/requests` uses `AdministrationPageBody`,
-  `AdministrativeGridToolbar`, `AdministrativeGridShell` with `fillViewport`,
-  `GridPagination` (server-backed 20/50/100), a read-only selection side panel,
-  and `PortalNotification` via `detailsNotification`, while preserving filters,
-  details-route workflow actions, permissions, and API contracts.
+- Latest functional milestone: shared Company workspace layout for Organization
+  and Business Calendar Non-working days. A pathless `(company)` route group owns
+  one persistent Organization shell across `/organization/*` and
+  `/business-calendar/admin/non-working-days` without changing public URLs.
 
 ## Platform foundation
 
@@ -38,7 +36,9 @@
   `DateRangePicker`, `ConfirmDialog`, `StatusBadge`, `PortalSectionHeader`,
   `WorkspaceNavigation`, `PortalActionIcon` / `portalActionContent`,
   `PortalNotification` (canonical transient operation feedback with
-  `PORTAL_NOTIFICATION_DEFAULT_DURATION_MS`), `FormField` /
+  `PORTAL_NOTIFICATION_DEFAULT_DURATION_MS` and top-center
+  `PortalNotificationHost` on Vacation and Organization workspace surfaces;
+  transitional right-rail `detailsNotification` remains on Identity), `FormField` /
   `formControlClassName` / primary·secondary·danger·danger-solid button
   helpers, `SearchableCombobox`, `AppCalendar`, `AdministrationPageBody`,
   `AdministrativeGridShell` (with optional `detailsNotification`),
@@ -47,7 +47,10 @@
   Organization Employees and Departments, Identity Users, User–Employee
   links, Vacation Leave Types, Leave Policies, Leave Balances, Vacation
   Request Administration, and Business Calendar non-working days share
-  stable right-rail operation feedback. Portal-wide regression tests reject
+  canonical `PortalNotification` feedback. Vacation and Organization use the
+  top-center `PortalNotificationHost`; Identity retains a transitional
+  right-rail host until migrated. Portal-wide
+  regression tests reject
   native `type="date"`, `window.confirm` / `window.alert`, forbidden local
   input/button class constants, feature-local date display formatters, known
   module-prefixed copies of canonical controls, feature-local tab separator
@@ -56,23 +59,35 @@
   dismiss controls inside operation notifications. Documented remaining
   non-mechanical exceptions: calendar toolbar chrome and domain
   `VacationStatusBadge` (§1.4 / §7.5).
-- Tabbed screen hierarchy (platform rule, §2.5): every Portal screen with
-  multiple tabs uses module header (stable `h1` + module description; only
-  genuinely module-global actions) → tab navigation via
-  `WorkspaceNavigation` (medium/semibold labels, higher-contrast inactive
-  tabs, subtle tile-like inter-tab separators, active underline) →
-  `PortalSectionHeader` active section title/description and tab-specific
-  actions → filters → section content.
-  The shell no longer offers a command band between the module header and
-  the tabs. Vacation workspace routes (`/vacation`, `/vacation/requests`,
-  `/vacation/leave-types`, `/vacation/admin/requests`,
-  `/vacation/admin/policies`, `/vacation/admin/leave-balances`, and related
-  detail/create flows) follow this layout via `VacationWorkspace`.
+- Tabbed-screen compatibility (§2.5): `WorkspaceNavigation` remains supported
+  for legacy module navigation and legitimate local views of one subject.
+  Portal v2 workspace sections are registry-owned sidebar destinations.
+  `PortalSectionHeader` remains the supported page-header control in both
+  patterns.
 - Operation feedback (platform rule, §1.6): field validation stays beside
   fields; operation success/error/warning uses transient
-  `PortalNotification` in the right-rail `detailsNotification` region (or
-  equivalent aside placement) and must not push the primary grid down.
+  `PortalNotification`. Migrated Vacation and Company living-pilot surfaces
+  render feedback through the shared top-center `PortalNotificationHost`
+  overlay (no layout shift). Identity may still use right-rail
+  `detailsNotification` until migrated.
   `ConfirmDialog` remains a separate non-transient confirmation control.
+- Portal Information Architecture (**Draft v1, living pilot, not canonical**):
+  [`docs/architecture/PORTAL_INFORMATION_ARCHITECTURE.md`](architecture/PORTAL_INFORMATION_ARCHITECTURE.md)
+  records the implemented Vacation and bounded Company living pilot. Portal v2
+  is the default direction for new workspace work, but is not yet a universal
+  platform rule; legacy modules may retain the established shell/navigation
+  pattern. `ARCHITECTURE.md` and `PLATFORM_ARCHITECTURE.md` do not claim a
+  complete rollout. No backend navigation contract was introduced.
+  Resolved decisions: one Vacation workspace (`Odmori i odsustva`) with
+  `Pregled`, `Moji zahtevi`, and an expandable non-routed `Administracija`
+  group containing `Zahtevi`, `Vrste odsustava`, `Godišnja prava`, and
+  `Stanja odsustva`, all permission-filtered; the Portal owns a typed
+  section/navigation registry for the pilot and the assigned-applications API
+  is not extended; tabs are views of one subject with a recommended maximum of
+  two; the page-title level and `PortalSectionHeader` are preserved. The
+  bounded six-phase pilot plan is in §14 of that document. Platform-wide
+  universal adoption and an ADR are deferred until a separately approved
+  platform-wide adoption decision.
 - Portal navigation keeps Organization master data and Business Calendar
   administration in a shared Company administration section. Settings is a
   dedicated authenticated navigation item at `/settings`. Vacation navigation
@@ -120,7 +135,8 @@
 - Leave Balance administration: migrated to the canonical administration
   shell. Scope selectors remain in the grid filter strip with explicit Load;
   history uses client-side search and `GridPagination`; append posting stays
-  in the side panel; operation feedback uses right-rail `PortalNotification`.
+  in the side panel; operation feedback uses the top-center
+  `PortalNotificationHost`.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
@@ -402,12 +418,18 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Vacation Request Administration shell migration to the canonical Portal Design
-System. Complete.
+Shared Company workspace layout ownership is implemented: Organization and
+Business Calendar Non-working days share one persistent shell under the pathless
+`(company)` App Router group. Public routes, navigation hierarchy, and Vacation
+remain unchanged. Controlled browser persistence validation should confirm no
+full-shell remount when crossing the Organization / Non-working days prefix.
 
 ## Next task
 
-No follow-on scope is approved.
+Continue controlled permission-shape validation for the narrower smoke
+identities when fixtures permit. Identity remains on transitional right-rail
+notifications until a separate migration; future independent Business Calendar
+workspace routes may require separating the current bounded Company shell.
 
 ## Session instruction
 
@@ -415,4 +437,5 @@ New AI sessions must first read:
 
 - [Platform state](PLATFORM_STATE.md)
 - [AI working agreement](AI_WORKING_AGREEMENT.md)
-- [Vacation module](modules/vacation.md)
+- [Organization domain](domain/organization.md)
+- [Portal Information Architecture](architecture/PORTAL_INFORMATION_ARCHITECTURE.md)

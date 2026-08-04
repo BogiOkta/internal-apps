@@ -10,6 +10,8 @@ import {
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
+import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import {
   formatDate,
   formatDateTime,
@@ -105,12 +107,29 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
   </VacationWorkspace>;
 
   return <VacationWorkspace title={t("vacation.admin.detailsTitle")}
+    breadcrumbRecordLabel={t("vacation.admin.detailsTitle")}
     description={t("vacation.admin.detailsDescription")}>
+    <PortalNotificationHost>
+      {success ? (
+        <PortalNotification
+          variant="success"
+          message={success}
+          dismissLabel={t("common.dismissNotification")}
+          onDismiss={() => setSuccess(null)}
+        />
+      ) : null}
+      {error ? (
+        <PortalNotification
+          variant="error"
+          message={error}
+          dismissLabel={t("common.dismissNotification")}
+          onDismiss={() => setError(null)}
+        />
+      ) : null}
+    </PortalNotificationHost>
     <div className="mb-4"><Link href="/vacation/admin/requests" className={formSecondaryButtonClassName()}>
       {t("vacation.admin.back")}
     </Link></div>
-    {success && <div role="status" className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">{success}</div>}
-    {error && <div role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">{error}</div>}
     {isLoading ? <div className="h-72 animate-pulse rounded-lg bg-slate-200" />
       : request && <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.55fr)]">
         <article className="rounded-lg border border-slate-300 bg-white p-6">

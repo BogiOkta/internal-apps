@@ -167,7 +167,7 @@ unless a row says otherwise.
 | Icon-only button | Compact icon commands | Semantic `<button>` + accessible name; `PortalActionIcon` | Shared/calendar toolbars | Visible focus; `aria-label` | Icon buttons without accessible names | `calendar-toolbar` keeps local sizing for calendar chrome | None |
 | Field wrapper | Label, required, hint, error | `FormField`, `fieldDescriptionIds` | `@/components/form-field` | Stable IDs; hint/error wiring | Divergent hand-rolled label/error blocks for ordinary fields | Dense grid filter cells may use `sr-only` labels | None beyond consumer contracts |
 | Confirmation dialog | Destructive/consequential confirm | `ConfirmDialog` | `@/components/confirm-dialog` | Message; optional title/children; confirm/cancel; destructive tone; no browser `confirm` | `window.confirm` / `confirm()`; duplicated amber/red panels | None | Yes — rejects `window.confirm` / `window.alert` |
-| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` | `@/components/portal-notification` | Variants; X-only dismiss; canonical auto-dismiss durations; pause on hover/focus; aria-live; stable placement that does not shift the primary grid; optional progress indicator owned by the shared component | Full-width operation banners above administration grids; parallel toast stacks; feature-local toast timers; text “Close” / “Zatvori” dismiss buttons | Field/form validation stays beside the field (§1.6); `ConfirmDialog` is not a notification | Yes — migrated admin pages |
+| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` inside `PortalNotificationHost` (Vacation and Company living-pilot surfaces migrated); right-rail `detailsNotification` remains for unmigrated modules | `@/components/portal-notification`, `@/components/portal-notification-host` | Variants; X-only dismiss; canonical auto-dismiss durations; pause on hover/focus; aria-live; top-center overlay host that does not shift the primary grid; optional progress indicator owned by the shared component | Full-width operation banners above administration grids; parallel toast stacks; feature-local toast timers; text “Close” / “Zatvori” dismiss buttons; right-rail hosts on migrated living-pilot surfaces | Field/form validation stays beside the field (§1.6); `ConfirmDialog` is not a notification | Yes — migrated admin pages |
 | Modal/dialog | Overlay dialogs beyond inline confirm | Not yet a shared overlay primitive | — | Prefer `ConfirmDialog` for confirmations | Ad-hoc full-screen modal frameworks | Calendar popovers owned by date controls | None |
 | Status badge | Compact status labels | `StatusBadge` for active/inactive/yes-no; `VacationStatusBadge` for leave-request statuses | `@/components/status-badge`; `@/features/vacation/components/vacation-status-badge` | Non-color indicators remain with text labels | Parallel active/inactive chip chrome | Domain request statuses stay in `VacationStatusBadge` | Partial |
 | Loading state | In-progress data | `GridStateRows` inside admin grids; localized page pulse/message elsewhere | `@/components/admin-data-grid` | Stable shell geometry | Full-page spinners that collapse admin chrome | Self-service pages keep localized loading blocks | Admin pages via existing contracts |
@@ -195,11 +195,13 @@ unless an explicit row above documents an exception.
 
 **Operation feedback rule (normative):** Transient operation success, warning,
 and error messages MUST use `PortalNotification` in a stable region that does
-not shift the primary grid, filters, or page chrome. Full-width operation
-banners above administration grids are prohibited. Field and form validation
-messages remain beside the relevant control and may participate in layout.
-Feature modules MUST NOT implement local toast timers, duplicate dismiss
-buttons, or a second notification/toast component.
+not shift the primary grid, filters, or page chrome. Canonical placement for
+migrated workspace surfaces is the shared top-center `PortalNotificationHost`
+overlay. Full-width operation banners above administration grids are
+prohibited. Field and form validation messages remain beside the relevant
+control and may participate in layout. Feature modules MUST NOT implement
+local toast timers, duplicate dismiss buttons, or a second notification/toast
+component.
 
 ### 1.6 Validation messages vs operation notifications
 
@@ -213,12 +215,17 @@ Two distinct message categories:
 2. **Operation feedback** — create/update/delete/activate results, delete
    conflicts, refresh failures, export failures, and similar page-operation
    outcomes. Uses `PortalNotification` only. Placement:
-   - administration pages with a right rail: `AdministrativeGridShell`
-     `detailsNotification` (below details, actions, and `ConfirmDialog`);
-   - equivalent custom right-rail layouts (for example Business Calendar):
-     the same position inside the aside, below confirmation;
-   - pages without a right rail: a stable non-layout-shifting host owned by
-     the shared notification pattern (do not invent a second toast stack).
+   - **Canonical (migrated):** `PortalNotificationHost` — a fixed overlay near
+     the top center of the authenticated work area (beside the desktop
+     sidebar), below the persistent workspace header, max-width ≈560px, no
+     layout shift. Vacation and Company living-pilot surfaces use this host.
+   - **Transitional (unmigrated modules):** administration pages with a right
+     rail may still use `AdministrativeGridShell` `detailsNotification`
+     (below details, actions, and `ConfirmDialog`); equivalent custom
+     right-rail layouts keep the same aside placement until migrated. Identity
+     is the remaining current administration consumer of this transitional host.
+   - Do not invent a second toast stack, bottom/corner placement, or
+     page-local banners that push content.
 
 **`PortalNotification` modes (normative):**
 
@@ -239,9 +246,10 @@ Default transient durations (centralized in
 
 Dismiss control: X icon only, with an accessible `dismissLabel` (`aria-label`).
 Do not render a separate text “Close” / “Zatvori” button when the X control
-exists. Soft variant colors (soft green / amber / rose / blue) must remain
-readable in light and dark mode. Any expiration progress indicator is owned
-by `PortalNotification`, not by feature pages.
+exists. Severity color is limited to the left accent bar, leading icon, and
+progress highlight on a neutral elevated surface; full-bleed red / yellow /
+green notification backgrounds are prohibited. Any expiration progress
+indicator is owned by `PortalNotification`, not by feature pages.
 
 Confirmation (`ConfirmDialog`) and completed-operation notification remain
 separate visual blocks. `ConfirmDialog` MUST NOT auto-dismiss and MUST keep
@@ -266,14 +274,19 @@ shared control improves every consumer; feature pages MUST NOT restyle them.
 
 **Notification color philosophy (`PortalNotification`)**
 
-- Calm, temporary information. Soft surfaces, subtle borders, dark readable
-  text, and a matching icon. Avoid saturated alarm colors.
-- Success: soft green surface, subtle green border, dark green text.
-- Info: soft blue surface, subtle blue border, dark blue text.
-- Warning: soft amber surface, subtle amber border, dark amber text.
-- Error: soft rose surface, subtle rose border, dark red text.
+- Calm, temporary system feedback. Neutral elevated surface (white / very
+  light slate), subtle border and shadow, rounded corners, and a left accent
+  bar. Avoid full-bleed severity backgrounds.
+- Color is reserved for the left accent, leading icon, and progress highlight.
+- Title uses stronger, slightly larger slate text; body/message uses lighter
+  secondary slate for readable hierarchy.
+- Success: emerald accent and icon.
+- Info: sky accent and icon.
+- Warning: amber accent and icon.
+- Error: rose accent and icon.
 - Spacing, radius, shadow, progress indicator, and dismiss hover stay
   restrained and elegant. Contrast remains AA-compliant in light and dark.
+  Severity is never communicated by color alone (icon + role/live region).
 
 **ConfirmDialog philosophy**
 
@@ -323,9 +336,11 @@ Before merging a new Portal screen or form:
 - [ ] Use `portalActionContent` / `PortalActionIcon` for create, refresh,
       export, and delete command icons; do not hand-write those SVGs in
       feature pages.
-- [ ] Use `PortalNotification` for operation feedback in a stable region
-      (`detailsNotification` on right-rail admin pages). Do not place
-      operation success/error banners above the primary grid.
+- [ ] Use `PortalNotification` for operation feedback in the shared
+      top-center `PortalNotificationHost` on migrated workspace surfaces (or
+      transitional right-rail `detailsNotification` until that module is
+      migrated). Do not place operation success/error banners above the
+      primary grid.
 - [ ] Rely on canonical `PortalNotification` transient behavior (variant
       default durations, X-only dismiss, pause on hover/focus). Do not add
       feature-local `setTimeout` dismissals or text Close/Zatvori buttons.
@@ -359,7 +374,11 @@ Authenticated pages use this consistent structure:
 | Page header | One page title, optional short description, primary actions |
 | Main content | Forms, tables, dashboards, calendars, and detail views |
 
-The root authenticated layout owns the shell. Module pages provide page content and optional breadcrumb/navigation metadata; they do not render another sidebar or topbar.
+The nearest authenticated workspace layout owns the shell. The living-pilot
+owners are `app/vacation/layout.tsx` and the pathless `app/(company)/layout.tsx`;
+legacy pages may retain the established page-owned shell until separately
+migrated. A routed page inside a persistent workspace does not render another
+sidebar or topbar.
 
 ### 2.1 Current authenticated shell
 
@@ -377,7 +396,7 @@ Language and appearance preferences are edited on `/settings`. The sidebar does 
 
 Dashboard is always a platform navigation item. Settings is available to every authenticated Portal user and appears in a dedicated Settings section near the bottom of primary navigation, above Logout. Application links and routes come from the assigned-applications response and are never inferred from username or role. Desktop and mobile navigation use the same active-route rules and close the mobile drawer after navigation.
 
-Business pages follow this hierarchy:
+Legacy business pages may follow this hierarchy:
 
 1. Page title and context (the module header).
 2. Secondary navigation (tabs), when the screen has multiple sections.
@@ -394,9 +413,21 @@ The shell provides optional header-actions and secondary-navigation regions so p
 
 ### 2.2 Business workspaces
 
-An application may add compact secondary navigation inside the shared shell. The navigation is owned by that application, remains responsive and keyboard accessible, and marks the active section. It must not duplicate or replace global application navigation. Screens that use such tab navigation follow the canonical tabbed screen hierarchy in §2.5.
+Portal v2 is the default direction for new workspace work. Its typed Portal
+registry owns client-side workspace/section/page metadata; assigned
+applications still determine application availability, and API authorization
+remains independent. Workspace rows expand to routed sections, while section
+groups such as Administration are expandable and non-routed.
 
-Vacation establishes the first workspace pattern: Overview and Employees are functional sections; future sections are visibly disabled and labeled as coming soon. Read-only functionality is delivered before edit workflows when that provides usable business value.
+Legacy modules and legitimate page-local view tabs may continue to use compact
+`WorkspaceNavigation` inside the shared shell. It remains responsive,
+keyboard-accessible, and subject to §2.5; it must not duplicate global
+application navigation.
+
+Vacation and Organization are implemented living-pilot workspaces. The existing
+Business Calendar Non-working-days route shares the persistent Company shell
+without changing Business Calendar domain ownership or its public URL. This is
+not a declaration of complete platform rollout.
 
 ### 2.3 Sidebar
 
@@ -421,11 +452,12 @@ Manage organizational units.
 
 Do not place the same primary action in multiple competing locations.
 
-### 2.5 Tabbed screen hierarchy (canonical)
+### 2.5 Legacy and local-view tabbed screen hierarchy
 
-Every Portal screen with multiple tabs uses this exact vertical hierarchy.
-It is a platform rule: all current and future Portal modules MUST follow
-this structure, not only Vacation.
+Every remaining Portal screen with multiple tabs uses this exact vertical
+hierarchy. `WorkspaceNavigation` remains supported for legacy module navigation
+and legitimate alternate views of one subject. Portal v2 workspace sections
+belong in the sidebar registry, not in a new module tab strip.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -863,7 +895,7 @@ Canonical placement:
 | Page header | Title and description on the left; primary New, then Refresh, on the far right |
 | Grid toolbar | Search, then filter controls, then export |
 | Grid footer | One localized visible-range summary, page-size selector, and pagination only |
-| Side panel | Details, create, or edit content sharing the shell border, radius, and padding; operation notifications via `detailsNotification` below details/confirmation |
+| Side panel | Details, create, or edit content sharing the shell border, radius, and padding; transitional right-rail operation notifications via `detailsNotification` below details/confirmation (Vacation and Company living-pilot surfaces use top-center `PortalNotificationHost` instead) |
 
 The header keeps the title and description on the left and places the primary
 New action, then Refresh, on the right; actions wrap below the description on
@@ -1025,10 +1057,10 @@ Do not use `PortalNotification` for:
 - long instructions the user must keep open indefinitely (prefer page content);
 - information the user must copy or review without a dismiss path.
 
-Notifications use concise text, soft calm severity colors (§1.7), an
-accessible live region, X-only dismiss, and the canonical transient durations
-in §1.6. Avoid duplicate notifications when the page already shows the result
-clearly.
+Notifications use concise text, a neutral elevated surface with severity
+limited to accent/icon/progress (§1.7), an accessible live region, X-only
+dismiss, and the canonical transient durations in §1.6. Avoid duplicate
+notifications when the page already shows the result clearly.
 
 ## 10. Loading, Empty, Error, and Success States
 

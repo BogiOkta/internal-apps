@@ -15,6 +15,7 @@ import { GridPagination } from "@/components/grid-pagination";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalDateInput } from "@/components/portal-date-input";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate, formatPortalDateTime } from "@/utils/portal-date-format";
@@ -272,6 +273,16 @@ export default function LeaveBalancesPage() {
         </button>
       }
     >
+      <PortalNotificationHost>
+        {feedback ? (
+          <PortalNotification
+            variant={feedback.error ? "error" : "success"}
+            message={t(feedback.key)}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("leaveBalance.tableLabel")}
@@ -521,16 +532,6 @@ export default function LeaveBalancesPage() {
             ) : (
               <p className="text-sm text-slate-600">{t("leaveBalance.selectScope")}</p>
             )
-          }
-          detailsNotification={
-            feedback ? (
-              <PortalNotification
-                variant={feedback.error ? "error" : "success"}
-                message={t(feedback.key)}
-                dismissLabel={t("common.dismissNotification")}
-                onDismiss={() => setFeedback(null)}
-              />
-            ) : undefined
           }
         />
       </AdministrationPageBody>

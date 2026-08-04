@@ -11,6 +11,7 @@ import { GridPagination } from "@/components/grid-pagination";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalDateInput } from "@/components/portal-date-input";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate } from "@/utils/portal-date-format";
@@ -134,6 +135,16 @@ export default function LeavePoliciesPage() {
   return <VacationWorkspace title={t("leavePolicy.title")} description={t("leavePolicy.description")} contentFillsViewport
     sectionActions={<button type="button" onClick={reset} className={formPrimaryButtonClassName()}>{portalActionContent("create", t("leavePolicy.new"))}</button>}
     sectionSecondaryActions={<button type="button" onClick={() => void load()} disabled={loading} className={formSecondaryButtonClassName()}>{portalActionContent("refresh", loading ? t("leavePolicy.refreshing") : t("leavePolicy.refresh"))}</button>}>
+    <PortalNotificationHost>
+      {feedback ? (
+        <PortalNotification
+          variant={feedback.error ? "error" : "success"}
+          message={feedback.text}
+          dismissLabel={t("common.dismissNotification")}
+          onDismiss={() => setFeedback(null)}
+        />
+      ) : null}
+    </PortalNotificationHost>
     <AdministrationPageBody>
     <AdministrativeGridShell ariaLabel={t("leavePolicy.tableLabel")} fillViewport
       toolbar={<AdministrativeGridToolbar search={search} searchLabel={t("leavePolicy.searchLabel")} searchPlaceholder={t("leavePolicy.searchPlaceholder")} onSearchChange={setSearch} activeFilterCount={employeeFilter ? 1 : 0} areFiltersVisible exportDisabled filtersLabel={t("grid.filters")} showFiltersLabel={t("grid.showFilters")} hideFiltersLabel={t("grid.hideFilters")} clearFiltersLabel={t("grid.clearFilters")} exportLabel={t("grid.export")} exportCsvLabel={t("grid.exportCsv")} exportExcelLabel={t("grid.exportExcel")} onToggleFilters={() => undefined} onClearFilters={() => { setEmployeeFilter(""); setYear(currentYear); }} onExportCsv={() => undefined} onExportExcel={() => undefined} />}
@@ -226,16 +237,6 @@ export default function LeavePoliciesPage() {
         />
       )}
       </div>}
-      detailsNotification={
-        feedback ? (
-          <PortalNotification
-            variant={feedback.error ? "error" : "success"}
-            message={feedback.text}
-            dismissLabel={t("common.dismissNotification")}
-            onDismiss={() => setFeedback(null)}
-          />
-        ) : undefined
-      }
     />
     </AdministrationPageBody>
   </VacationWorkspace>;

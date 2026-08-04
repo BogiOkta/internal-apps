@@ -22,6 +22,7 @@ import {
 } from "@/components/form-field";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { StatusBadge } from "@/components/status-badge";
 import { GridPagination } from "@/components/grid-pagination";
 import { LeaveTypeForm } from "@/features/vacation/components/leave-type-form";
@@ -453,6 +454,36 @@ export default function LeaveTypesPage() {
       }
       contentFillsViewport
     >
+      <PortalNotificationHost>
+        {successMessage ? (
+          <PortalNotification
+            variant="success"
+            message={successMessage}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setSuccessMessage(null)}
+          />
+        ) : null}
+        {operationError ? (
+          <PortalNotification
+            variant="error"
+            message={operationError}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setOperationError(null)}
+          />
+        ) : null}
+        {exportError ? (
+          <PortalNotification
+            variant="error"
+            message={
+              displayedLeaveTypes.length === 0
+                ? t("grid.noExportRows")
+                : t("grid.exportFailure")
+            }
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setExportError(false)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("vacation.leaveTypes.tableLabel")}
@@ -872,40 +903,6 @@ export default function LeaveTypesPage() {
                 </p>
               )}
             </div>
-          }
-          detailsNotification={
-            successMessage || operationError || exportError ? (
-              <>
-                {successMessage && (
-                  <PortalNotification
-                    variant="success"
-                    message={successMessage}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setSuccessMessage(null)}
-                  />
-                )}
-                {operationError && (
-                  <PortalNotification
-                    variant="error"
-                    message={operationError}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setOperationError(null)}
-                  />
-                )}
-                {exportError && (
-                  <PortalNotification
-                    variant="error"
-                    message={
-                      displayedLeaveTypes.length === 0
-                        ? t("grid.noExportRows")
-                        : t("grid.exportFailure")
-                    }
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setExportError(false)}
-                  />
-                )}
-              </>
-            ) : undefined
           }
         />
       </AdministrationPageBody>

@@ -239,7 +239,7 @@ public sealed class OrganizationEmployeeDeletionTests
     [Fact]
     public void PortalContract_HasCompactGridSafeDependenciesAndConfirmedDelete()
     {
-        var page = Read("apps", "portal", "src", "app", "organization", "employees", "page.tsx");
+        var page = Read("apps", "portal", "src", "app", "(company)", "organization", "employees", "page.tsx");
         var grid = Read("apps", "portal", "src", "components", "admin-data-grid.tsx");
         var service = Read("apps", "portal", "src", "services", "organization.ts");
         Assert.Contains("employmentStartDate", page);

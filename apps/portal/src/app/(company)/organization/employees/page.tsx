@@ -15,7 +15,7 @@ import { AdministrativeGridToolbar } from "@/components/administrative-grid-tool
 import { GridPagination } from "@/components/grid-pagination";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
+import { OrganizationWorkspace } from "@/features/organization/components/organization-workspace";
 import {
   formDangerButtonClassName,
   formPrimaryButtonClassName,
@@ -23,6 +23,7 @@ import {
 } from "@/components/form-field";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { useTranslations } from "@/i18n/use-translations";
 import {
   activateEmployee,
@@ -289,35 +290,6 @@ export default function EmployeesPage() {
     }
   }
 
-  const commandBar = (
-    <div className="flex flex-wrap items-center gap-2">
-      {canManage && (
-        <button
-          type="button"
-          onClick={() => {
-            setFeedback(null);
-            setWriteError(null);
-            setPanelMode("create");
-          }}
-          className={formPrimaryButtonClassName()}
-        >
-          {portalActionContent("create", t("vacation.employees.new"))}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => setRefreshVersion((version) => version + 1)}
-        disabled={isLoading}
-        className={formSecondaryButtonClassName()}
-      >
-        {portalActionContent(
-          "refresh",
-          isLoading ? t("vacation.employees.refreshing") : t("vacation.employees.refresh"),
-        )}
-      </button>
-    </div>
-  );
-
   const gridToolbar = (
     <EmployeeGridToolbar
       search={search}
@@ -335,12 +307,86 @@ export default function EmployeesPage() {
   );
 
   return (
-    <CompanyAdministrationWorkspace
+    <OrganizationWorkspace
       title={t("vacation.employees.title")}
       description={t("vacation.employees.description")}
-      headerActions={commandBar}
+      sectionActions={canManage ? (
+        <button
+          type="button"
+          onClick={() => {
+            setPanelMode("create");
+            setSelectedEmployeePublicId(null);
+            setFeedback(null);
+            setWriteError(null);
+          }}
+          className={formPrimaryButtonClassName()}
+        >
+          {portalActionContent("create", t("vacation.employees.new"))}
+        </button>
+      ) : undefined}
+      sectionSecondaryActions={
+        <button
+          type="button"
+          onClick={() => setRefreshVersion((value) => value + 1)}
+          disabled={isLoading}
+          className={formSecondaryButtonClassName()}
+        >
+          {portalActionContent(
+            "refresh",
+            isLoading
+              ? t("vacation.employees.refreshing")
+              : t("vacation.employees.refresh"),
+          )}
+        </button>
+      }
       contentFillsViewport
     >
+      <PortalNotificationHost>
+        {feedback ? (
+          <PortalNotification
+            variant="success"
+            message={feedback}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : null}
+        {writeError ? (
+          <PortalNotification
+            variant="error"
+            message={writeError}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setWriteError(null)}
+          />
+        ) : null}
+        {hasDepartmentError ? (
+          <PortalNotification
+            variant="warning"
+            message={t("vacation.employees.departmentError")}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setHasDepartmentError(false)}
+          />
+        ) : null}
+        {hasError ? (
+          <PortalNotification
+            variant="error"
+            message={t("vacation.employees.error")}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setHasError(false)}
+          />
+        ) : null}
+        {exportError ? (
+          <PortalNotification
+            variant="error"
+            message={
+              employees.length === 0
+                ? t("grid.noExportRows")
+                : t("grid.exportFailure")
+            }
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setExportError(false)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("vacation.employees.tableLabel")}
@@ -491,63 +537,9 @@ export default function EmployeesPage() {
           ) : <p className="text-sm text-slate-600">{t("vacation.employees.selectForDetails")}</p>}
             </div>
           }
-          detailsNotification={
-            feedback ||
-            writeError ||
-            hasDepartmentError ||
-            hasError ||
-            exportError ? (
-              <>
-                {feedback && (
-                  <PortalNotification
-                    variant="success"
-                    message={feedback}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setFeedback(null)}
-                  />
-                )}
-                {writeError && (
-                  <PortalNotification
-                    variant="error"
-                    message={writeError}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setWriteError(null)}
-                  />
-                )}
-                {hasDepartmentError && (
-                  <PortalNotification
-                    variant="warning"
-                    message={t("vacation.employees.departmentError")}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setHasDepartmentError(false)}
-                  />
-                )}
-                {hasError && (
-                  <PortalNotification
-                    variant="error"
-                    message={t("vacation.employees.error")}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setHasError(false)}
-                  />
-                )}
-                {exportError && (
-                  <PortalNotification
-                    variant="error"
-                    message={
-                      employees.length === 0
-                        ? t("grid.noExportRows")
-                        : t("grid.exportFailure")
-                    }
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setExportError(false)}
-                  />
-                )}
-              </>
-            ) : undefined
-          }
         />
       </AdministrationPageBody>
-    </CompanyAdministrationWorkspace>
+    </OrganizationWorkspace>
   );
 }
 
