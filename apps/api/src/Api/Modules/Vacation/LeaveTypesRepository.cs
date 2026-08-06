@@ -39,6 +39,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         leave_types.requires_balance AS RequiresBalance,
         leave_types.requires_approval AS RequiresApproval,
         leave_types.is_active AS IsActive,
+        leave_types.is_system AS IsSystem,
         leave_types.display_order AS DisplayOrder,
         {UsageProjection} AS IsInUse
         """;
@@ -324,6 +325,7 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
             row.RequiresBalance,
             row.RequiresApproval,
             row.IsActive,
+            row.IsSystem,
             row.DisplayOrder,
             row.IsInUse);
 
@@ -350,6 +352,8 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         public bool RequiresApproval { get; set; }
 
         public bool IsActive { get; set; }
+
+        public bool IsSystem { get; set; }
 
         public int DisplayOrder { get; set; }
 

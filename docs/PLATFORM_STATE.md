@@ -98,7 +98,13 @@
 
 ## Vacation module
 
-- Database foundation: complete; migrations through 034 are applied and validated.
+- ADR-0007 increment 1: migrations 036–039 are applied. Permanent request
+  identity exists; the ledger evidentiary FK targets it; request-derived ledger
+  insertion rejects an absent operational request; Leave Type dependency
+  markers are permanent; and exactly five canonical system Leave Types are
+  protected. `isSystem` is read-only in the existing API/Portal model.
+  Migrations 040–041 and every request-deletion capability remain unimplemented.
+- Database foundation: complete; migrations through 039 are applied and validated.
 - Leave balance compatibility mirror: annual-entitlement, carry-over, and
   manual-adjustment ledger commands now create or refresh the matching
   `vacation.leave_balances` credit buckets from accepted entries in the same
@@ -142,6 +148,14 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- ADR-0007 increment 1: migrations 036–039 applied in order and a second pass
+  found no pending scripts. API Debug build passed with zero warnings/errors.
+  Focused database-enabled tests passed 5/5 with no skips. The requested ledger,
+  Leave Type, and employee-marker regression classes ran 23 tests: 21 passed
+  and the two documented unrelated failures remained. The full database-enabled
+  API suite ran 119 tests: 114 passed, 5 failed, and 0 skipped; all five failures
+  are unrelated source-contract/retained-fixture failures in untouched areas.
 
 - Vacation leave-balance authorization hardening: migration 035 applied and a
   second migrator pass found no pending scripts; the focused source-contract

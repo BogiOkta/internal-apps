@@ -713,6 +713,28 @@ stores explicit Serbian non-working dates in `core.non_working_days`. Vacation
 delegates request working-day calculations to that capability and persists the
 result for later balance deduction and restoration.
 
+#### 7.2.6 Permanent request identity and protected Leave Types
+
+Migrations 036–039 establish the behavior-neutral ADR-0007 increment-1
+foundation. `vacation.leave_request_identities` permanently owns every numeric
+request ID and public UUID. Existing values were backfilled unchanged; identity
+rows are immutable. The operational request matches both values through a
+composite `ON DELETE NO ACTION` foreign key, and creation allocates the identity
+first in the existing transaction.
+
+`vacation.leave_balance_entries.leave_request_id` now references the permanent
+identity with `ON DELETE NO ACTION`; no ledger row was rewritten or removed.
+The integrity trigger explicitly rejects request-derived posting when the
+operational request is absent and uses null-safe comparisons while preserving
+all existing ledger invariants.
+
+`vacation.leave_type_protected_dependencies` permanently records the established
+request, balance, and ledger dependency labels. Owner-controlled triggers add
+markers and the runtime role has no marker-table privileges. Exactly the five
+canonical seeded Leave Types have read-only `is_system = true`; they cannot be
+physically deleted and may still be deactivated. Controlled request deletion,
+its permissions, database function, API, and Portal behavior are not implemented.
+
 ---
 
 ## 8. Future Business Schemas
@@ -1270,6 +1292,8 @@ Use this checklist for every new entity or schema change:
 - [ ] The primary key remains internal.
 - [ ] A public UUID exists when the resource crosses a boundary.
 - [ ] Every relationship has defined cardinality and lifecycle behavior.
+- [ ] Every new table referencing a Vacation request is classified as
+  operational or evidentiary, with no `ON DELETE CASCADE`.
 - [ ] Business-module tables do not directly depend on another module’s tables.
 - [ ] Core data is accessed through the owning Core service.
 - [ ] Required foreign keys, uniqueness, and reference-data behavior are defined.

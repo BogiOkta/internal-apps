@@ -24,6 +24,9 @@ The current implemented capabilities are:
   restoration.
 - employee Portal dashboard, request list, creation, details/history,
   cancellation, and personal calendar.
+- permanent request identities, ledger evidentiary references to those
+  identities, absent-operational-request posting rejection, permanent Leave
+  Type dependency markers, and protection of five canonical system Leave Types.
 
 The approved target boundary for a future Leave Balance Ledger is documented
 in [`../domain/vacation.md`](../domain/vacation.md) and
@@ -134,6 +137,23 @@ The stable code stays immutable after creation. `Requires Balance` and
 `Counts Against Balance` are editable only while the leave type is unused and
 are locked by a derived `isInUse` flag afterward. Deactivation is always
 allowed, and historical records continue to resolve deactivated types.
+
+Migrations 038–039 add owner-maintained permanent dependency markers behind the
+controlled delete function and mark exactly the canonical seeded codes as system types. System
+types cannot be physically deleted but may still be deactivated; `isSystem` is
+read-only in the existing API/Portal model. Runtime grants cannot access marker
+rows or set `is_system`.
+
+### ADR-0007 increment-1 foundation
+
+Migration 036 preserves every request ID and public UUID in an immutable
+permanent identity and makes request creation identity-first within the existing
+transaction. The ledger request foreign key now targets that identity with
+restrictive delete behavior. Migration 037 rejects new request-derived ledger
+posting when the operational request is absent, without changing accepted
+ledger data or cancellation behavior. Migrations 040–041, request delete
+permissions/functions, API/service routes, and Portal delete UX remain
+unimplemented; no request-deletion capability is exposed.
 
 The Portal route is migrated to the canonical administration foundation
 (`AdministrationPageHeader` via the workspace shell, `AdministrationPageBody`,

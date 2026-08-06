@@ -8,6 +8,8 @@ export type LeaveType = {
   requiresBalance: boolean;
   requiresApproval: boolean;
   isActive: boolean;
+  /** Canonical seeded type; read-only and never client-settable. */
+  isSystem: boolean;
   displayOrder: number;
   /**
    * True once a leave request, yearly balance, or ledger entry has referenced the

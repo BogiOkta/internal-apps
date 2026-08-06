@@ -1,5 +1,23 @@
 # Internal Apps Platform change history
 
+## 2026-08-06 — ADR-0007 increment 1 database foundation
+
+- Added migrations 036–039 for immutable permanent Vacation request identity,
+  a restrictive ledger evidentiary foreign key, explicit rejection of
+  request-derived postings without an operational request, permanent Leave Type
+  dependency markers, and protection of exactly five canonical system types.
+- Changed request creation to allocate identity first in the existing
+  transaction and exposed read-only `isSystem` in the existing Leave Type API
+  and Portal models. Existing request IDs/public UUIDs and ledger rows are
+  preserved; cancellation behavior is unchanged.
+- Added database-enabled rollback-isolated focused coverage. Migrations 040–041
+  and all request-deletion capability remain unimplemented and unexposed.
+- Validation applied all four migrations and found no pending work on a second
+  pass; API Debug build passed with zero warnings/errors; focused tests passed
+  5/5 with no skips. The full database-enabled API suite passed 114/119; the
+  five failures are unrelated existing source-contract or retained-fixture
+  failures in untouched areas.
+
 ## 2026-08-04 — Portal v2 living-pilot final review corrections
 
 - Retained Portal Information Architecture at Draft v1 while recording the

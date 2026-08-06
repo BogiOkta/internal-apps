@@ -160,12 +160,18 @@ public sealed class LeaveBalanceCompatibilityMirrorIntegrationTests
         NpgsqlConnection connection, NpgsqlTransaction transaction, ScopeFixture scope, int year)
     {
         const string sql = """
+            WITH new_identity AS (
+                INSERT INTO vacation.leave_request_identities DEFAULT VALUES
+                RETURNING id, public_id
+            )
             INSERT INTO vacation.leave_requests
-                (employee_id, leave_type_id, date_from, date_to, working_days, status,
+                (id, public_id, employee_id, leave_type_id, date_from, date_to, working_days, status,
                  employee_note, submitted_at, created_by_user_id)
-            SELECT employees.id, leave_types.id, @Date, @Date, 2, 'SUBMITTED',
+            SELECT new_identity.id, new_identity.public_id,
+                   employees.id, leave_types.id, @Date, @Date, 2, 'SUBMITTED',
                    'Compatibility mirror integration test', now(), users.id
-            FROM organization.employees AS employees
+            FROM new_identity
+            CROSS JOIN organization.employees AS employees
             CROSS JOIN vacation.leave_types AS leave_types
             CROSS JOIN identity.users AS users
             WHERE employees.public_id = @EmployeeId

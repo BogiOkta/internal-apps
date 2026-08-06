@@ -134,6 +134,14 @@ Balance administration require the Vacation-owned
 `vacation.leave-balances.manage` policy. Business Calendar administration
 continues to use `identity.users.manage`.
 
+Migration 036 grants the runtime role only `SELECT`/`INSERT` on permanent
+request identities, identity-sequence `USAGE`, and request-column `INSERT` for
+the allocated ID and UUID. Migration 038 grants no runtime access to permanent
+Leave Type dependency markers. Migration 039 grants no ability to insert or
+update `leave_types.is_system`; system protection is enforced through the
+existing owner-controlled Leave Type delete function. No runtime `DELETE`
+grant or request-deletion function exists.
+
 Request creation and each status transition write the business record,
 required balance mutation, append-only transition history, and platform audit
 inside one transaction. Runtime grants do not permit physical deletion of

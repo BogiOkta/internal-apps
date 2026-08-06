@@ -107,6 +107,7 @@ public sealed class VacationLeaveTypeAdministrationTests
                 RequiresBalance: true,
                 RequiresApproval: true,
                 IsActive: true,
+                IsSystem: true,
                 DisplayOrder: 10,
                 IsInUse: isInUse);
             var command = new UpdateLeaveTypeCommand(
@@ -293,12 +294,18 @@ public sealed class VacationLeaveTypeAdministrationTests
         long employeeId, long leaveTypeId)
     {
         await using var command = new NpgsqlCommand("""
+            WITH new_identity AS (
+                INSERT INTO vacation.leave_request_identities DEFAULT VALUES
+                RETURNING id, public_id
+            )
             INSERT INTO vacation.leave_requests
-                (employee_id, leave_type_id, date_from, date_to, working_days, status,
+                (id, public_id, employee_id, leave_type_id, date_from, date_to, working_days, status,
                  created_by_user_id)
-            SELECT @employeeId, @leaveTypeId, DATE '2999-03-01', DATE '2999-03-01', 1,
+            SELECT new_identity.id, new_identity.public_id,
+                @employeeId, @leaveTypeId, DATE '2999-03-01', DATE '2999-03-01', 1,
                 'SUBMITTED', users.id
-            FROM identity.users AS users
+            FROM new_identity
+            CROSS JOIN identity.users AS users
             ORDER BY users.id
             LIMIT 1
             """, connection, transaction);

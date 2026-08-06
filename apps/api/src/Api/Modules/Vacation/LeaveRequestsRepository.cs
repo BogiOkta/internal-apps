@@ -118,17 +118,23 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
         string status, string source, bool decided, bool english, CancellationToken cancellationToken)
     {
         var sql = $"""
-            WITH inserted AS (
+            WITH new_identity AS (
+                INSERT INTO vacation.leave_request_identities
+                DEFAULT VALUES
+                RETURNING id, public_id
+            ), inserted AS (
                 INSERT INTO vacation.leave_requests (
-                    employee_id, leave_type_id, date_from, date_to, working_days,
+                    id, public_id, employee_id, leave_type_id, date_from, date_to, working_days,
                     status, source, employee_note, submitted_at, decided_at, decided_by_user_id,
                     created_by_user_id
                 )
-                SELECT employees.id, leave_types.id, @DateFrom, @DateTo, @WorkingDays,
+                SELECT new_identity.id, new_identity.public_id,
+                       employees.id, leave_types.id, @DateFrom, @DateTo, @WorkingDays,
                        @Status, @Source, @Note, now(),
                        CASE WHEN @Decided THEN now() ELSE NULL END,
                        CASE WHEN @Decided THEN users.id ELSE NULL END, users.id
-                FROM organization.employees AS employees
+                FROM new_identity
+                CROSS JOIN organization.employees AS employees
                 CROSS JOIN vacation.leave_types AS leave_types
                 CROSS JOIN identity.users AS users
                 WHERE employees.public_id = @EmployeePublicId

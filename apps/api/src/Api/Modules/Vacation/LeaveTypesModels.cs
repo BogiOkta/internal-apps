@@ -45,6 +45,7 @@ internal sealed record LeaveTypeRecord(
     bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
+    bool IsSystem,
     int DisplayOrder,
     bool IsInUse);
 
@@ -58,6 +59,7 @@ internal sealed record LeaveTypeResponse(
     bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
+    bool IsSystem,
     int DisplayOrder,
     bool IsInUse);
 
@@ -75,6 +77,7 @@ internal sealed record LeaveTypeDetailsResponse(
     bool RequiresBalance,
     bool RequiresApproval,
     bool IsActive,
+    bool IsSystem,
     int DisplayOrder,
     bool IsInUse);
 

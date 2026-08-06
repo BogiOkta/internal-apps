@@ -20,7 +20,8 @@ internal sealed class LeaveTypesService(
     [
         "Vacation leave request",
         "Vacation leave balance",
-        "Vacation leave balance entry"
+        "Vacation leave balance entry",
+        "System leave type"
     ];
 
     public bool TryCreateListQuery(
@@ -388,6 +389,7 @@ internal sealed class LeaveTypesService(
             record.RequiresBalance,
             record.RequiresApproval,
             record.IsActive,
+            record.IsSystem,
             record.DisplayOrder,
             record.IsInUse);
     }
@@ -411,6 +413,7 @@ internal sealed class LeaveTypesService(
             localized.RequiresBalance,
             localized.RequiresApproval,
             localized.IsActive,
+            localized.IsSystem,
             localized.DisplayOrder,
             localized.IsInUse);
     }

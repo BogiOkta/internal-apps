@@ -52,9 +52,11 @@ be selected for new requests. Deactivation is always allowed and never breaks
 historical resolution. Repository updates must explicitly set
 `updated_at = now()`; no automatic timestamp trigger is used.
 
-Migration 032 adds controlled physical deletion. A leave type may be deleted
-only when it has never been referenced by `vacation.leave_requests`,
-`vacation.leave_balances`, or `vacation.leave_balance_entries`. Deletion runs
+Migration 032 adds controlled physical deletion. Migrations 038–039 make usage
+permanent through `vacation.leave_type_protected_dependencies` and protect the
+five canonical system codes. A leave type may be deleted only when it has never
+been referenced by `vacation.leave_requests`, `vacation.leave_balances`, or
+`vacation.leave_balance_entries`, and when it is not a system type. Deletion runs
 exclusively through the owner-owned `SECURITY DEFINER` function
 `vacation.delete_unreferenced_leave_type(uuid)`; the runtime role holds no
 `DELETE` privilege on `vacation.leave_types` and no direct SQL delete path
@@ -68,9 +70,16 @@ labels into the stable `409` `leave_type_delete_conflict` Problem Details with a
 leave type is already in use and should be deactivated instead. Dependent rows
 are never cascaded or deleted.
 
+Markers are backfilled and added by owner-controlled triggers, are never
+removed, and are inaccessible to the runtime role. Existing Organization
+employee markers already preserve the same permanent request dependency and
+require no behavioral change. System types expose read-only `isSystem = true`,
+may still be deactivated, and cannot have the flag set by the runtime.
+
 `requires_balance` and `counts_against_vacation_balance` are editable only
 while a leave type is unused. The list and details projections derive an
-`isInUse` flag from the same three referencing tables. Once it is true, the API
+`isInUse` flag from the same three live referencing tables. Permanent markers
+are consulted by the owner-controlled delete function. Once `isInUse` is true, the API
 rejects a differing submitted value for either field with a locked-field
 validation error, and the Portal renders lock hints instead of editable
 controls. Migration 032 grants the runtime role the previously missing
@@ -97,7 +106,10 @@ Calendar and persists its inclusive result. Vacation does not reinterpret
 weekends or configured non-working dates.
 
 The only statuses are `SUBMITTED`, `APPROVED`, `REJECTED`, and `CANCELLED`.
-There is no draft and no physical deletion. A single Administrator decision
+There is no draft and no physical-deletion capability. A permanent
+`vacation.leave_request_identities` row owns each numeric ID and public UUID;
+the operational request matches both through a composite foreign key. Creation
+allocates the identity first in the same transaction. A single Administrator decision
 actor is stored for approval or rejection. Cancellation remains in history.
 Requests for the same employee cannot overlap while either request is submitted
 or approved; rejected and cancelled requests do not block later dates.
@@ -395,8 +407,14 @@ Submitted requests expose approval, rejection, and administrator cancellation
 on the details route; approved requests expose administrator cancellation;
 terminal requests expose no transition actions.
 
+The ledger evidentiary request foreign key targets the permanent identity with
+restrictive delete behavior. New request-derived entries still require an
+operational request: the integrity trigger rejects absence explicitly and uses
+null-safe comparisons while preserving scope, quantity, status, reversal, and
+balance rules. No accepted ledger row was changed by this foundation.
+
 No Vacation-owned public-holiday calendar, notification, background job,
-manager hierarchy, configurable workflow, or physical delete is implemented.
+manager hierarchy, configurable workflow, or request delete is implemented.
 
 ### Employee Portal
 
