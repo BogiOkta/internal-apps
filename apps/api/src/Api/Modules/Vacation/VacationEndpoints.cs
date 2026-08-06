@@ -15,6 +15,9 @@ internal static class VacationEndpoints
         vacation.MapGet("/leave-types", ListLeaveTypesAsync);
         vacation.MapGet("/leave-types/{publicId:guid}", GetLeaveTypeAsync);
         vacation
+            .MapGet("/leave-types/{publicId:guid}/dependencies", GetLeaveTypeDependenciesAsync)
+            .RequireAuthorization(VacationPermissions.ManageLeaveTypes);
+        vacation
             .MapPost("/leave-types", CreateLeaveTypeAsync)
             .RequireAuthorization(VacationPermissions.ManageLeaveTypes);
         vacation
@@ -93,6 +96,18 @@ internal static class VacationEndpoints
                     ["traceId"] = context.TraceIdentifier
                 })
             : Results.Ok(leaveType);
+    }
+
+    private static async Task<IResult> GetLeaveTypeDependenciesAsync(
+        Guid publicId,
+        HttpContext context,
+        LeaveTypesService service,
+        CancellationToken cancellationToken)
+    {
+        var inspection = await service.GetDependenciesAsync(publicId, cancellationToken);
+        return inspection is null
+            ? NotFoundProblem(context)
+            : Results.Ok(inspection);
     }
 
     private static async Task<IResult> CreateLeaveTypeAsync(
@@ -225,7 +240,8 @@ internal static class VacationEndpoints
                 extensions: new Dictionary<string, object?>
                 {
                     ["code"] = "leave_type_system_protected",
-                    ["traceId"] = context.TraceIdentifier
+                    ["traceId"] = context.TraceIdentifier,
+                    ["dependencyInspection"] = result.Inspection
                 }),
             LeaveTypeWriteStatus.HasDependencies => Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,
@@ -236,7 +252,8 @@ internal static class VacationEndpoints
                 {
                     ["code"] = "leave_type_delete_conflict",
                     ["traceId"] = context.TraceIdentifier,
-                    ["dependencies"] = result.Dependencies ?? []
+                    ["dependencies"] = result.Dependencies ?? [],
+                    ["dependencyInspection"] = result.Inspection
                 }),
             _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError)
         };

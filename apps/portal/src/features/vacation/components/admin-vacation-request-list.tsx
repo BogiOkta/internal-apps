@@ -72,6 +72,15 @@ export function AdminVacationRequestList() {
   }, [t]);
 
   useEffect(() => {
+    if (!accessToken || !allowed) return;
+    const params = new URLSearchParams(window.location.search);
+    const leaveTypeIdParam = params.get("leaveTypeId");
+    if (leaveTypeIdParam) {
+      setLeaveTypeId(leaveTypeIdParam);
+    }
+  }, [accessToken, allowed]);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => {
       setSearch(searchInput.trim());
     }, 250);

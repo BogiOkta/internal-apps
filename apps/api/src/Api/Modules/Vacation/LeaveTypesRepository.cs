@@ -258,6 +258,85 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
     }
 
     /// <summary>
+    /// Live dependency snapshot for the Dependency Inspector. Permanent markers
+    /// still govern deletion; this query only describes current operational and
+    /// ledger references so administrators can navigate and resolve them.
+    /// </summary>
+    public async Task<LeaveTypeDependencySnapshot?> GetDependencySnapshotAsync(
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        const string headerSql = """
+            SELECT
+                leave_types.public_id AS PublicId,
+                leave_types.is_system AS IsSystem,
+                EXISTS (
+                    SELECT 1
+                    FROM vacation.leave_type_protected_dependencies AS markers
+                    WHERE markers.leave_type_id = leave_types.id
+                ) AS HasPermanentProtection,
+                (
+                    SELECT count(*)::int
+                    FROM vacation.leave_requests AS used_requests
+                    WHERE used_requests.leave_type_id = leave_types.id
+                ) AS RequestCount,
+                (
+                    SELECT count(DISTINCT used_balances.employee_id)::int
+                    FROM vacation.leave_balances AS used_balances
+                    WHERE used_balances.leave_type_id = leave_types.id
+                ) AS BalanceEmployeeCount,
+                (
+                    SELECT count(*)::int
+                    FROM vacation.leave_balance_entries AS used_entries
+                    WHERE used_entries.leave_type_id = leave_types.id
+                ) AS LedgerEntryCount
+            FROM vacation.leave_types AS leave_types
+            WHERE leave_types.public_id = @PublicId
+            """;
+
+        const string statusSql = """
+            SELECT
+                used_requests.status AS Status,
+                count(*)::int AS Count
+            FROM vacation.leave_requests AS used_requests
+            INNER JOIN vacation.leave_types AS leave_types
+                ON leave_types.id = used_requests.leave_type_id
+            WHERE leave_types.public_id = @PublicId
+            GROUP BY used_requests.status
+            ORDER BY used_requests.status
+            """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        var header = await connection.QuerySingleOrDefaultAsync<LeaveTypeDependencyHeaderRow>(
+            new CommandDefinition(
+                headerSql,
+                new { PublicId = publicId },
+                cancellationToken: cancellationToken));
+
+        if (header is null)
+        {
+            return null;
+        }
+
+        var statusRows = await connection.QueryAsync<LeaveTypeRequestStatusCountRow>(
+            new CommandDefinition(
+                statusSql,
+                new { PublicId = publicId },
+                cancellationToken: cancellationToken));
+
+        return new LeaveTypeDependencySnapshot(
+            header.PublicId,
+            header.IsSystem,
+            header.HasPermanentProtection,
+            header.RequestCount,
+            statusRows
+                .Select(row => new LeaveTypeRequestStatusCount(row.Status, row.Count))
+                .ToArray(),
+            header.BalanceEmployeeCount,
+            header.LedgerEntryCount);
+    }
+
+    /// <summary>
     /// Physical deletion runs only through the owner-controlled SECURITY DEFINER
     /// function; the runtime role holds no DELETE privilege on vacation.leave_types.
     /// </summary>
@@ -358,5 +437,27 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
         public int DisplayOrder { get; set; }
 
         public bool IsInUse { get; set; }
+    }
+
+    private sealed class LeaveTypeDependencyHeaderRow
+    {
+        public Guid PublicId { get; set; }
+
+        public bool IsSystem { get; set; }
+
+        public bool HasPermanentProtection { get; set; }
+
+        public int RequestCount { get; set; }
+
+        public int BalanceEmployeeCount { get; set; }
+
+        public int LedgerEntryCount { get; set; }
+    }
+
+    private sealed class LeaveTypeRequestStatusCountRow
+    {
+        public string Status { get; set; } = string.Empty;
+
+        public int Count { get; set; }
     }
 }

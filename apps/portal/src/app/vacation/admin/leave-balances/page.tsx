@@ -101,6 +101,19 @@ export default function LeaveBalancesPage() {
     (scope.leaveTypeId ? 1 : 0) +
     (scope.year !== currentYear ? 1 : 0);
 
+  useEffect(() => {
+    if (!accessToken || !allowed) return;
+    const params = new URLSearchParams(window.location.search);
+    const leaveTypeIdParam = params.get("leaveTypeId");
+    if (leaveTypeIdParam) {
+      setScope((current) =>
+        current.leaveTypeId === leaveTypeIdParam
+          ? current
+          : { ...current, leaveTypeId: leaveTypeIdParam },
+      );
+    }
+  }, [accessToken, allowed]);
+
   useEffect(() => setPage(1), [search, pageSize, history]);
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);

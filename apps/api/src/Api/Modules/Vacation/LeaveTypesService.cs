@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using InternalApps.Api.Core.Dependencies;
 using InternalApps.Api.Infrastructure.Auditing;
 using Microsoft.Net.Http.Headers;
 using Npgsql;
@@ -111,6 +112,77 @@ internal sealed class LeaveTypesService(
         var locale = ResolveLocale(acceptLanguage);
         var record = await repository.GetByPublicIdAsync(publicId, cancellationToken);
         return record is null ? null : ToDetailsResponse(record, locale);
+    }
+
+    public async Task<DependencyInspectionResponse?> GetDependenciesAsync(
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await repository.GetDependencySnapshotAsync(publicId, cancellationToken);
+        if (snapshot is null)
+        {
+            return null;
+        }
+
+        var dependencies = new List<DependencyGroupResponse>();
+        var leaveTypeId = publicId.ToString("D");
+
+        if (snapshot.RequestCount > 0)
+        {
+            dependencies.Add(
+                new DependencyGroupResponse(
+                    LeaveTypeDependencyCodes.LeaveRequests,
+                    snapshot.RequestCount,
+                    CountUnit: null,
+                    snapshot.RequestStatusCounts
+                        .Select(status => new DependencyDetailResponse(status.Status, status.Count))
+                        .ToArray(),
+                    new DependencyNavigationResponse(
+                        DependencyNavigationKinds.PortalRoute,
+                        LeaveTypeDependencyCodes.RouteLeaveRequests,
+                        new Dictionary<string, string>
+                        {
+                            ["leaveTypeId"] = leaveTypeId
+                        })));
+        }
+
+        if (snapshot.BalanceEmployeeCount > 0)
+        {
+            dependencies.Add(
+                new DependencyGroupResponse(
+                    LeaveTypeDependencyCodes.LeaveBalances,
+                    snapshot.BalanceEmployeeCount,
+                    LeaveTypeDependencyCodes.CountUnitEmployees,
+                    Details: [],
+                    new DependencyNavigationResponse(
+                        DependencyNavigationKinds.PortalRoute,
+                        LeaveTypeDependencyCodes.RouteLeaveBalances,
+                        new Dictionary<string, string>
+                        {
+                            ["leaveTypeId"] = leaveTypeId
+                        })));
+        }
+
+        if (snapshot.LedgerEntryCount > 0)
+        {
+            dependencies.Add(
+                new DependencyGroupResponse(
+                    LeaveTypeDependencyCodes.LeaveBalanceEntries,
+                    snapshot.LedgerEntryCount,
+                    LeaveTypeDependencyCodes.CountUnitEntries,
+                    Details: [],
+                    new DependencyNavigationResponse(
+                        DependencyNavigationKinds.None,
+                        InfoCode: LeaveTypeDependencyCodes.InfoHistoricalLedger)));
+        }
+
+        return new DependencyInspectionResponse(
+            LeaveTypeDependencyCodes.EntityType,
+            snapshot.PublicId,
+            CanDelete: !snapshot.IsSystem && !snapshot.HasPermanentProtection,
+            snapshot.IsSystem,
+            snapshot.HasPermanentProtection,
+            dependencies);
     }
 
     public async Task<LeaveTypeWriteResult> CreateAsync(
@@ -323,9 +395,11 @@ internal sealed class LeaveTypesService(
              exception.MessageText.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal)))
         {
             await transaction.RollbackAsync(cancellationToken);
+            var inspection = await GetDependenciesAsync(publicId, cancellationToken);
             return new LeaveTypeDeleteResult(
                 LeaveTypeWriteStatus.HasDependencies,
-                ParseDeleteConflictDependencies(exception.MessageText));
+                ParseDeleteConflictDependencies(exception.MessageText),
+                inspection);
         }
     }
 

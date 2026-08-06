@@ -133,9 +133,15 @@ owner-owned `SECURITY DEFINER` function
 its `EXECUTE` grant plus the previously missing `requires_balance` column
 `UPDATE`, never a table `DELETE`. A leave type referenced by a leave request,
 yearly balance, or ledger entry returns the stable `409`
-`leave_type_delete_conflict` Problem Details with controlled dependency labels,
-and the Portal explains that the type is already in use and should be
-deactivated instead. Dependent Vacation data never cascades.
+`leave_type_delete_conflict` Problem Details with controlled dependency labels.
+The Portal opens the shared `DependencyInspector` dialog, populated from
+`GET /api/v1/vacation/leave-types/{publicId}/dependencies`, instead of a
+toast-only conflict notice. The inspector lists live blocking dependencies with
+counts (request status breakdown, distinct balance employees, ledger entries),
+offers navigation to Request Administration and Leave Balances when those
+groups exist, offers deactivation when permitted, and never provides a
+delete-anyway path. Ledger groups show an informational note without a
+navigation button. Dependent Vacation data never cascades.
 
 The stable code stays immutable after creation. `Requires Balance` and
 `Counts Against Balance` are editable only while the leave type is unused and

@@ -1,6 +1,7 @@
 import { ApiError } from "@/services/auth";
 import { getApiBaseUrl } from "@/services/api-config";
 import type { ProblemDetails } from "@/types/auth";
+import type { DependencyInspection } from "@/types/dependency-inspection";
 import type {
   CreateLeaveTypeRequest,
   LeaveType,
@@ -156,6 +157,19 @@ export async function deleteLeaveType(
     problem?.detail ?? problem?.title ?? "The leave type could not be deleted.",
     problem ?? undefined,
     response.status,
+  );
+}
+
+export async function getLeaveTypeDependencies(
+  accessToken: string,
+  publicId: string,
+  signal?: AbortSignal,
+): Promise<DependencyInspection> {
+  return vacationRequest(
+    `/api/v1/vacation/leave-types/${encodeURIComponent(publicId)}/dependencies`,
+    accessToken,
+    "",
+    { signal },
   );
 }
 

@@ -363,6 +363,7 @@ Current Vacation Leave Type endpoints:
 |---|---|---|
 | `GET /api/v1/vacation/leave-types` | Authenticated | Accepts `search`, `status`, `sortBy`, and `sortDirection`; returns a localized direct array. |
 | `GET /api/v1/vacation/leave-types/{publicId}` | Authenticated | Returns localized details, including the bilingual values required by the administration form, or `404`. |
+| `GET /api/v1/vacation/leave-types/{publicId}/dependencies` | `vacation.leave-types.manage` | Returns the platform Dependency Inspection contract for the Leave Type: live request counts by status, distinct balance-employee count, ledger entry count, permanent-protection and system flags, and navigation hints. It never deletes or weakens protection. |
 | `POST /api/v1/vacation/leave-types` | `vacation.leave-types.manage` | Creates a Leave Type and returns `201 Created`. |
 | `PUT /api/v1/vacation/leave-types/{publicId}` | `vacation.leave-types.manage` | Updates mutable bilingual labels, descriptions, behavior, color, and display order. It cannot change `code` or active state. |
 | `POST /api/v1/vacation/leave-types/{publicId}/activate` | `vacation.leave-types.manage` | Idempotently makes the type active and returns the resulting resource. |

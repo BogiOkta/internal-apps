@@ -15,6 +15,9 @@ import { AdministrativeGridToolbar } from "@/components/administrative-grid-tool
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
+  DependencyInspector,
+} from "@/components/dependency-inspector";
+import {
   formControlClassName,
   formDangerButtonClassName,
   formPrimaryButtonClassName,
@@ -26,6 +29,10 @@ import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { StatusBadge } from "@/components/status-badge";
 import { GridPagination } from "@/components/grid-pagination";
 import { LeaveTypeForm } from "@/features/vacation/components/leave-type-form";
+import {
+  leaveTypeDependencyNavigationActions,
+  toLeaveTypeDependencyGroups,
+} from "@/features/vacation/leave-type-dependency-mapping";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import { ApiError } from "@/services/auth";
@@ -35,9 +42,11 @@ import {
   deactivateLeaveType,
   deleteLeaveType,
   getLeaveType,
+  getLeaveTypeDependencies,
   listLeaveTypes,
   updateLeaveType,
 } from "@/services/vacation";
+import type { DependencyInspection } from "@/types/dependency-inspection";
 import type {
   CreateLeaveTypeRequest,
   LeaveType,
@@ -107,6 +116,9 @@ export default function LeaveTypesPage() {
   const [pendingActiveState, setPendingActiveState] = useState<boolean | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [dependencyInspection, setDependencyInspection] =
+    useState<DependencyInspection | null>(null);
+  const [isLoadingDependencies, setIsLoadingDependencies] = useState(false);
   const [operationError, setOperationError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const canManage = user?.permissions.includes(leaveTypesManagePermission) ?? false;
@@ -273,6 +285,7 @@ export default function LeaveTypesPage() {
     setEditLeaveType(null);
     setPendingActiveState(null);
     setIsConfirmingDelete(false);
+    setDependencyInspection(null);
     setOperationError(null);
   }
 
@@ -281,6 +294,7 @@ export default function LeaveTypesPage() {
     setEditLeaveType(null);
     setPendingActiveState(null);
     setIsConfirmingDelete(false);
+    setDependencyInspection(null);
     setOperationError(null);
     setSuccessMessage(null);
   }
@@ -389,20 +403,38 @@ export default function LeaveTypesPage() {
       setEditLeaveType(null);
       setPanelMode("details");
       setIsConfirmingDelete(false);
+      setDependencyInspection(null);
       setSuccessMessage(t("vacation.leaveTypes.deleteSuccess"));
       setRefreshVersion((version) => version + 1);
     } catch (error) {
       const problemCode =
         error instanceof ApiError ? error.problem?.code : undefined;
-      setOperationError(
-        problemCode === "leave_type_delete_conflict"
-          ? t("vacation.leaveTypes.deleteReferenced")
-          : problemCode === "leave_type_system_protected"
+      if (problemCode === "leave_type_delete_conflict") {
+        setIsConfirmingDelete(false);
+        setIsLoadingDependencies(true);
+        try {
+          const inspection = await getLeaveTypeDependencies(
+            accessToken,
+            selectedLeaveType.publicId,
+          );
+          setDependencyInspection(inspection);
+        } catch {
+          setDependencyInspection(null);
+          setOperationError(
+            t("vacation.leaveTypes.dependencyInspector.loadFailed"),
+          );
+        } finally {
+          setIsLoadingDependencies(false);
+        }
+      } else {
+        setOperationError(
+          problemCode === "leave_type_system_protected"
             ? t("vacation.leaveTypes.deleteSystemProtected")
-          : error instanceof ApiError && error.status === 403
-            ? t("vacation.leaveTypes.forbidden")
-            : t("vacation.leaveTypes.deleteFailed"),
-      );
+            : error instanceof ApiError && error.status === 403
+              ? t("vacation.leaveTypes.forbidden")
+              : t("vacation.leaveTypes.deleteFailed"),
+        );
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -414,6 +446,7 @@ export default function LeaveTypesPage() {
     setEditLeaveType(null);
     setPendingActiveState(null);
     setIsConfirmingDelete(false);
+    setDependencyInspection(null);
     setOperationError(null);
     setSuccessMessage(message);
     setRefreshVersion((version) => version + 1);
@@ -842,6 +875,7 @@ export default function LeaveTypesPage() {
                           disabled={isStateChanging || isDeleting}
                           onClick={() => {
                             setIsConfirmingDelete(false);
+                            setDependencyInspection(null);
                             setPendingActiveState(!selectedLeaveType.isActive);
                           }}
                           className={formSecondaryButtonClassName()}
@@ -855,9 +889,10 @@ export default function LeaveTypesPage() {
                         {canDelete && (
                         <button
                           type="button"
-                          disabled={isStateChanging || isDeleting}
+                          disabled={isStateChanging || isDeleting || isLoadingDependencies}
                           onClick={() => {
                             setPendingActiveState(null);
+                            setDependencyInspection(null);
                             setIsConfirmingDelete(true);
                           }}
                           className={formDangerButtonClassName()}
@@ -903,6 +938,47 @@ export default function LeaveTypesPage() {
                           onCancel={() => setIsConfirmingDelete(false)}
                         />
                       )}
+
+                      {dependencyInspection && selectedLeaveType ? (
+                        <DependencyInspector
+                          title={t(
+                            "vacation.leaveTypes.dependencyInspector.title",
+                          )}
+                          referencedByLabel={t(
+                            "vacation.leaveTypes.dependencyInspector.referencedBy",
+                          )}
+                          groups={toLeaveTypeDependencyGroups(
+                            dependencyInspection,
+                            t,
+                          )}
+                          emptyReferencedMessage={
+                            dependencyInspection.hasPermanentProtection
+                              ? t(
+                                  "vacation.leaveTypes.dependencyInspector.permanentProtection",
+                                )
+                              : undefined
+                          }
+                          actions={leaveTypeDependencyNavigationActions(
+                            dependencyInspection,
+                            {
+                              t,
+                              canManage,
+                              isActive: selectedLeaveType.isActive,
+                              onOpen: (href) => {
+                                window.location.assign(href);
+                              },
+                              onDeactivate: () => {
+                                setDependencyInspection(null);
+                                setPendingActiveState(false);
+                              },
+                            },
+                          )}
+                          closeLabel={t(
+                            "vacation.leaveTypes.dependencyInspector.close",
+                          )}
+                          onClose={() => setDependencyInspection(null)}
+                        />
+                      ) : null}
                     </div>
                   )}
                 </div>

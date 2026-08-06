@@ -16,6 +16,7 @@ public sealed class VacationLeaveTypeAdministrationTests
         Assert.Contains("MapDelete(\"/leave-types/{publicId:guid}\", DeleteLeaveTypeAsync)", endpoints);
         Assert.Contains("/leave-types/{publicId:guid}/activate", endpoints);
         Assert.Contains("/leave-types/{publicId:guid}/deactivate", endpoints);
+        Assert.Contains("/leave-types/{publicId:guid}/dependencies", endpoints);
         Assert.Contains("RequireAuthorization(VacationPermissions.ManageLeaveTypes)", endpoints);
         Assert.Contains("RequireAuthorization(VacationPermissions.DeleteLeaveTypes)", endpoints);
         Assert.Contains("leave_type_delete_conflict", endpoints);
@@ -25,6 +26,43 @@ public sealed class VacationLeaveTypeAdministrationTests
         var permissions = Read("apps", "api", "src", "Api", "Modules", "Vacation", "VacationPermissions.cs");
         Assert.Contains("\"vacation.leave-types.manage\"", permissions);
         Assert.Contains("\"vacation.leave-types.delete\"", permissions);
+    }
+
+    [Fact]
+    public void DependencyInspectionContract_UsesSharedPlatformModelsAndLiveCounts()
+    {
+        var models = Read("apps", "api", "src", "Api", "Core", "Dependencies",
+            "DependencyInspectionModels.cs");
+        Assert.Contains("record DependencyInspectionResponse", models);
+        Assert.Contains("record DependencyGroupResponse", models);
+        Assert.Contains("DependencyNavigationKinds", models);
+        Assert.Contains("portal_route", models);
+
+        var leaveModels = Read("apps", "api", "src", "Api", "Modules", "Vacation",
+            "LeaveTypesModels.cs");
+        Assert.Contains("LeaveTypeDependencyCodes", leaveModels);
+        Assert.Contains("leave_requests", leaveModels);
+        Assert.Contains("leave_balances", leaveModels);
+        Assert.Contains("leave_balance_entries", leaveModels);
+        Assert.Contains("historical_ledger_records", leaveModels);
+
+        var repository = Read("apps", "api", "src", "Api", "Modules", "Vacation",
+            "LeaveTypesRepository.cs");
+        Assert.Contains("GetDependencySnapshotAsync", repository);
+        Assert.Contains("count(DISTINCT used_balances.employee_id)", repository);
+        Assert.Contains("used_requests.status", repository);
+        Assert.Contains("leave_type_protected_dependencies", repository);
+        Assert.DoesNotContain("DELETE FROM vacation.leave_types", repository);
+
+        var service = Read("apps", "api", "src", "Api", "Modules", "Vacation",
+            "LeaveTypesService.cs");
+        Assert.Contains("GetDependenciesAsync", service);
+        Assert.Contains("DependencyInspectionResponse", service);
+        Assert.Contains("CanDelete: !snapshot.IsSystem && !snapshot.HasPermanentProtection", service);
+
+        var endpoints = Read("apps", "api", "src", "Api", "Modules", "Vacation",
+            "VacationEndpoints.cs");
+        Assert.Contains("[\"dependencyInspection\"] = result.Inspection", endpoints);
     }
 
     [Fact]

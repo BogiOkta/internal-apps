@@ -1,3 +1,5 @@
+using InternalApps.Api.Core.Dependencies;
+
 namespace InternalApps.Api.Modules.Vacation;
 
 internal enum LeaveTypeLocale
@@ -145,8 +147,35 @@ internal sealed record LeaveTypeWriteResult(
 
 internal sealed record LeaveTypeDeleteResult(
     LeaveTypeWriteStatus Status,
-    string[]? Dependencies = null);
+    string[]? Dependencies = null,
+    DependencyInspectionResponse? Inspection = null);
 
 internal sealed record LeaveTypeCreatePersistenceResult(
     LeaveTypeRecord? LeaveType,
     bool DuplicateCode);
+
+internal sealed record LeaveTypeDependencySnapshot(
+    Guid PublicId,
+    bool IsSystem,
+    bool HasPermanentProtection,
+    int RequestCount,
+    IReadOnlyList<LeaveTypeRequestStatusCount> RequestStatusCounts,
+    int BalanceEmployeeCount,
+    int LedgerEntryCount);
+
+internal sealed record LeaveTypeRequestStatusCount(
+    string Status,
+    int Count);
+
+internal static class LeaveTypeDependencyCodes
+{
+    public const string EntityType = "leave_type";
+    public const string LeaveRequests = "leave_requests";
+    public const string LeaveBalances = "leave_balances";
+    public const string LeaveBalanceEntries = "leave_balance_entries";
+    public const string CountUnitEmployees = "employees";
+    public const string CountUnitEntries = "entries";
+    public const string InfoHistoricalLedger = "historical_ledger_records";
+    public const string RouteLeaveRequests = "/vacation/admin/requests";
+    public const string RouteLeaveBalances = "/vacation/admin/leave-balances";
+}
