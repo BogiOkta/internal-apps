@@ -244,6 +244,22 @@ looks up that exact `request_consumption`, stores its ID in
 `reverses_entry_id`, and inserts one equal-and-opposite
 `cancellation_reversal`; duplicate cancellation conflicts without another
 reversal. Migration 020, its triggers, and runtime grants required no change.
-Retained fixture ledger entries must not be cleaned up because deleting them
-would violate the append-only ledger rule; their timestamp prefix is the
-development-data boundary.
+Retained fixture ledger entries must not be cleaned through the application or
+by prefix because that would violate the append-only ledger boundary. A bounded
+development-only cleanup is acceptable only from an exact creation-time
+manifest with complete scope-ownership proof: each compatibility-mirror scope
+must have zero unknown contributors before any manifest-listed ledger entries,
+balances, dependency markers, permanent identities, or custom smoke Leave
+Types are removed. System Leave Types, employees, users, and central audit data
+remain outside this cleanup boundary. Runtime grants and protection triggers
+remain unchanged; no reusable cleanup script or production cleanup capability
+is introduced.
+
+Future development smoke tooling that creates retained Vacation data must write
+an exact per-run cleanup manifest at fixture-creation time. The manifest must
+record Leave Type, request, request-history, permanent-identity, ledger and
+reversal, compatibility-mirror scope, and protected-dependency-marker
+identifiers. A cleanup must use those exact identifiers, prove every ledger
+contributor in each mirror scope belongs to the manifest, default to dry-run,
+and refuse ambiguous scopes. A name prefix alone is never sufficient authority
+for deletion.

@@ -1,5 +1,18 @@
 # Internal Apps Platform change history
 
+## 2026-08-07 — Vacation smoke fixture cleanup
+
+- Performed a one-time, development-only cleanup from an exact manifest, never
+  a prefix-only deletion. Exact verification proved that all
+  compatibility-mirror scopes had zero unknown ledger contributors before any
+  removal.
+- Removed only manifest-listed ledger entries, balances, dependency markers,
+  permanent identities, and custom smoke Leave Types after that verification.
+  System Leave Types, employees, users, and central audit data remained.
+- Runtime grants and protection triggers were unchanged. No reusable cleanup
+  script or production cleanup capability was introduced; future smoke fixtures
+  must carry exact per-run cleanup manifests.
+
 ## 2026-08-07 — Leave Balances administration overview redesign
 
 - Redesigned Leave Balances administration so the page loads an overview of
