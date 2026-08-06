@@ -543,36 +543,22 @@ const englishTranslations = {
   "vacation.leaveTypes.deleteSystemProtected":
     "System leave types cannot be deleted. Deactivate the type instead if it must no longer be selectable.",
   "vacation.leaveTypes.dependencyInspector.title":
-    "This Leave Type cannot be deleted.",
-  "vacation.leaveTypes.dependencyInspector.referencedBy":
-    "It is referenced by:",
+    "This Leave Type is still used.",
+  "vacation.leaveTypes.dependencyInspector.description":
+    "Review the live records using the available links, or deactivate this Leave Type instead.",
+  "vacation.leaveTypes.dependencyInspector.dependencies": "Dependencies",
   "vacation.leaveTypes.dependencyInspector.permanentProtection":
     "Permanent historical protection remains even after live operational rows are removed.",
   "vacation.leaveTypes.dependencyInspector.historicalLedger":
-    "Historical ledger records exist.",
-  "vacation.leaveTypes.dependencyInspector.openRequests":
-    "Open Leave Requests",
-  "vacation.leaveTypes.dependencyInspector.openBalances":
-    "Open Leave Balances",
+    "Historical ledger records cannot be removed from this screen.",
   "vacation.leaveTypes.dependencyInspector.deactivate":
     "Deactivate Leave Type",
   "vacation.leaveTypes.dependencyInspector.close": "Close",
   "vacation.leaveTypes.dependencyInspector.loadFailed":
     "Dependency details could not be loaded.",
-  "vacation.leaveTypes.dependencyInspector.leaveRequests":
-    "Leave requests ({count})",
-  "vacation.leaveTypes.dependencyInspector.leaveBalances":
-    "Leave balances ({count} employees)",
-  "vacation.leaveTypes.dependencyInspector.ledgerHistory":
-    "Ledger history ({count} entries)",
-  "vacation.leaveTypes.dependencyInspector.status.SUBMITTED":
-    "Submitted: {count}",
-  "vacation.leaveTypes.dependencyInspector.status.APPROVED":
-    "Approved: {count}",
-  "vacation.leaveTypes.dependencyInspector.status.REJECTED":
-    "Rejected: {count}",
-  "vacation.leaveTypes.dependencyInspector.status.CANCELLED":
-    "Cancelled: {count}",
+  "vacation.leaveTypes.dependencyInspector.leaveRequests": "Leave requests",
+  "vacation.leaveTypes.dependencyInspector.leaveBalances": "Leave balances",
+  "vacation.leaveTypes.dependencyInspector.ledgerEntries": "Ledger entries",
   "vacation.leaveTypes.deleteFailed": "The leave type could not be deleted.",
   "vacation.leaveTypes.form.code": "Code",
   "vacation.leaveTypes.form.codeGuidance":
@@ -1467,36 +1453,23 @@ const serbianLatinTranslations: TranslationDictionary = {
   "vacation.leaveTypes.deleteSystemProtected":
     "Sistemske vrste odsustva ne mogu se obrisati. Deaktivirajte vrstu ako više ne sme biti dostupna za izbor.",
   "vacation.leaveTypes.dependencyInspector.title":
-    "Ova vrsta odsustva ne može se obrisati.",
-  "vacation.leaveTypes.dependencyInspector.referencedBy":
-    "Referencira se iz:",
+    "Ova vrsta odsustva se još uvek koristi.",
+  "vacation.leaveTypes.dependencyInspector.description":
+    "Pregledajte aktivne zapise pomoću dostupnih veza ili deaktivirajte ovu vrstu odsustva.",
+  "vacation.leaveTypes.dependencyInspector.dependencies": "Zavisnosti",
   "vacation.leaveTypes.dependencyInspector.permanentProtection":
     "Trajna istorijska zaštita ostaje i nakon uklanjanja operativnih redova.",
   "vacation.leaveTypes.dependencyInspector.historicalLedger":
-    "Postoje istorijski zapisi u knjizi salda.",
-  "vacation.leaveTypes.dependencyInspector.openRequests":
-    "Otvori zahteve za odsustvo",
-  "vacation.leaveTypes.dependencyInspector.openBalances":
-    "Otvori stanja odsustva",
+    "Istorijski zapisi u knjizi salda ne mogu se ukloniti sa ovog ekrana.",
   "vacation.leaveTypes.dependencyInspector.deactivate":
     "Deaktiviraj vrstu odsustva",
   "vacation.leaveTypes.dependencyInspector.close": "Zatvori",
   "vacation.leaveTypes.dependencyInspector.loadFailed":
     "Detalji zavisnosti nisu mogli da se učitaju.",
   "vacation.leaveTypes.dependencyInspector.leaveRequests":
-    "Zahtevi za odsustvo ({count})",
-  "vacation.leaveTypes.dependencyInspector.leaveBalances":
-    "Stanja odsustva ({count} zaposlenih)",
-  "vacation.leaveTypes.dependencyInspector.ledgerHistory":
-    "Istorija knjige ({count} unosa)",
-  "vacation.leaveTypes.dependencyInspector.status.SUBMITTED":
-    "Podneto: {count}",
-  "vacation.leaveTypes.dependencyInspector.status.APPROVED":
-    "Odobreno: {count}",
-  "vacation.leaveTypes.dependencyInspector.status.REJECTED":
-    "Odbijeno: {count}",
-  "vacation.leaveTypes.dependencyInspector.status.CANCELLED":
-    "Otkazano: {count}",
+    "Zahtevi za odsustvo",
+  "vacation.leaveTypes.dependencyInspector.leaveBalances": "Stanja odsustva",
+  "vacation.leaveTypes.dependencyInspector.ledgerEntries": "Unosi u knjizi",
   "vacation.leaveTypes.deleteFailed": "Vrstu odsustva nije moguće obrisati.",
   "vacation.leaveTypes.form.code": "Šifra",
   "vacation.leaveTypes.form.codeGuidance":

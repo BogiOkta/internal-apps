@@ -329,6 +329,8 @@ public sealed class PortalAdministrationUiContractTests
     {
         var dialog = Read("apps", "portal", "src", "components", "dependency-inspector.tsx");
         Assert.Contains("export function DependencyInspector", dialog);
+        Assert.Contains("DependencyInspectorItem", dialog);
+        Assert.Contains("onNavigate", dialog);
         Assert.Contains("formPrimaryButtonClassName", dialog);
         Assert.Contains("formSecondaryButtonClassName", dialog);
         Assert.Contains("role=\"alertdialog\"", dialog);
@@ -339,13 +341,17 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("DependencyInspector", leaveTypes);
         Assert.Contains("getLeaveTypeDependencies", leaveTypes);
         Assert.Contains("@/components/dependency-inspector", leaveTypes);
+        Assert.Contains("toLeaveTypeDependencyItems", leaveTypes);
+        Assert.Contains("leaveTypeDependencySecondaryActions", leaveTypes);
+        Assert.Contains("router.push", leaveTypes);
 
         var helper = Read("apps", "portal", "src", "features", "vacation",
             "leave-type-dependency-mapping.ts");
-        Assert.Contains("toLeaveTypeDependencyGroups", helper);
-        Assert.Contains("leaveTypeDependencyNavigationActions", helper);
+        Assert.Contains("toLeaveTypeDependencyItems", helper);
+        Assert.Contains("leaveTypeDependencySecondaryActions", helper);
         Assert.Contains("buildLeaveTypeDependencyHref", helper);
         Assert.Contains("historical_ledger_records", helper);
+        Assert.DoesNotContain("Delete anyway", helper, StringComparison.OrdinalIgnoreCase);
 
         var requestList = Read("apps", "portal", "src", "features", "vacation",
             "components", "admin-vacation-request-list.tsx");
@@ -355,6 +361,8 @@ public sealed class PortalAdministrationUiContractTests
         var balances = Read("apps", "portal", "src", "app", "vacation", "admin",
             "leave-balances", "page.tsx");
         Assert.Contains("leaveTypeIdParam", balances);
+        Assert.Contains("employeeIdParam", balances);
+        Assert.Contains("yearParam", balances);
         Assert.Contains("window.location.search", balances);
     }
 
@@ -881,8 +889,8 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("leave_type_system_protected", page);
         Assert.Contains("vacation.leaveTypes.deleteConfirmation", page);
         Assert.Contains("DependencyInspector", page);
-        Assert.Contains("toLeaveTypeDependencyGroups", page);
-        Assert.Contains("leaveTypeDependencyNavigationActions", page);
+        Assert.Contains("toLeaveTypeDependencyItems", page);
+        Assert.Contains("leaveTypeDependencySecondaryActions", page);
         Assert.DoesNotContain("Delete anyway", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("unprotected delete bypass", page, StringComparison.OrdinalIgnoreCase);
 
@@ -920,10 +928,13 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("Deactivate it instead", translations);
         Assert.Contains("Deaktivirajte je", translations);
         Assert.Contains("\"vacation.leaveTypes.dependencyInspector.title\":", translations);
-        Assert.Contains("This Leave Type cannot be deleted.", translations);
-        Assert.Contains("Ova vrsta odsustva ne može se obrisati.", translations);
+        Assert.Contains("This Leave Type is still used.", translations);
+        Assert.Contains("Ova vrsta odsustva se još uvek koristi.", translations);
+        Assert.Contains("\"vacation.leaveTypes.dependencyInspector.description\":", translations);
+        Assert.Contains("Review the live records using the available links, or deactivate this Leave Type instead.", translations);
+        Assert.Contains("\"vacation.leaveTypes.dependencyInspector.dependencies\":", translations);
         Assert.Contains("\"vacation.leaveTypes.dependencyInspector.historicalLedger\":", translations);
-        Assert.Contains("Historical ledger records exist.", translations);
+        Assert.Contains("Historical ledger records cannot be removed from this screen.", translations);
         Assert.Contains("\"vacation.leaveTypes.form.balanceLocked\":", translations);
         Assert.Contains("\"vacation.leaveTypes.validation.balanceLocked\":", translations);
     }

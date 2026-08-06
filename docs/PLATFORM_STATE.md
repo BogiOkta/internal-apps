@@ -133,8 +133,10 @@
   cascade. Code is immutable after creation, and Requires Balance and Counts
   Against Balance lock after first use. Blocked deletes open the shared
   Dependency Inspector via
-  `GET /api/v1/vacation/leave-types/{publicId}/dependencies` instead of a
-  toast-only conflict notice.
+  `GET /api/v1/vacation/leave-types/{publicId}/dependencies`. The inspector
+  shows still-used guidance, clickable dependency rows with counts, and
+  navigates to Request Administration or Leave Balances with Leave Type filter
+  preload. Ledger rows stay informational when not navigable.
 - Backend API: complete and runtime validated.
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
@@ -158,6 +160,13 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- Dependency Inspector UX guidance: Portal production build and TypeScript
+  passed (`/vacation/leave-types` included). Focused
+  `PortalAdministrationUiContractTests` passed 27/27 with 0 skipped.
+  `git diff --check` clean. No backend, API, migration, deletion-rule, ledger,
+  audit, or protection changes. Controlled browser smoke was not run in this
+  session.
 
 - Dependency Inspector v1 (Leave Types): API Debug build passed with zero
   warnings/errors. Portal production build passed (`/vacation/leave-types`
@@ -480,10 +489,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Platform-wide Dependency Inspector v1 for Vacation Leave Types: reusable API
-dependency inspection contract, shared Portal `DependencyInspector`, and Leave
-Type blocked-delete UX with navigation to Request Administration and Leave
-Balances.
+Improve Dependency Inspector administrator guidance for Vacation Leave Types:
+clickable dependency rows with counts, clearer still-used copy, and filter
+preload on existing destination pages. No deletion-rule or backend changes.
 
 ## Next task
 

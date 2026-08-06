@@ -1,5 +1,21 @@
 # Internal Apps Platform change history
 
+## 2026-08-06 — Dependency Inspector UX guidance improvement
+
+- Improved the shared Portal `DependencyInspector` so blocked deletes show
+  actionable administrator guidance: title and instruction copy, a Dependencies
+  heading, and clickable dependency rows with counts that navigate to the
+  destination page with filter payload applied. Non-navigable rows (for example
+  historical ledger) remain informational. No delete-anyway, cascade, or
+  automatic cleanup was added. Vacation continues to supply only dependency
+  type, count, navigation target, filter payload, and display label.
+- Leave Balances administration now also preloads `employeeId` and `year` from
+  the query string when present, in addition to `leaveTypeId`.
+- Validation: Portal production build and TypeScript passed
+  (`/vacation/leave-types` included); focused
+  `PortalAdministrationUiContractTests` passed 27/27; `git diff --check`
+  clean.
+
 ## 2026-08-06 — Dependency Inspector v1 for Vacation Leave Types
 
 - Introduced a reusable platform Dependency Inspection API contract under

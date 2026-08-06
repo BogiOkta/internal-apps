@@ -136,12 +136,14 @@ yearly balance, or ledger entry returns the stable `409`
 `leave_type_delete_conflict` Problem Details with controlled dependency labels.
 The Portal opens the shared `DependencyInspector` dialog, populated from
 `GET /api/v1/vacation/leave-types/{publicId}/dependencies`, instead of a
-toast-only conflict notice. The inspector lists live blocking dependencies with
-counts (request status breakdown, distinct balance employees, ledger entries),
-offers navigation to Request Administration and Leave Balances when those
-groups exist, offers deactivation when permitted, and never provides a
-delete-anyway path. Ledger groups show an informational note without a
-navigation button. Dependent Vacation data never cascades.
+toast-only conflict notice. The inspector explains that the leave type is
+still used, lists remaining dependency rows with counts (leave requests,
+leave balances, ledger entries), and makes navigable rows clickable so an
+administrator can open Request Administration or Leave Balances with the
+Leave Type filter preloaded. Ledger rows remain informational when no Portal
+destination exists. Optional deactivation remains available when permitted.
+There is no delete-anyway, cascade, or automatic cleanup path. Dependent
+Vacation data never cascades.
 
 The stable code stays immutable after creation. `Requires Balance` and
 `Counts Against Balance` are editable only while the leave type is unused and

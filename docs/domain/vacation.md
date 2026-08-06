@@ -66,8 +66,8 @@ migration 030. A referenced leave type raises the internal
 grammar, whose labels are `Vacation leave request`, `Vacation leave balance`,
 and `Vacation leave balance entry`. The API translates only those controlled
 labels into the stable `409` `leave_type_delete_conflict` Problem Details with a
-`dependencies` array; the Portal shows a localized message explaining that the
-leave type is already in use and should be deactivated instead. Dependent rows
+`dependencies` array; the Portal opens the shared Dependency Inspector with
+counts, navigable dependency rows, and deactivation guidance. Dependent rows
 are never cascaded or deleted.
 
 Markers are backfilled and added by owner-controlled triggers, are never

@@ -30,11 +30,12 @@ import { StatusBadge } from "@/components/status-badge";
 import { GridPagination } from "@/components/grid-pagination";
 import { LeaveTypeForm } from "@/features/vacation/components/leave-type-form";
 import {
-  leaveTypeDependencyNavigationActions,
-  toLeaveTypeDependencyGroups,
+  leaveTypeDependencySecondaryActions,
+  toLeaveTypeDependencyItems,
 } from "@/features/vacation/leave-type-dependency-mapping";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import { useTranslations } from "@/i18n/use-translations";
+import { useRouter } from "next/navigation";
 import { ApiError } from "@/services/auth";
 import {
   activateLeaveType,
@@ -92,6 +93,7 @@ const columnCount = 7;
 
 export default function LeaveTypesPage() {
   const { accessToken, user } = useAuth();
+  const router = useRouter();
   const { browserLocale, t } = useTranslations();
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [search, setSearch] = useState("");
@@ -944,35 +946,37 @@ export default function LeaveTypesPage() {
                           title={t(
                             "vacation.leaveTypes.dependencyInspector.title",
                           )}
-                          referencedByLabel={t(
-                            "vacation.leaveTypes.dependencyInspector.referencedBy",
+                          description={t(
+                            "vacation.leaveTypes.dependencyInspector.description",
                           )}
-                          groups={toLeaveTypeDependencyGroups(
+                          dependenciesHeading={t(
+                            "vacation.leaveTypes.dependencyInspector.dependencies",
+                          )}
+                          items={toLeaveTypeDependencyItems(
                             dependencyInspection,
-                            t,
+                            {
+                              t,
+                              onNavigate: (href) => {
+                                router.push(href);
+                              },
+                            },
                           )}
-                          emptyReferencedMessage={
+                          emptyMessage={
                             dependencyInspection.hasPermanentProtection
                               ? t(
                                   "vacation.leaveTypes.dependencyInspector.permanentProtection",
                                 )
                               : undefined
                           }
-                          actions={leaveTypeDependencyNavigationActions(
-                            dependencyInspection,
-                            {
-                              t,
-                              canManage,
-                              isActive: selectedLeaveType.isActive,
-                              onOpen: (href) => {
-                                window.location.assign(href);
-                              },
-                              onDeactivate: () => {
-                                setDependencyInspection(null);
-                                setPendingActiveState(false);
-                              },
+                          actions={leaveTypeDependencySecondaryActions({
+                            t,
+                            canManage,
+                            isActive: selectedLeaveType.isActive,
+                            onDeactivate: () => {
+                              setDependencyInspection(null);
+                              setPendingActiveState(false);
                             },
-                          )}
+                          })}
                           closeLabel={t(
                             "vacation.leaveTypes.dependencyInspector.close",
                           )}

@@ -105,13 +105,31 @@ export default function LeaveBalancesPage() {
     if (!accessToken || !allowed) return;
     const params = new URLSearchParams(window.location.search);
     const leaveTypeIdParam = params.get("leaveTypeId");
-    if (leaveTypeIdParam) {
-      setScope((current) =>
-        current.leaveTypeId === leaveTypeIdParam
-          ? current
-          : { ...current, leaveTypeId: leaveTypeIdParam },
-      );
-    }
+    const employeeIdParam = params.get("employeeId");
+    const yearParam = params.get("year");
+    const parsedYear = yearParam ? Number(yearParam) : NaN;
+
+    setScope((current) => {
+      const next = {
+        ...current,
+        leaveTypeId: leaveTypeIdParam ?? current.leaveTypeId,
+        employeeId: employeeIdParam ?? current.employeeId,
+        year:
+          Number.isInteger(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100
+            ? parsedYear
+            : current.year,
+      };
+
+      if (
+        next.leaveTypeId === current.leaveTypeId &&
+        next.employeeId === current.employeeId &&
+        next.year === current.year
+      ) {
+        return current;
+      }
+
+      return next;
+    });
   }, [accessToken, allowed]);
 
   useEffect(() => setPage(1), [search, pageSize, history]);
