@@ -732,8 +732,20 @@ all existing ledger invariants.
 request, balance, and ledger dependency labels. Owner-controlled triggers add
 markers and the runtime role has no marker-table privileges. Exactly the five
 canonical seeded Leave Types have read-only `is_system = true`; they cannot be
-physically deleted and may still be deactivated. Controlled request deletion,
-its permissions, database function, API, and Portal behavior are not implemented.
+physically deleted and may still be deactivated.
+
+Migrations 040–041 add the two dedicated, Administrator-only delete permissions
+and the owner-controlled
+`vacation.delete_neutralized_leave_request(uuid)` database function. The
+`SECURITY DEFINER` function has `search_path = pg_catalog`, is owned by
+`internal_apps_owner`, and grants `EXECUTE` only to `internal_apps_app`. It
+locks the request, takes the ledger posting advisory lock, re-reads eligibility,
+and deletes only request history followed by the terminal, request-scoped
+ledger-neutral operational request. It contains no commit and can therefore be
+called inside the later API transaction so an audit failure rolls the deletion
+back. Permanent identity, ledger, balance, policy, marker, Organization,
+Identity, and Audit rows are never updated or deleted. The runtime role retains
+no table `DELETE` grant. No API or Portal request-deletion behavior exists yet.
 
 ---
 

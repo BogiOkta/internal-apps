@@ -144,16 +144,29 @@ types cannot be physically deleted but may still be deactivated; `isSystem` is
 read-only in the existing API/Portal model. Runtime grants cannot access marker
 rows or set `is_system`.
 
-### ADR-0007 increment-1 foundation
+### ADR-0007 database foundation and increment 2
 
 Migration 036 preserves every request ID and public UUID in an immutable
 permanent identity and makes request creation identity-first within the existing
 transaction. The ledger request foreign key now targets that identity with
 restrictive delete behavior. Migration 037 rejects new request-derived ledger
 posting when the operational request is absent, without changing accepted
-ledger data or cancellation behavior. Migrations 040–041, request delete
-permissions/functions, API/service routes, and Portal delete UX remain
-unimplemented; no request-deletion capability is exposed.
+ledger data or cancellation behavior.
+
+Migration 040 adds `vacation.requests.delete` and
+`vacation.leave-types.delete`, both initially assigned only to Administrator.
+Existing Administrator tokens require refresh or re-login. Migration 041 adds
+the owner-controlled, runtime-executable
+`vacation.delete_neutralized_leave_request(uuid)` function. It accepts only
+terminal, request-scoped ledger-neutral requests, removes history before the
+operational request, returns the locked facts required for later API audit, and
+never mutates permanent identity, ledger, balances, policies, dependency
+markers, Organization, Identity, or central audit. The function has no internal
+commit, so a later atomic API audit failure can roll back deletion. No API
+service or route calls it and no Portal deletion control exists; no user can
+invoke request deletion through the application. Moving the existing Leave
+Type delete route to its dedicated permission, the request-delete API/audit
+service, and Portal UX remain pending increments.
 
 The Portal route is migrated to the canonical administration foundation
 (`AdministrationPageHeader` via the workspace shell, `AdministrationPageBody`,

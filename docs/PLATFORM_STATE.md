@@ -98,13 +98,16 @@
 
 ## Vacation module
 
-- ADR-0007 increment 1: migrations 036–039 are applied. Permanent request
+- ADR-0007 increments 1–2: migrations 036–041 are applied. Permanent request
   identity exists; the ledger evidentiary FK targets it; request-derived ledger
   insertion rejects an absent operational request; Leave Type dependency
   markers are permanent; and exactly five canonical system Leave Types are
-  protected. `isSystem` is read-only in the existing API/Portal model.
-  Migrations 040–041 and every request-deletion capability remain unimplemented.
-- Database foundation: complete; migrations through 039 are applied and validated.
+  protected. `isSystem` is read-only in the existing API/Portal model. The two
+  dedicated delete permissions and the owner-controlled, terminal-and-neutral
+  request delete function now exist, but no API or Portal path invokes request
+  deletion and the Leave Type endpoint has not yet moved to its new permission.
+- Database foundation: complete through increment 2; migrations through 041 are
+  applied and validated.
 - Leave balance compatibility mirror: annual-entitlement, carry-over, and
   manual-adjustment ledger commands now create or refresh the matching
   `vacation.leave_balances` credit buckets from accepted entries in the same
@@ -148,6 +151,17 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- ADR-0007 increment 2: 41 migrations discovered; migrations 040–041 applied in
+  order and the second pass found zero pending scripts. API Debug build passed
+  with zero warnings/errors. Focused database-enabled increment-2 tests passed
+  7/7 with 0 skipped. The increment-1, Leave Type administration, and relevant
+  ledger regression group ran 23 tests: 22 passed, 1 failed, 0 skipped; the
+  failure is the documented retained-fixture-dependent ledger integration test.
+  The full database-enabled API suite ran 126 tests: 121 passed, 5 failed, 0
+  skipped. All five are pre-existing and unrelated source-contract or missing-
+  fixture failures reproduced by increment 1; no stale contract was intentionally
+  changed by increment 2.
 
 - ADR-0007 increment 1: migrations 036–039 applied in order and a second pass
   found no pending scripts. API Debug build passed with zero warnings/errors.
@@ -424,6 +438,11 @@ Detailed state: [Vacation module](modules/vacation.md) and
   tokens or re-login are required after migration 035. Leave Type
   administration reuses the existing `vacation.leave-types.manage` permission,
   so migration 032 requires no token refresh.
+- Migration 040 adds `vacation.requests.delete` and
+  `vacation.leave-types.delete`; existing Administrator access tokens require
+  refresh or re-login to receive both claims. Neither permission is exposed by
+  request-delete API or Portal behavior yet, and the existing Leave Type delete
+  endpoint still uses `vacation.leave-types.manage` pending the API increment.
 - No frontend automated-test framework is currently present.
 - Employee pagination is client-side because the current API contract intentionally
   returns a bounded unpaged result. Larger datasets require documented API
@@ -432,18 +451,15 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Shared Company workspace layout ownership is implemented: Organization and
-Business Calendar Non-working days share one persistent shell under the pathless
-`(company)` App Router group. Public routes, navigation hierarchy, and Vacation
-remain unchanged. Controlled browser persistence validation should confirm no
-full-shell remount when crossing the Organization / Non-working days prefix.
+ADR-0007 increment 2 is implemented and validated: dedicated delete permissions
+and the owner-controlled request database function exist without any API route
+or Portal delete UX. Public routes remain unchanged.
 
 ## Next task
 
-Continue controlled permission-shape validation for the narrower smoke
-identities when fixtures permit. Identity remains on transitional right-rail
-notifications until a separate migration; future independent Business Calendar
-workspace routes may require separating the current bounded Company shell.
+ADR-0007 increment 3 remains pending: API service/transaction/audit behavior,
+the request-delete command route, and the Leave Type endpoint authorization
+narrowing. Portal deletion UX remains a later independent increment.
 
 ## Session instruction
 

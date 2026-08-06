@@ -31,10 +31,6 @@ public sealed class VacationAdr0007Increment1Tests
         Assert.DoesNotContain("GRANT DELETE", identity + ledger + markers + system);
         Assert.DoesNotContain("ON DELETE CASCADE", identity + ledger + markers + system,
             StringComparison.OrdinalIgnoreCase);
-        Assert.False(File.Exists(Path.Combine(RepositoryRoot(), "database", "migrations",
-            "040_vacation_delete_permissions.sql")));
-        Assert.False(File.Exists(Path.Combine(RepositoryRoot(), "database", "migrations",
-            "041_vacation_delete_neutralized_leave_request.sql")));
     }
 
     [Fact]

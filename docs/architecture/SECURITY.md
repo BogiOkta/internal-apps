@@ -113,6 +113,8 @@ Current module permission:
 | `identity.users.manage` | Users cannot list or manage other accounts without this permission | Seeded only to the existing `Administrator` role by migration 010 |
 | `vacation.requests.manage` | Vacation request administration is unavailable without this permission; employee self-service remains linked-active-employee scoped | Seeded only to the existing `Administrator` role by migration 031 |
 | `vacation.leave-balances.manage` | Vacation Leave Balance Ledger and Leave Policy administration are unavailable without this permission | Seeded only to the existing `Administrator` role by migration 035 |
+| `vacation.requests.delete` | Reserved for the later administrative request-deletion API command; no endpoint uses it yet | Seeded only to the existing `Administrator` role by migration 040 |
+| `vacation.leave-types.delete` | Reserved for the later authorization narrowing of physical Leave Type deletion; the existing endpoint still uses `vacation.leave-types.manage` | Seeded only to the existing `Administrator` role by migration 040 |
 
 After migration 008, existing Administrator access tokens must be refreshed or
 reissued before the new employee-management permission claim is available.
@@ -124,6 +126,8 @@ After migration 031, Administrator tokens likewise require refresh or reissue
 before the Vacation request-administration permission is present.
 After migration 035, Administrator tokens likewise require refresh or reissue
 before the Vacation leave-balance management permission is present.
+After migration 040, Administrator tokens likewise require refresh or reissue
+before either dedicated Vacation delete-permission claim is present.
 
 Vacation employee self-service requires an authenticated user explicitly
 linked to an active Organization employee. The employee is never accepted from
@@ -139,8 +143,11 @@ request identities, identity-sequence `USAGE`, and request-column `INSERT` for
 the allocated ID and UUID. Migration 038 grants no runtime access to permanent
 Leave Type dependency markers. Migration 039 grants no ability to insert or
 update `leave_types.is_system`; system protection is enforced through the
-existing owner-controlled Leave Type delete function. No runtime `DELETE`
-grant or request-deletion function exists.
+existing owner-controlled Leave Type delete function. Migration 041 adds the
+owner-controlled `vacation.delete_neutralized_leave_request(uuid)` function,
+but no API endpoint invokes it yet. The runtime role receives only function
+`EXECUTE`; it still has no table `DELETE` on requests, history, ledger,
+balances, or audit.
 
 Request creation and each status transition write the business record,
 required balance mutation, append-only transition history, and platform audit

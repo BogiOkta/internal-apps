@@ -1,5 +1,31 @@
 # Internal Apps Platform change history
 
+## 2026-08-06 — ADR-0007 increment 2 permissions and controlled database function
+
+- Added idempotent migrations 040–041: dedicated
+  `vacation.requests.delete` and `vacation.leave-types.delete` permissions are
+  assigned initially only to Administrator, and the owner-controlled
+  `vacation.delete_neutralized_leave_request(uuid)` function enforces terminal,
+  request-scoped ledger-neutral deletion under row and ledger advisory locks.
+- The function deletes only operational request history followed by the
+  operational request and returns the locked audit facts. Permanent identity,
+  ledger, balances, policies, dependency markers, and central audit are not
+  mutated; the runtime role gained no table `DELETE`, and the function performs
+  no autonomous commit.
+- Added API permission constants and policy registrations for later use. No API
+  endpoint or Portal delete control exists, and the existing Leave Type delete
+  route retains its current authorization until the API increment.
+- Existing Administrator tokens require refresh or re-login after migration
+  040. Focused database tests use isolated rollback fixtures and retain no smoke
+  request, history, or ledger fixtures.
+- Validation discovered and applied all 41 migrations and found zero pending on
+  a second pass; API Debug build passed with zero warnings/errors; focused
+  increment-2 tests passed 7/7. The requested regression group ran 23 tests
+  (22 passed, 1 documented unrelated missing-fixture failure). The full
+  database-enabled API suite ran 126 tests (121 passed, 5 failed, 0 skipped);
+  all five failures are the pre-existing unrelated source-contract or retained-
+  fixture failures already documented for increment 1.
+
 ## 2026-08-06 — ADR-0007 increment 1 database foundation
 
 - Added migrations 036–039 for immutable permanent Vacation request identity,

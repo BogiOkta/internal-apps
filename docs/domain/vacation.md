@@ -94,6 +94,10 @@ is accepted only during creation and is not part of the update contract or the
 runtime role's update privileges. Duplicate code comparison is
 case-insensitive and produces a conflict response.
 
+Migration 040 also seeds `vacation.leave-types.delete`, initially only for the
+Administrator role. It is not yet attached to the existing Leave Type delete
+endpoint; that intentional authorization narrowing remains an API increment.
+
 After migration 007 is applied, existing Administrator access tokens must be
 refreshed or reissued before they contain the new permission claim.
 
@@ -413,8 +417,24 @@ operational request: the integrity trigger rejects absence explicitly and uses
 null-safe comparisons while preserving scope, quantity, status, reversal, and
 balance rules. No accepted ledger row was changed by this foundation.
 
+Migration 040 seeds the dedicated `vacation.requests.delete` permission only to
+Administrator, without implication from any existing manage or Identity
+permission. Migration 041 adds an owner-controlled database operation for a
+terminal `REJECTED` or `CANCELLED` request whose request-scoped signed ledger
+sum is exactly zero. It locks and re-reads the request, uses the same balance-
+scope advisory lock as ledger posting, deletes operational history first and
+the operational request second, and preserves permanent identity, ledger,
+balance, dependency markers, and central audit. It never cancels a request,
+posts or changes ledger entries, or changes the compatibility balance mirror.
+The function performs no internal commit, so a later API transaction can roll
+back deletion if its required audit write fails. These database capabilities
+are not exposed through API or Portal; no user can delete a request through the
+application yet. Administrator tokens require refresh or re-login after
+migration 040.
+
 No Vacation-owned public-holiday calendar, notification, background job,
-manager hierarchy, configurable workflow, or request delete is implemented.
+manager hierarchy, configurable workflow, or application request-delete
+command is implemented.
 
 ### Employee Portal
 

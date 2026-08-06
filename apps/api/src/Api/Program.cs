@@ -79,6 +79,11 @@ builder.Services.AddAuthorization(options =>
             "permission",
             VacationPermissions.ManageLeaveTypes));
     options.AddPolicy(
+        VacationPermissions.DeleteLeaveTypes,
+        policy => policy.RequireClaim(
+            "permission",
+            VacationPermissions.DeleteLeaveTypes));
+    options.AddPolicy(
         VacationPermissions.ManageLeaveBalances,
         policy => policy.RequireClaim(
             "permission",
@@ -88,6 +93,11 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireClaim(
             "permission",
             VacationPermissions.ManageRequests));
+    options.AddPolicy(
+        VacationPermissions.DeleteRequests,
+        policy => policy.RequireClaim(
+            "permission",
+            VacationPermissions.DeleteRequests));
     options.AddPolicy(
         OrganizationPermissions.ManageEmployees,
         policy => policy.RequireClaim(
