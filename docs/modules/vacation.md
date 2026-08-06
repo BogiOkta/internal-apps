@@ -138,10 +138,11 @@ The Portal opens the shared `DependencyInspector` dialog, populated from
 `GET /api/v1/vacation/leave-types/{publicId}/dependencies`, instead of a
 toast-only conflict notice. The inspector explains that the leave type is
 still used, lists remaining dependency rows with counts (leave requests,
-leave balances, ledger entries), and makes navigable rows clickable so an
-administrator can open Request Administration or Leave Balances with the
-Leave Type filter preloaded. Ledger rows remain informational when no Portal
-destination exists. Optional deactivation remains available when permitted.
+leave balances, ledger entries), and makes a single leave-balance scope
+clickable so an administrator opens Leave Balances with `leaveTypeId`,
+`employeeId`, and `year` preloaded and loaded. Multiple leave-balance scopes
+and ledger rows remain informational when no single Portal destination can
+show the records. Optional deactivation remains available when permitted.
 There is no delete-anyway, cascade, or automatic cleanup path. Dependent
 Vacation data never cascades.
 

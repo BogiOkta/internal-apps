@@ -1,5 +1,19 @@
 # Internal Apps Platform change history
 
+## 2026-08-07 — Leave Type leave-balance dependency navigation fix
+
+- Corrected Leave Type Dependency Inspector leave-balance semantics: the count
+  is the number of `vacation.leave_balances` compatibility-mirror rows
+  (employee + Leave Type + year), not a Leave Type-only list filter. A single
+  scope now navigates to `/vacation/admin/leave-balances` with `leaveTypeId`,
+  `employeeId`, and `year`; Leave Balances auto-loads that complete scope.
+  Multiple scopes stay informational so the row never opens an empty screen.
+  Ledger groups remain informational. Deletion protection, ADR-0007, markers,
+  and cascade rules are unchanged.
+- Validation: API Debug build; Portal strict TypeScript and production build;
+  focused Leave Type administration and Portal administration UI contract
+  tests; `git diff --check`.
+
 ## 2026-08-06 — Dependency Inspector UX guidance improvement
 
 - Improved the shared Portal `DependencyInspector` so blocked deletes show

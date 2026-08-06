@@ -45,11 +45,16 @@ public sealed class VacationLeaveTypeAdministrationTests
         Assert.Contains("leave_balances", leaveModels);
         Assert.Contains("leave_balance_entries", leaveModels);
         Assert.Contains("historical_ledger_records", leaveModels);
+        Assert.Contains("LeaveTypeBalanceScope", leaveModels);
+        Assert.Contains("multiple_leave_balance_scopes", leaveModels);
+        Assert.Contains("CountUnitBalances", leaveModels);
 
         var repository = Read("apps", "api", "src", "Api", "Modules", "Vacation",
             "LeaveTypesRepository.cs");
         Assert.Contains("GetDependencySnapshotAsync", repository);
-        Assert.Contains("count(DISTINCT used_balances.employee_id)", repository);
+        Assert.Contains("vacation.leave_balances AS used_balances", repository);
+        Assert.Contains("employees.public_id AS EmployeePublicId", repository);
+        Assert.Contains("used_balances.year AS Year", repository);
         Assert.Contains("used_requests.status", repository);
         // Runtime role has no privilege on the permanent marker table; the live
         // snapshot must not query it (delete still consults markers via SECURITY DEFINER).
@@ -61,6 +66,10 @@ public sealed class VacationLeaveTypeAdministrationTests
         Assert.Contains("GetDependenciesAsync", service);
         Assert.Contains("DependencyInspectionResponse", service);
         Assert.Contains("CanDelete: !snapshot.IsSystem && !snapshot.HasPermanentProtection", service);
+        Assert.Contains("[\"employeeId\"] = scope.EmployeePublicId.ToString(\"D\")", service);
+        Assert.Contains("[\"year\"] = scope.Year.ToString()", service);
+        Assert.Contains("InfoMultipleLeaveBalances", service);
+        Assert.Contains("BalanceScopes.Count == 1", service);
 
         var endpoints = Read("apps", "api", "src", "Api", "Modules", "Vacation",
             "VacationEndpoints.cs");

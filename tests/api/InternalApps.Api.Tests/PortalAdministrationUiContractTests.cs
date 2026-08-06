@@ -351,6 +351,7 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("leaveTypeDependencySecondaryActions", helper);
         Assert.Contains("buildLeaveTypeDependencyHref", helper);
         Assert.Contains("historical_ledger_records", helper);
+        Assert.Contains("multiple_leave_balance_scopes", helper);
         Assert.DoesNotContain("Delete anyway", helper, StringComparison.OrdinalIgnoreCase);
 
         var requestList = Read("apps", "portal", "src", "features", "vacation",
@@ -363,6 +364,7 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("leaveTypeIdParam", balances);
         Assert.Contains("employeeIdParam", balances);
         Assert.Contains("yearParam", balances);
+        Assert.Contains("pendingUrlScopeLoad", balances);
         Assert.Contains("window.location.search", balances);
     }
 
@@ -935,6 +937,8 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("\"vacation.leaveTypes.dependencyInspector.dependencies\":", translations);
         Assert.Contains("\"vacation.leaveTypes.dependencyInspector.historicalLedger\":", translations);
         Assert.Contains("Historical ledger records cannot be removed from this screen.", translations);
+        Assert.Contains("\"vacation.leaveTypes.dependencyInspector.multipleLeaveBalances\":", translations);
+        Assert.Contains("Multiple employee or year balances use this Leave Type.", translations);
         Assert.Contains("\"vacation.leaveTypes.form.balanceLocked\":", translations);
         Assert.Contains("\"vacation.leaveTypes.validation.balanceLocked\":", translations);
     }

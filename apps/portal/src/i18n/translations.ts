@@ -551,6 +551,8 @@ const englishTranslations = {
     "Permanent historical protection remains even after live operational rows are removed.",
   "vacation.leaveTypes.dependencyInspector.historicalLedger":
     "Historical ledger records cannot be removed from this screen.",
+  "vacation.leaveTypes.dependencyInspector.multipleLeaveBalances":
+    "Multiple employee or year balances use this Leave Type. Open Leave Balances and select the employee and year.",
   "vacation.leaveTypes.dependencyInspector.deactivate":
     "Deactivate Leave Type",
   "vacation.leaveTypes.dependencyInspector.close": "Close",
@@ -1461,6 +1463,8 @@ const serbianLatinTranslations: TranslationDictionary = {
     "Trajna istorijska zaštita ostaje i nakon uklanjanja operativnih redova.",
   "vacation.leaveTypes.dependencyInspector.historicalLedger":
     "Istorijski zapisi u knjizi salda ne mogu se ukloniti sa ovog ekrana.",
+  "vacation.leaveTypes.dependencyInspector.multipleLeaveBalances":
+    "Više stanja zaposlenih ili godina koristi ovu vrstu odsustva. Otvorite Stanja odsustva i izaberite zaposlenog i godinu.",
   "vacation.leaveTypes.dependencyInspector.deactivate":
     "Deaktiviraj vrstu odsustva",
   "vacation.leaveTypes.dependencyInspector.close": "Zatvori",

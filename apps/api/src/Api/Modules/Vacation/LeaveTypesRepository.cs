@@ -264,6 +264,8 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
     /// references the app role can SELECT.
     /// Live references imply markers exist (owner triggers write them); the
     /// marker-only case after live rows are gone remains enforced at delete time.
+    /// Leave-balance scopes are the compatibility-mirror rows
+    /// (employee + Leave Type + year); navigation must resolve that full key.
     /// </summary>
     public async Task<LeaveTypeDependencySnapshot?> GetDependencySnapshotAsync(
         Guid publicId,
@@ -279,11 +281,6 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                     FROM vacation.leave_requests AS used_requests
                     WHERE used_requests.leave_type_id = leave_types.id
                 ) AS RequestCount,
-                (
-                    SELECT count(DISTINCT used_balances.employee_id)::int
-                    FROM vacation.leave_balances AS used_balances
-                    WHERE used_balances.leave_type_id = leave_types.id
-                ) AS BalanceEmployeeCount,
                 (
                     SELECT count(*)::int
                     FROM vacation.leave_balance_entries AS used_entries
@@ -305,6 +302,19 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
             ORDER BY used_requests.status
             """;
 
+        const string balanceScopeSql = """
+            SELECT
+                employees.public_id AS EmployeePublicId,
+                used_balances.year AS Year
+            FROM vacation.leave_balances AS used_balances
+            INNER JOIN vacation.leave_types AS leave_types
+                ON leave_types.id = used_balances.leave_type_id
+            INNER JOIN organization.employees AS employees
+                ON employees.id = used_balances.employee_id
+            WHERE leave_types.public_id = @PublicId
+            ORDER BY used_balances.year DESC, employees.public_id
+            """;
+
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var header = await connection.QuerySingleOrDefaultAsync<LeaveTypeDependencyHeaderRow>(
             new CommandDefinition(
@@ -323,6 +333,12 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
                 new { PublicId = publicId },
                 cancellationToken: cancellationToken));
 
+        var balanceScopes = await connection.QueryAsync<LeaveTypeBalanceScopeRow>(
+            new CommandDefinition(
+                balanceScopeSql,
+                new { PublicId = publicId },
+                cancellationToken: cancellationToken));
+
         return new LeaveTypeDependencySnapshot(
             header.PublicId,
             header.IsSystem,
@@ -331,7 +347,9 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
             statusRows
                 .Select(row => new LeaveTypeRequestStatusCount(row.Status, row.Count))
                 .ToArray(),
-            header.BalanceEmployeeCount,
+            balanceScopes
+                .Select(row => new LeaveTypeBalanceScope(row.EmployeePublicId, row.Year))
+                .ToArray(),
             header.LedgerEntryCount);
     }
 
@@ -448,9 +466,14 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
 
         public int RequestCount { get; set; }
 
-        public int BalanceEmployeeCount { get; set; }
-
         public int LedgerEntryCount { get; set; }
+    }
+
+    private sealed class LeaveTypeBalanceScopeRow
+    {
+        public Guid EmployeePublicId { get; set; }
+
+        public int Year { get; set; }
     }
 
     private sealed class LeaveTypeRequestStatusCountRow

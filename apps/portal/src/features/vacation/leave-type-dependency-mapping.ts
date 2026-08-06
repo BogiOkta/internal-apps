@@ -46,15 +46,28 @@ export function toLeaveTypeDependencyItems(
       onNavigate: href
         ? () => options.onNavigate(href)
         : undefined,
-      note:
-        group.navigation.kind === "none" &&
-        group.navigation.infoCode === "historical_ledger_records"
-          ? options.t(
-              "vacation.leaveTypes.dependencyInspector.historicalLedger",
-            )
-          : undefined,
+      note: leaveTypeDependencyNote(group.navigation, options.t),
     };
   });
+}
+
+function leaveTypeDependencyNote(
+  navigation: DependencyInspection["dependencies"][number]["navigation"],
+  t: Translate,
+): string | undefined {
+  if (navigation.kind !== "none") {
+    return undefined;
+  }
+
+  if (navigation.infoCode === "historical_ledger_records") {
+    return t("vacation.leaveTypes.dependencyInspector.historicalLedger");
+  }
+
+  if (navigation.infoCode === "multiple_leave_balance_scopes") {
+    return t("vacation.leaveTypes.dependencyInspector.multipleLeaveBalances");
+  }
+
+  return undefined;
 }
 
 export function buildLeaveTypeDependencyHref(

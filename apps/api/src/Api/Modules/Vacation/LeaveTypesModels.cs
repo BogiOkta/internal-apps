@@ -160,12 +160,21 @@ internal sealed record LeaveTypeDependencySnapshot(
     bool HasPermanentProtection,
     int RequestCount,
     IReadOnlyList<LeaveTypeRequestStatusCount> RequestStatusCounts,
-    int BalanceEmployeeCount,
+    IReadOnlyList<LeaveTypeBalanceScope> BalanceScopes,
     int LedgerEntryCount);
 
 internal sealed record LeaveTypeRequestStatusCount(
     string Status,
     int Count);
+
+/// <summary>
+/// One compatibility-mirror leave balance identity: employee + calendar year.
+/// Leave Balances administration resolves a single scope, so Dependency
+/// Inspector navigation must carry both public identifiers with the Leave Type.
+/// </summary>
+internal sealed record LeaveTypeBalanceScope(
+    Guid EmployeePublicId,
+    int Year);
 
 internal static class LeaveTypeDependencyCodes
 {
@@ -173,9 +182,10 @@ internal static class LeaveTypeDependencyCodes
     public const string LeaveRequests = "leave_requests";
     public const string LeaveBalances = "leave_balances";
     public const string LeaveBalanceEntries = "leave_balance_entries";
-    public const string CountUnitEmployees = "employees";
+    public const string CountUnitBalances = "balances";
     public const string CountUnitEntries = "entries";
     public const string InfoHistoricalLedger = "historical_ledger_records";
+    public const string InfoMultipleLeaveBalances = "multiple_leave_balance_scopes";
     public const string RouteLeaveRequests = "/vacation/admin/requests";
     public const string RouteLeaveBalances = "/vacation/admin/leave-balances";
 }

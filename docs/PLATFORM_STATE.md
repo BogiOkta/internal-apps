@@ -4,11 +4,12 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Identity Portal v2 workspace migration is
-  complete. Identity Users use the registry-driven persistent Identity shell,
-  breadcrumb + page-header hierarchy, and top-center `PortalNotificationHost`.
-  Prior ADR-0007 controlled administrative Vacation request deletion remains
-  complete and unchanged.
+- Latest functional milestone: Leave Type Dependency Inspector leave-balance
+  navigation now resolves a single compatibility-mirror scope with
+  `leaveTypeId`, `employeeId`, and `year` (auto-load on Leave Balances).
+  Multiple scopes stay informational. Prior Identity Portal v2 workspace
+  migration and ADR-0007 controlled administrative Vacation request deletion
+  remain complete and unchanged.
 
 ## Platform foundation
 
@@ -135,8 +136,10 @@
   Dependency Inspector via
   `GET /api/v1/vacation/leave-types/{publicId}/dependencies`. The inspector
   shows still-used guidance, clickable dependency rows with counts, and
-  navigates to Request Administration or Leave Balances with Leave Type filter
-  preload. Ledger rows stay informational when not navigable.
+  navigates to Request Administration with Leave Type filter preload. A single
+  leave-balance scope navigates to Leave Balances with `leaveTypeId`,
+  `employeeId`, and `year` and auto-loads; multiple leave-balance scopes and
+  ledger rows stay informational.
 - Backend API: complete and runtime validated.
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
@@ -160,6 +163,17 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- Leave Type leave-balance dependency navigation fix: API Debug build passed
+  with 0 warnings/errors (validated via alternate output path because the
+  local API process held a lock on `bin/Debug`). Portal strict TypeScript and
+  production build passed (`/vacation/admin/leave-balances` and
+  `/vacation/leave-types` included). Focused
+  `VacationLeaveTypeAdministrationTests` and
+  `PortalAdministrationUiContractTests` passed 37/37 with 0 skipped.
+  `git diff --check` clean. Deletion protection, ADR-0007, permanent markers,
+  and cascade rules unchanged. Controlled browser smoke was not run in this
+  session.
 
 - Dependency Inspector UX guidance: Portal production build and TypeScript
   passed (`/vacation/leave-types` included). Focused
@@ -489,9 +503,9 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-Improve Dependency Inspector administrator guidance for Vacation Leave Types:
-clickable dependency rows with counts, clearer still-used copy, and filter
-preload on existing destination pages. No deletion-rule or backend changes.
+Leave Type Dependency Inspector leave-balance navigation fix completed in this
+session: single compatibility-mirror scopes deep-link with full key and
+auto-load; multiple scopes remain informational.
 
 ## Next task
 

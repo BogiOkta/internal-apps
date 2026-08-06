@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdministrativeGridShell, GridStateRows } from "@/components/admin-data-grid";
 import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
@@ -73,6 +73,7 @@ export default function LeaveBalancesPage() {
     explanation: null,
     sourceReference: "",
   });
+  const pendingUrlScopeLoad = useRef(false);
 
   const filteredHistory = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase();
@@ -108,16 +109,23 @@ export default function LeaveBalancesPage() {
     const employeeIdParam = params.get("employeeId");
     const yearParam = params.get("year");
     const parsedYear = yearParam ? Number(yearParam) : NaN;
+    const yearFromQuery =
+      Number.isInteger(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100
+        ? parsedYear
+        : null;
+
+    // Dependency Inspector deep-links carry the full balance key. Auto-load
+    // once so the grid shows the resolved scope instead of an empty 0 of 0.
+    if (leaveTypeIdParam && employeeIdParam && yearFromQuery !== null) {
+      pendingUrlScopeLoad.current = true;
+    }
 
     setScope((current) => {
       const next = {
         ...current,
         leaveTypeId: leaveTypeIdParam ?? current.leaveTypeId,
         employeeId: employeeIdParam ?? current.employeeId,
-        year:
-          Number.isInteger(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100
-            ? parsedYear
-            : current.year,
+        year: yearFromQuery ?? current.year,
       };
 
       if (
@@ -175,7 +183,7 @@ export default function LeaveBalancesPage() {
     setSearch("");
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!accessToken || !scope.employeeId || !scope.leaveTypeId) {
       setFeedback({ error: true, key: "leaveBalance.scopeValidation" });
       return;
@@ -211,7 +219,14 @@ export default function LeaveBalancesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [accessToken, scope.employeeId, scope.leaveTypeId, scope.year]);
+
+  useEffect(() => {
+    if (!pendingUrlScopeLoad.current) return;
+    if (!accessToken || !scope.employeeId || !scope.leaveTypeId) return;
+    pendingUrlScopeLoad.current = false;
+    void load();
+  }, [accessToken, load, scope.employeeId, scope.leaveTypeId, scope.year]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

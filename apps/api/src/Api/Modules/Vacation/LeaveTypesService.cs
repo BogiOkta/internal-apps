@@ -146,21 +146,39 @@ internal sealed class LeaveTypesService(
                         })));
         }
 
-        if (snapshot.BalanceEmployeeCount > 0)
+        if (snapshot.BalanceScopes.Count > 0)
         {
+            // Leave Balances administration is a single employee+Leave Type+year
+            // scope lookup. Only a single resolvable scope may navigate; multiple
+            // scopes stay informational so the row never opens an empty screen.
+            DependencyNavigationResponse balanceNavigation;
+            if (snapshot.BalanceScopes.Count == 1)
+            {
+                var scope = snapshot.BalanceScopes[0];
+                balanceNavigation = new DependencyNavigationResponse(
+                    DependencyNavigationKinds.PortalRoute,
+                    LeaveTypeDependencyCodes.RouteLeaveBalances,
+                    new Dictionary<string, string>
+                    {
+                        ["leaveTypeId"] = leaveTypeId,
+                        ["employeeId"] = scope.EmployeePublicId.ToString("D"),
+                        ["year"] = scope.Year.ToString()
+                    });
+            }
+            else
+            {
+                balanceNavigation = new DependencyNavigationResponse(
+                    DependencyNavigationKinds.None,
+                    InfoCode: LeaveTypeDependencyCodes.InfoMultipleLeaveBalances);
+            }
+
             dependencies.Add(
                 new DependencyGroupResponse(
                     LeaveTypeDependencyCodes.LeaveBalances,
-                    snapshot.BalanceEmployeeCount,
-                    LeaveTypeDependencyCodes.CountUnitEmployees,
+                    snapshot.BalanceScopes.Count,
+                    LeaveTypeDependencyCodes.CountUnitBalances,
                     Details: [],
-                    new DependencyNavigationResponse(
-                        DependencyNavigationKinds.PortalRoute,
-                        LeaveTypeDependencyCodes.RouteLeaveBalances,
-                        new Dictionary<string, string>
-                        {
-                            ["leaveTypeId"] = leaveTypeId
-                        })));
+                    balanceNavigation));
         }
 
         if (snapshot.LedgerEntryCount > 0)

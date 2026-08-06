@@ -67,8 +67,13 @@ grammar, whose labels are `Vacation leave request`, `Vacation leave balance`,
 and `Vacation leave balance entry`. The API translates only those controlled
 labels into the stable `409` `leave_type_delete_conflict` Problem Details with a
 `dependencies` array; the Portal opens the shared Dependency Inspector with
-counts, navigable dependency rows, and deactivation guidance. Dependent rows
-are never cascaded or deleted.
+counts, navigable dependency rows, and deactivation guidance. Leave-balance
+dependency counts are compatibility-mirror rows
+(`vacation.leave_balances`: employee + Leave Type + year). A single scope
+navigates to Leave Balances with `leaveTypeId`, `employeeId`, and `year`;
+multiple scopes stay informational so the row never opens an empty screen.
+Ledger entry groups remain informational. Dependent rows are never cascaded or
+deleted.
 
 Markers are backfilled and added by owner-controlled triggers, are never
 removed, and are inaccessible to the runtime role. Existing Organization
