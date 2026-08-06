@@ -1,5 +1,24 @@
 # Internal Apps Platform change history
 
+## 2026-08-06 — Identity Portal v2 workspace and notification host migration
+
+- Migrated Identity Users to the Portal v2 workspace model: registry-driven
+  platform-group Identity workspace, persistent `/identity` shell, breadcrumb
+  + page-header hierarchy (`IdentityWorkspace` / `PortalSectionHeader`), and
+  shared top-center `PortalNotificationHost` feedback.
+- Preserved `/identity/users` and added a default-section redirect from
+  `/identity`. User–Employee links remain under the Company Organization
+  Administration group with the existing top-center host. Removed the legacy
+  `CompanyAdministrationWorkspace` wrapper. No API, permission, or
+  business-logic changes.
+- Updated focused Portal navigation and administration UI contract tests, plus
+  Design System / platform-state wording so Identity is no longer a
+  transitional right-rail notification consumer.
+- Validation: Portal strict TypeScript and production build passed
+  (`/identity`, `/identity/users`); focused `PortalNavigationContractTests`
+  and `PortalAdministrationUiContractTests` passed 32/32; `git diff --check`
+  clean.
+
 ## 2026-08-06 — ADR-0007 controlled administrative request deletion completed
 
 - Added `POST /api/v1/vacation/requests/{requestId}/delete` under

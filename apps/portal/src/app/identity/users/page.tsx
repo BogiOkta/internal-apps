@@ -15,7 +15,6 @@ import { AdministrationPageBody } from "@/components/administration-page-body";
 import { AdministrativeGridToolbar } from "@/components/administrative-grid-toolbar";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { CompanyAdministrationWorkspace } from "@/components/company-administration-workspace";
 import {
   FormField,
   formControlClassName,
@@ -24,7 +23,9 @@ import {
 } from "@/components/form-field";
 import { portalActionContent } from "@/components/portal-action-icon";
 import { PortalNotification } from "@/components/portal-notification";
+import { PortalNotificationHost } from "@/components/portal-notification-host";
 import { GridPagination } from "@/components/grid-pagination";
+import { IdentityWorkspace } from "@/features/identity/components/identity-workspace";
 import { useTranslations } from "@/i18n/use-translations";
 import {
   activateUser,
@@ -224,54 +225,90 @@ export default function UsersPage() {
 
   if (!canManage) {
     return (
-      <CompanyAdministrationWorkspace title={t("identity.users.title")}>
+      <IdentityWorkspace title={t("identity.users.title")}>
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 p-4 text-red-800"
         >
           {t("identity.users.forbidden")}
         </div>
-      </CompanyAdministrationWorkspace>
+      </IdentityWorkspace>
     );
   }
 
-  const headerActions = (
-    <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={() => {
-          setFeedback(null);
-          setWriteError(null);
-          setIsConfirmingStatus(false);
-          setPanelMode("create");
-        }}
-        className={formPrimaryButtonClassName()}
-      >
-        {portalActionContent("create", t("identity.users.new"))}
-      </button>
-      <button
-        type="button"
-        onClick={() => setRefreshVersion((value) => value + 1)}
-        disabled={isLoading}
-        className={formSecondaryButtonClassName()}
-      >
-        {portalActionContent(
-          "refresh",
-          isLoading
-            ? t("identity.users.refreshing")
-            : t("identity.users.refresh"),
-        )}
-      </button>
-    </div>
-  );
-
   return (
-    <CompanyAdministrationWorkspace
+    <IdentityWorkspace
       title={t("identity.users.title")}
       description={t("identity.users.description")}
-      headerActions={headerActions}
+      sectionActions={
+        <button
+          type="button"
+          onClick={() => {
+            setFeedback(null);
+            setWriteError(null);
+            setIsConfirmingStatus(false);
+            setPanelMode("create");
+          }}
+          className={formPrimaryButtonClassName()}
+        >
+          {portalActionContent("create", t("identity.users.new"))}
+        </button>
+      }
+      sectionSecondaryActions={
+        <button
+          type="button"
+          onClick={() => setRefreshVersion((value) => value + 1)}
+          disabled={isLoading}
+          className={formSecondaryButtonClassName()}
+        >
+          {portalActionContent(
+            "refresh",
+            isLoading
+              ? t("identity.users.refreshing")
+              : t("identity.users.refresh"),
+          )}
+        </button>
+      }
       contentFillsViewport
     >
+      <PortalNotificationHost>
+        {feedback ? (
+          <PortalNotification
+            variant="success"
+            message={feedback}
+            detail={
+              <Link
+                className="font-semibold underline"
+                href="/organization/user-employee-links"
+              >
+                {t("identity.users.linkEmployee")}
+              </Link>
+            }
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : null}
+        {writeError ? (
+          <PortalNotification
+            variant="error"
+            message={writeError}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setWriteError(null)}
+          />
+        ) : null}
+        {exportError ? (
+          <PortalNotification
+            variant="error"
+            message={
+              users.length === 0
+                ? t("grid.noExportRows")
+                : t("grid.exportFailure")
+            }
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setExportError(false)}
+          />
+        ) : null}
+      </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
           ariaLabel={t("identity.users.tableLabel")}
@@ -553,51 +590,9 @@ export default function UsersPage() {
               )}
             </div>
           }
-          detailsNotification={
-            feedback || writeError || exportError ? (
-              <>
-                {feedback && (
-                  <PortalNotification
-                    variant="success"
-                    message={feedback}
-                    detail={
-                      <Link
-                        className="font-semibold underline"
-                        href="/organization/user-employee-links"
-                      >
-                        {t("identity.users.linkEmployee")}
-                      </Link>
-                    }
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setFeedback(null)}
-                  />
-                )}
-                {writeError && (
-                  <PortalNotification
-                    variant="error"
-                    message={writeError}
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setWriteError(null)}
-                  />
-                )}
-                {exportError && (
-                  <PortalNotification
-                    variant="error"
-                    message={
-                      users.length === 0
-                        ? t("grid.noExportRows")
-                        : t("grid.exportFailure")
-                    }
-                    dismissLabel={t("common.dismissNotification")}
-                    onDismiss={() => setExportError(false)}
-                  />
-                )}
-              </>
-            ) : undefined
-          }
         />
       </AdministrationPageBody>
-    </CompanyAdministrationWorkspace>
+    </IdentityWorkspace>
   );
 }
 

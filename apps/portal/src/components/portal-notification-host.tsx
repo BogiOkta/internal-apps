@@ -9,7 +9,7 @@ import { Children, type ReactNode } from "react";
  * pointer interaction for dismiss / hover pause / focus pause.
  *
  * Feature pages render PortalNotification children here. Do not place
- * operation feedback in detailsNotification, page-local banners, or
+ * operation feedback in right-rail detailsNotification, page-local banners, or
  * scrolling grid content. ConfirmDialog remains a separate control.
  */
 export function PortalNotificationHost({

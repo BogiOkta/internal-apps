@@ -1,3 +1,4 @@
+import { identityWorkspace } from "./identity";
 import { organizationWorkspace } from "./organization";
 import { vacationWorkspace } from "./vacation";
 import type { WorkspaceDescriptor } from "./types";
@@ -5,6 +6,7 @@ import type { WorkspaceDescriptor } from "./types";
 const workspaceRegistry: WorkspaceDescriptor[] = [
   organizationWorkspace,
   vacationWorkspace,
+  identityWorkspace,
 ];
 
 export function getWorkspaceByApplicationCode(
@@ -43,7 +45,14 @@ export function getCompanyWorkspaces(): WorkspaceDescriptor[] {
     .sort((left, right) => left.order - right.order);
 }
 
-export { organizationWorkspace, vacationWorkspace };
+/** Platform-group workspaces rendered outside assigned-applications. */
+export function getPlatformWorkspaces(): WorkspaceDescriptor[] {
+  return workspaceRegistry
+    .filter((workspace) => workspace.group === "platform")
+    .sort((left, right) => left.order - right.order);
+}
+
+export { identityWorkspace, organizationWorkspace, vacationWorkspace };
 export type {
   BreadcrumbNode,
   NavigationGroupId,

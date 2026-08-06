@@ -2,9 +2,9 @@
 
 | Attribute | Value |
 |---|---|
-| Status | **Draft v1 — Vacation and Organization living pilot implemented; platform-wide adoption pending** |
-| Canonical? | **No.** Portal v2 is the default direction for new workspace work, but legacy modules may retain the established shell/navigation pattern until separately migrated. |
-| Approved scope | The implemented Vacation workspace and shared Company workspace pilot (Organization plus Business Calendar Non-working days) |
+| Status | **Draft v1 — Vacation, Organization/Company, and Identity living pilot implemented; platform-wide adoption pending** |
+| Canonical? | **No.** Portal v2 is the default direction for new workspace work, but remaining non-migrated surfaces may retain established patterns until separately migrated. |
+| Approved scope | The implemented Vacation workspace, shared Company workspace pilot (Organization plus Business Calendar Non-working days), and Identity Users workspace |
 | Governing document | [`../PROJECT_INSTRUCTIONS.md`](../PROJECT_INSTRUCTIONS.md) |
 | Architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md), [`PLATFORM_ARCHITECTURE.md`](PLATFORM_ARCHITECTURE.md) |
 | Design system | [`../standards/UI_GUIDELINES.md`](../standards/UI_GUIDELINES.md) |

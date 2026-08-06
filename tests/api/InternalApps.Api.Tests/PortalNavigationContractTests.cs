@@ -9,13 +9,15 @@ public sealed class PortalNavigationContractTests
     {
         var shell = ReadRepositoryFile("apps", "portal", "src", "components", "app-shell.tsx");
         var registry = ReadRepositoryFile("apps", "portal", "src", "navigation", "organization.ts");
+        var identityRegistry = ReadRepositoryFile("apps", "portal", "src", "navigation", "identity.ts");
         var index = ReadRepositoryFile("apps", "portal", "src", "navigation", "index.ts");
 
         Assert.Contains("navigation.companyAdministration", shell);
         Assert.Contains("getCompanyWorkspaces", shell);
+        Assert.Contains("getPlatformWorkspaces", shell);
         Assert.Contains("WorkspaceNavBlock", shell);
-        Assert.Contains("/identity/users", shell);
-        Assert.Contains("user.permissions.includes(usersManagePermission)", shell);
+        // Identity route ownership lives in the registry, not a hardcoded NavLink.
+        Assert.DoesNotContain("href=\"/identity/users\"", shell);
 
         Assert.DoesNotContain("href=\"/organization/departments\"", shell);
         Assert.DoesNotContain("href=\"/organization/employees\"", shell);
@@ -23,7 +25,9 @@ public sealed class PortalNavigationContractTests
         Assert.DoesNotContain("href=\"/organization/user-employee-links\"", shell);
 
         Assert.Contains("organizationWorkspace", index);
+        Assert.Contains("identityWorkspace", index);
         Assert.Contains("getCompanyWorkspaces", index);
+        Assert.Contains("getPlatformWorkspaces", index);
         Assert.Contains("/organization", registry);
         Assert.Contains("/organization/departments", registry);
         Assert.Contains("/organization/employees", registry);
@@ -32,6 +36,11 @@ public sealed class PortalNavigationContractTests
         Assert.Contains("organization.nav.administration", registry);
         Assert.Contains("businessCalendarManagePermission", registry);
         Assert.Contains("userEmployeeLinksManagePermission", registry);
+
+        Assert.Contains("/identity/users", identityRegistry);
+        Assert.Contains("usersManagePermission", identityRegistry);
+        Assert.Contains("identity.workspace.name", identityRegistry);
+        Assert.Contains("\"platform\"", identityRegistry);
     }
 
     [Fact]
@@ -123,6 +132,12 @@ public sealed class PortalNavigationContractTests
         var nonWorkingDays = ReadRepositoryFile("apps", "portal", "src", "app", "(company)",
             "business-calendar", "admin", "non-working-days", "page.tsx");
         var users = ReadRepositoryFile("apps", "portal", "src", "app", "identity", "users", "page.tsx");
+        var identityLayout = ReadRepositoryFile("apps", "portal", "src", "app", "identity",
+            "layout.tsx");
+        var identityShell = ReadRepositoryFile("apps", "portal", "src", "features", "identity",
+            "components", "identity-shell.tsx");
+        var identityWorkspace = ReadRepositoryFile("apps", "portal", "src", "features", "identity",
+            "components", "identity-workspace.tsx");
         var vacationLayout = ReadRepositoryFile("apps", "portal", "src", "app", "vacation",
             "layout.tsx");
 
@@ -134,6 +149,7 @@ public sealed class PortalNavigationContractTests
         Assert.Contains("layoutMode=\"workspace\"", shell);
         Assert.Contains("OrganizationPersistentShell", companyLayout);
         Assert.DoesNotContain("VacationPersistentShell", companyLayout);
+        Assert.DoesNotContain("IdentityPersistentShell", companyLayout);
 
         // Shared Company layout owns AppShell once; pages must not wrap it.
         Assert.DoesNotContain("AppShell", employees);
@@ -158,7 +174,13 @@ public sealed class PortalNavigationContractTests
         Assert.DoesNotContain("VacationWorkspace", links);
         Assert.DoesNotContain("VacationWorkspace", nonWorkingDays);
 
-        Assert.Contains("CompanyAdministrationWorkspace", users);
+        Assert.Contains("IdentityPersistentShell", identityLayout);
+        Assert.Contains("layoutMode=\"workspace\"", identityShell);
+        Assert.Contains("PortalSectionHeader", identityWorkspace);
+        Assert.Contains("asPageTitle", identityWorkspace);
+        Assert.Contains("IdentityWorkspace", users);
+        Assert.DoesNotContain("AppShell", users);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", users);
         Assert.DoesNotContain("OrganizationWorkspace", users);
         Assert.DoesNotContain("VacationWorkspace", users);
 
@@ -199,6 +221,10 @@ public sealed class PortalNavigationContractTests
         Assert.Contains("\"organization.nav.overview\": \"Pregled\"", translations);
         Assert.Contains("\"organization.workspace.name\": \"Organization\"", translations);
         Assert.Contains("\"organization.workspace.name\": \"Organizacija\"", translations);
+        Assert.Contains("\"identity.workspace.name\": \"Identity\"", translations);
+        Assert.Contains("\"identity.workspace.name\": \"Identitet\"", translations);
+        Assert.Contains("\"identity.nav.users\": \"Users\"", translations);
+        Assert.Contains("\"identity.nav.users\": \"Korisnici\"", translations);
     }
 
     private static string ReadRepositoryFile(params string[] parts)

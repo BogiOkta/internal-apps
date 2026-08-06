@@ -14,12 +14,13 @@ import { useTranslations } from "@/i18n/use-translations";
 import { getAssignedApplications } from "@/services/applications";
 import type { AssignedApplication } from "@/types/application";
 import type { CurrentUser } from "@/types/auth";
-import { usersManagePermission } from "@/types/auth";
 import { AdministrationPageHeader } from "@/components/administration-page-header";
 import { PortalBreadcrumb } from "@/components/portal-breadcrumb";
+import { usersManagePermission } from "@/types/auth";
 import {
   filterVisibleSections,
   getCompanyWorkspaces,
+  getPlatformWorkspaces,
   getWorkspaceByApplicationCode,
   isSectionRouteActive,
   isWorkspaceRouteActive,
@@ -411,15 +412,26 @@ function Navigation({
             onNavigate={onNavigate}
           />
         ))}
-        {user.permissions.includes(usersManagePermission) && (
-          <NavLink
-            href="/identity/users"
-            isActive={isRouteActive(currentPath, "/identity/users")}
-            label={t("identity.users.navigation")}
-            icon={<UsersIcon />}
-            onNavigate={onNavigate}
-          />
-        )}
+        {getPlatformWorkspaces().map((workspace) => {
+          const visibleSections = filterVisibleSections(
+            workspace.sections,
+            user.permissions,
+          );
+          if (visibleSections.length === 0) {
+            return null;
+          }
+
+          return (
+            <WorkspaceNavBlock
+              key={workspace.id}
+              workspace={workspace}
+              workspaceLabel={t(workspace.labelKey)}
+              currentPath={currentPath}
+              permissions={user.permissions}
+              onNavigate={onNavigate}
+            />
+          );
+        })}
 
         {showDevelopmentNavigation && (
           <>
@@ -489,6 +501,20 @@ function WorkspaceNavBlock({
   useEffect(() => {
     setAdminExpanded(adminChildActive);
   }, [adminChildActive, currentPath]);
+
+  // Single-section workspaces render the section directly with no nested rows.
+  if (visibleSections.length === 1) {
+    const section = visibleSections[0];
+    return (
+      <NavLink
+        href={section.route}
+        isActive={isSectionRouteActive(currentPath, section.route)}
+        label={workspaceLabel}
+        icon={<ApplicationIcon code={workspace.applicationCode} />}
+        onNavigate={onNavigate}
+      />
+    );
+  }
 
   return (
     <div className="mb-0.5">
@@ -768,6 +794,9 @@ export function ApplicationIcon({
   if (code === "organization") {
     return <OrganizationIcon className={className} />;
   }
+  if (code === "identity") {
+    return <UsersIcon className={className} />;
+  }
   return <GridIcon className={className} />;
 }
 
@@ -832,9 +861,9 @@ function OrganizationIcon(props: SVGProps<SVGSVGElement> = {}) {
   );
 }
 
-function UsersIcon() {
+function UsersIcon(props: SVGProps<SVGSVGElement> = {}) {
   return (
-    <IconBase>
+    <IconBase {...props}>
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </IconBase>
   );

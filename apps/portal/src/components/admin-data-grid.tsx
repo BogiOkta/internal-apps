@@ -25,9 +25,9 @@ export function AdministrativeGridShell({
   footer?: ReactNode;
   detailsPanel?: ReactNode;
   /**
-   * Stable operation-feedback region in the right rail, below details /
-   * actions / confirmation. Retained for modules not yet migrated to the
-   * top-center `PortalNotificationHost`. Must not be rendered above the
+   * Optional right-rail operation-feedback slot below details / actions /
+   * confirmation. Migrated workspace surfaces use top-center
+   * `PortalNotificationHost` instead. Must not be rendered above the
    * primary grid.
    */
   detailsNotification?: ReactNode;
