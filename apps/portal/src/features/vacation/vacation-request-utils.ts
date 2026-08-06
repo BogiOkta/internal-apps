@@ -26,6 +26,9 @@ export function isCancellationEligible(status: VacationRequestStatus): boolean {
   return status === "SUBMITTED" || status === "APPROVED";
 }
 
+export const VACATION_REQUEST_DELETED_NOTICE_KEY =
+  "internal-apps.vacation.request-deleted";
+
 export function toVacationCalendarEvent(
   request: VacationRequest,
 ): AppCalendarEvent<VacationRequest> {
@@ -52,6 +55,9 @@ export const vacationProblemTranslationKeys: Record<string, string> = {
   vacation_request_overlap: "vacation.employeePortal.error.overlap",
   vacation_request_invalid_transition: "vacation.employeePortal.error.invalidTransition",
   vacation_request_not_found: "vacation.employeePortal.error.notFound",
+  vacation_request_not_terminal: "vacation.admin.error.notTerminal",
+  vacation_request_ledger_effect_not_zero: "vacation.admin.error.ledgerEffectNotZero",
+  vacation_request_delete_conflict: "vacation.admin.error.deleteConflict",
   vacation_balance_not_found: "vacation.employeePortal.error.balanceNotFound",
   vacation_balance_insufficient: "vacation.employeePortal.error.balanceInsufficient",
   vacation_balance_invalid: "vacation.employeePortal.error.balanceInvalid",

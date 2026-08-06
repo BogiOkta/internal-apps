@@ -34,6 +34,8 @@ internal sealed record RecordAdministrativeAbsence(
 
 internal sealed record LeaveRequestComment(string? Comment);
 
+internal sealed record DeleteLeaveRequestRequest(string? Reason);
+
 internal sealed record LeaveTypeOptionResponse(
     Guid PublicId,
     string Code,
@@ -129,10 +131,37 @@ internal enum LeaveRequestOperationStatus
     BalanceInvalid
 }
 
+internal enum LeaveRequestDeleteStatus
+{
+    Success,
+    ValidationFailed,
+    NotFound,
+    Forbidden,
+    NotTerminal,
+    LedgerEffectNotZero,
+    DeleteConflict
+}
+
 internal sealed record LeaveRequestOperationResult(
     LeaveRequestOperationStatus Status,
     LeaveRequestResponse? Request = null,
     Dictionary<string, string[]>? Errors = null);
+
+internal sealed record LeaveRequestDeleteResult(
+    LeaveRequestDeleteStatus Status,
+    Dictionary<string, string[]>? Errors = null);
+
+internal sealed record DeletedLeaveRequestFacts(
+    Guid EmployeePublicId,
+    Guid LeaveTypePublicId,
+    string LeaveTypeCode,
+    DateOnly DateFrom,
+    DateOnly DateTo,
+    int WorkingDays,
+    string PreviousStatus,
+    string Source,
+    decimal LedgerNetEffect,
+    int DeletedHistoryRows);
 
 internal sealed record LeaveRequestEntity(
     long Id,

@@ -20,6 +20,7 @@ import {
   problemMessage,
   statusLabel,
 } from "@/features/vacation/components/employee-vacation-dashboard";
+import { VACATION_REQUEST_DELETED_NOTICE_KEY } from "@/features/vacation/vacation-request-utils";
 import { VacationStatusBadge } from "@/features/vacation/components/vacation-status-badge";
 import { VacationWorkspace } from "@/features/vacation/components/vacation-workspace";
 import type { TranslationKey } from "@/i18n/translations";
@@ -57,7 +58,18 @@ export function AdminVacationRequestList() {
   const [selectedPublicId, setSelectedPublicId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
+
+  useEffect(() => {
+    if (window.sessionStorage.getItem(VACATION_REQUEST_DELETED_NOTICE_KEY) !== "1") {
+      return;
+    }
+    window.sessionStorage.removeItem(VACATION_REQUEST_DELETED_NOTICE_KEY);
+    setSelectedPublicId(null);
+    setSuccess(t("vacation.admin.action.delete.success"));
+    setRefreshVersion((version) => version + 1);
+  }, [t]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -174,6 +186,14 @@ export function AdminVacationRequestList() {
       }
     >
       <PortalNotificationHost>
+        {success ? (
+          <PortalNotification
+            variant="success"
+            message={success}
+            dismissLabel={t("common.dismissNotification")}
+            onDismiss={() => setSuccess(null)}
+          />
+        ) : null}
         {errorCode ? (
           <PortalNotification
             variant="error"

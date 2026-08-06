@@ -67,6 +67,9 @@ export type LeaveTypeQuery = {
 };
 
 export const leaveTypesManagePermission = "vacation.leave-types.manage";
+export const leaveTypesDeletePermission = "vacation.leave-types.delete";
+export const vacationRequestsManagePermission = "vacation.requests.manage";
+export const vacationRequestsDeletePermission = "vacation.requests.delete";
 
 export type VacationRequestStatus =
   | "SUBMITTED"
@@ -175,5 +178,3 @@ export type PagedVacationRequests = {
   pageSize: number;
   totalCount: number;
 };
-
-export const vacationRequestsManagePermission = "vacation.requests.manage";

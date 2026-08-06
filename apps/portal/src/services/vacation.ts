@@ -325,6 +325,34 @@ export function cancelAdminVacationRequest(
   return adminVacationRequestTransition(accessToken, locale, publicId, "cancel", body);
 }
 
+export async function deleteAdminVacationRequest(
+  accessToken: string,
+  locale: string,
+  publicId: string,
+  body: { reason: string },
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/vacation/requests/${encodeURIComponent(publicId)}/delete`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        ...(locale ? { "Accept-Language": locale } : {}),
+      },
+      credentials: "include",
+      body: JSON.stringify(body),
+    },
+  );
+  if (response.ok) return;
+  const problem = (await response.json().catch(() => null)) as ProblemDetails | null;
+  throw new ApiError(
+    problem?.title ?? "The Vacation request could not be deleted.",
+    problem ?? undefined,
+    response.status,
+  );
+}
+
 function adminVacationRequestTransition(
   accessToken: string,
   locale: string,

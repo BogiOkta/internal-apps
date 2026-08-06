@@ -441,6 +441,37 @@ internal sealed class LeaveRequestsRepository(NpgsqlDataSource dataSource)
             cancellationToken: cancellationToken));
     }
 
+    /// <summary>
+    /// Physical deletion runs only through the owner-controlled SECURITY DEFINER
+    /// function; the runtime role holds no DELETE privilege on leave requests.
+    /// </summary>
+    public async Task<DeletedLeaveRequestFacts?> DeleteNeutralizedAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT employee_public_id AS EmployeePublicId,
+                   leave_type_public_id AS LeaveTypePublicId,
+                   leave_type_code AS LeaveTypeCode,
+                   date_from AS DateFrom,
+                   date_to AS DateTo,
+                   working_days AS WorkingDays,
+                   previous_status AS PreviousStatus,
+                   source AS Source,
+                   ledger_net_effect AS LedgerNetEffect,
+                   deleted_history_rows AS DeletedHistoryRows
+            FROM vacation.delete_neutralized_leave_request(@PublicId)
+            """;
+        return await connection.QuerySingleOrDefaultAsync<DeletedLeaveRequestFacts>(
+            new CommandDefinition(
+                sql,
+                new { PublicId = publicId },
+                transaction,
+                cancellationToken: cancellationToken));
+    }
+
     private static LeaveRequestResponse Map(LeaveRequestRow row, bool english) =>
         new(row.PublicId, row.EmployeePublicId, row.EmployeeNumber, row.EmployeeName,
             row.DepartmentPublicId, row.DepartmentName, row.LeaveTypePublicId,

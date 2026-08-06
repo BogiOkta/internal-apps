@@ -88,15 +88,17 @@ application layer. The stable code remains immutable after creation and is not
 part of the update contract.
 
 Leave Type administration uses the explicit permission
-`vacation.leave-types.manage`. The permission is seeded by migration 007 and
-assigned initially only to the existing `Administrator` role. The stable code
+`vacation.leave-types.manage` for create, update, activate, and deactivate.
+Physical deletion requires the dedicated `vacation.leave-types.delete`
+permission seeded by migration 040 and assigned initially only to the existing
+`Administrator` role. The stable code
 is accepted only during creation and is not part of the update contract or the
 runtime role's update privileges. Duplicate code comparison is
 case-insensitive and produces a conflict response.
 
 Migration 040 also seeds `vacation.leave-types.delete`, initially only for the
-Administrator role. It is not yet attached to the existing Leave Type delete
-endpoint; that intentional authorization narrowing remains an API increment.
+Administrator role. The existing Leave Type delete endpoint uses that dedicated
+permission. System leave types return `409` `leave_type_system_protected`.
 
 After migration 007 is applied, existing Administrator access tokens must be
 refreshed or reissued before they contain the new permission claim.
@@ -110,7 +112,11 @@ Calendar and persists its inclusive result. Vacation does not reinterpret
 weekends or configured non-working dates.
 
 The only statuses are `SUBMITTED`, `APPROVED`, `REJECTED`, and `CANCELLED`.
-There is no draft and no physical-deletion capability. A permanent
+There is no draft. Controlled administrative hard deletion of the operational
+request is available for terminal `REJECTED` or `CANCELLED` requests whose
+request-scoped ledger net effect is exactly zero. Deletion never cancels a
+request, never posts or mutates ledger entries, and never changes the
+compatibility balance mirror. A permanent
 `vacation.leave_request_identities` row owns each numeric ID and public UUID;
 the operational request matches both through a composite foreign key. Creation
 allocates the identity first in the same transaction. A single Administrator decision
@@ -355,9 +361,10 @@ or English names and descriptions; missing or unsupported languages fall back
 to Serbian, while a missing localized description remains null.
 
 Users with `vacation.leave-types.manage` can create and edit Leave Types in the
-same side panel, can explicitly activate or deactivate a selected type, and can
-delete a never-referenced type through
-`DELETE /api/v1/vacation/leave-types/{publicId}`. Activation commands are
+same side panel and can explicitly activate or deactivate a selected type.
+Users with `vacation.leave-types.delete` can delete a never-referenced,
+non-system type through `DELETE /api/v1/vacation/leave-types/{publicId}`.
+Activation commands are
 state-idempotent. The Portal hides these controls for other users, while the API
 policy remains authoritative. Every successful mutation, including deletion,
 updates `updated_at` where applicable and writes an append-only audit event in
@@ -427,14 +434,21 @@ the operational request second, and preserves permanent identity, ledger,
 balance, dependency markers, and central audit. It never cancels a request,
 posts or changes ledger entries, or changes the compatibility balance mirror.
 The function performs no internal commit, so a later API transaction can roll
-back deletion if its required audit write fails. These database capabilities
-are not exposed through API or Portal; no user can delete a request through the
-application yet. Administrator tokens require refresh or re-login after
+back deletion if its required audit write fails.
+
+`POST /api/v1/vacation/requests/{requestId}/delete` exposes that capability
+under `vacation.requests.delete` only. The API validates a required trimmed
+reason (1–500 characters), calls the controlled function, writes the central
+`vacation.request.delete` audit event with the locked facts, and commits
+atomically. Unknown requests return `404`; non-terminal and non-zero ledger
+conflicts map to stable `409` Problem Details codes. The Portal details page
+shows Delete only when the actor has the delete permission and the request is
+`REJECTED` or `CANCELLED`, using shared `ConfirmDialog` and
+`PortalNotification`. Administrator tokens require refresh or re-login after
 migration 040.
 
 No Vacation-owned public-holiday calendar, notification, background job,
-manager hierarchy, configurable workflow, or application request-delete
-command is implemented.
+manager hierarchy, or configurable workflow is implemented.
 
 ### Employee Portal
 

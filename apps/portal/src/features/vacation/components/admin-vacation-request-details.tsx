@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   FormField,
   formControlClassName,
+  formDangerButtonClassName,
   formPrimaryButtonClassName,
   formSecondaryButtonClassName,
 } from "@/components/form-field";
@@ -26,20 +28,26 @@ import { ApiError } from "@/services/auth";
 import {
   approveAdminVacationRequest,
   cancelAdminVacationRequest,
+  deleteAdminVacationRequest,
   getAdminVacationRequest,
   getAdminVacationRequestHistory,
   rejectAdminVacationRequest,
 } from "@/services/vacation";
+import { VACATION_REQUEST_DELETED_NOTICE_KEY } from "@/features/vacation/vacation-request-utils";
 import {
+  vacationRequestsDeletePermission,
   vacationRequestsManagePermission,
   type VacationRequest,
   type VacationRequestHistory,
 } from "@/types/vacation";
 
 export function AdminVacationRequestDetails({ requestId }: { requestId: string }) {
+  const router = useRouter();
   const { accessToken, user } = useAuth();
   const { locale, t } = useTranslations();
   const allowed = user?.permissions.includes(vacationRequestsManagePermission) ?? false;
+  const canDelete =
+    user?.permissions.includes(vacationRequestsDeletePermission) ?? false;
   const [request, setRequest] = useState<VacationRequest | null>(null);
   const [history, setHistory] = useState<VacationRequestHistory[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +55,8 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
   const [isLoading, setIsLoading] = useState(true);
   const [action, setAction] = useState<AdminAction | null>(null);
   const [comment, setComment] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteReasonError, setDeleteReasonError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -76,6 +86,35 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
 
   async function submitAction() {
     if (!accessToken || !request || !action || isSubmitting) return;
+    if (action === "delete") {
+      const reason = deleteReason.trim();
+      if (reason.length < 1 || reason.length > 500) {
+        setDeleteReasonError(t("vacation.admin.action.delete.reasonRequired"));
+        return;
+      }
+      setDeleteReasonError(null);
+      setIsSubmitting(true);
+      setError(null);
+      setSuccess(null);
+      try {
+        await deleteAdminVacationRequest(accessToken, locale, request.publicId, {
+          reason,
+        });
+        window.sessionStorage.setItem(VACATION_REQUEST_DELETED_NOTICE_KEY, "1");
+        setRequest(null);
+        setHistory([]);
+        setAction(null);
+        setDeleteReason("");
+        router.push("/vacation/admin/requests");
+      } catch (caught) {
+        setError(problemMessage(
+          caught instanceof ApiError ? caught.problem?.code ?? "generic" : "generic", t));
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
@@ -150,11 +189,28 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
             {request.decisionNote && <Detail label={t("vacation.employeePortal.decisionNote")}
               value={request.decisionNote} />}
           </dl>
-          <AdminActions request={request} action={action} comment={comment}
-            isSubmitting={isSubmitting} t={t}
-            onChoose={(nextAction) => { setAction(nextAction); setComment(""); setError(null); }}
-            onComment={setComment} onSubmit={() => void submitAction()}
-            onClose={() => { setAction(null); setComment(""); }} />
+          <AdminActions request={request} canDelete={canDelete} action={action}
+            comment={comment} deleteReason={deleteReason}
+            deleteReasonError={deleteReasonError} isSubmitting={isSubmitting} t={t}
+            onChoose={(nextAction) => {
+              setAction(nextAction);
+              setComment("");
+              setDeleteReason("");
+              setDeleteReasonError(null);
+              setError(null);
+            }}
+            onComment={setComment}
+            onDeleteReason={(value) => {
+              setDeleteReason(value);
+              setDeleteReasonError(null);
+            }}
+            onSubmit={() => void submitAction()}
+            onClose={() => {
+              setAction(null);
+              setComment("");
+              setDeleteReason("");
+              setDeleteReasonError(null);
+            }} />
         </article>
         <aside className="rounded-lg border border-slate-300 bg-white p-6">
           <h2 className="text-lg font-semibold">{t("vacation.employeePortal.history")}</h2>
@@ -170,37 +226,74 @@ export function AdminVacationRequestDetails({ requestId }: { requestId: string }
   </VacationWorkspace>;
 }
 
-type AdminAction = "approve" | "reject" | "cancel";
+type AdminAction = "approve" | "reject" | "cancel" | "delete";
 
-function AdminActions({ request, action, comment, isSubmitting, t, onChoose,
-  onComment, onSubmit, onClose }: {
+function AdminActions({ request, canDelete, action, comment, deleteReason,
+  deleteReasonError, isSubmitting, t, onChoose, onComment, onDeleteReason, onSubmit,
+  onClose }: {
   request: VacationRequest;
+  canDelete: boolean;
   action: AdminAction | null;
   comment: string;
+  deleteReason: string;
+  deleteReasonError: string | null;
   isSubmitting: boolean;
   t: ReturnType<typeof useTranslations>["t"];
   onChoose: (action: AdminAction) => void;
   onComment: (comment: string) => void;
+  onDeleteReason: (reason: string) => void;
   onSubmit: () => void;
   onClose: () => void;
 }) {
-  const actions: AdminAction[] = request.source === "ADMINISTRATIVE_ENTRY"
-    ? request.status === "APPROVED" ? ["cancel"] : []
-    : request.status === "SUBMITTED"
-    ? ["approve", "reject", "cancel"]
-    : request.status === "APPROVED" ? ["cancel"] : [];
-  if (actions.length === 0) return null;
+  const transitionActions: Exclude<AdminAction, "delete">[] =
+    request.source === "ADMINISTRATIVE_ENTRY"
+      ? request.status === "APPROVED" ? ["cancel"] : []
+      : request.status === "SUBMITTED"
+      ? ["approve", "reject", "cancel"]
+      : request.status === "APPROVED" ? ["cancel"] : [];
+  const showDelete =
+    canDelete &&
+    (request.status === "REJECTED" || request.status === "CANCELLED");
+  if (transitionActions.length === 0 && !showDelete) return null;
 
   return <div className="mt-6 border-t border-slate-200 pt-5">
     {!action ? <div className="flex flex-wrap gap-2">
-      {actions.map((item) => <button key={item} type="button"
+      {transitionActions.map((item) => <button key={item} type="button"
         onClick={() => onChoose(item)}
         className={item === "approve"
           ? formPrimaryButtonClassName()
           : formSecondaryButtonClassName()}>
         {t(`vacation.admin.action.${item}.button`)}
       </button>)}
-    </div> : <ConfirmDialog
+      {showDelete ? <button type="button" onClick={() => onChoose("delete")}
+        className={formDangerButtonClassName()}>
+        {t("vacation.admin.action.delete.button")}
+      </button> : null}
+    </div> : action === "delete" ? <ConfirmDialog
+      title={t("vacation.admin.action.delete.title")}
+      message={t("vacation.admin.action.delete.warning")}
+      confirmLabel={isSubmitting
+        ? t("vacation.admin.action.delete.loading")
+        : t("vacation.admin.action.delete.confirm")}
+      cancelLabel={t("vacation.admin.action.keep")}
+      pending={isSubmitting}
+      confirmDisabled={deleteReason.trim().length < 1 || deleteReason.trim().length > 500}
+      destructive
+      onConfirm={onSubmit}
+      onCancel={onClose}
+    >
+      <FormField
+        id="admin-delete-reason"
+        label={t("vacation.admin.action.delete.reason")}
+        required
+        error={deleteReasonError ?? undefined}
+      >
+        <textarea id="admin-delete-reason" value={deleteReason} maxLength={500} rows={3}
+          required disabled={isSubmitting}
+          onChange={(event) => onDeleteReason(event.target.value)}
+          className={`${formControlClassName()} resize-y`} />
+      </FormField>
+    </ConfirmDialog> : <ConfirmDialog
       title={t(`vacation.admin.action.${action}.title`)}
       message={t(`vacation.admin.action.${action}.warning`)}
       confirmLabel={isSubmitting

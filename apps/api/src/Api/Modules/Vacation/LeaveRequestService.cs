@@ -16,6 +16,15 @@ internal sealed class LeaveRequestService(
     AuditWriter auditWriter)
 {
     private const int NoteMaxLength = 1000;
+    private const int DeleteReasonMaxLength = 500;
+    private const string DeleteConflictPrefix = "leave_request_delete_conflict:v1:";
+
+    private static readonly HashSet<string> ControlledDeleteConflictTokens =
+    [
+        "non_terminal_status",
+        "ledger_effect_not_zero",
+        "protected_dependency"
+    ];
 
     public async Task<(LeaveRequestOperationStatus Status,
         IReadOnlyList<LeaveTypeOptionResponse>? LeaveTypes)> ListLeaveTypesAsync(
@@ -253,6 +262,81 @@ internal sealed class LeaveRequestService(
             NormalizeOptional(command.Comment), IsEnglish(acceptLanguage),
             cancellationToken);
 
+    public async Task<LeaveRequestDeleteResult> DeleteAsync(
+        HttpContext context,
+        Guid publicId,
+        DeleteLeaveRequestRequest request,
+        CancellationToken cancellationToken)
+    {
+        var reason = request.Reason?.Trim() ?? string.Empty;
+        if (reason.Length is < 1 or > DeleteReasonMaxLength)
+        {
+            return new(
+                LeaveRequestDeleteStatus.ValidationFailed,
+                new Dictionary<string, string[]>
+                {
+                    ["reason"] =
+                    [
+                        $"Reason is required and must be between 1 and {DeleteReasonMaxLength} characters."
+                    ]
+                });
+        }
+
+        if (!TryGetActor(context, out var actor))
+            return new(LeaveRequestDeleteStatus.Forbidden);
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var facts = await repository.DeleteNeutralizedAsync(
+                connection, transaction, publicId, cancellationToken);
+            if (facts is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new(LeaveRequestDeleteStatus.NotFound);
+            }
+
+            await auditWriter.WriteAsync(
+                connection,
+                transaction,
+                new(
+                    actor,
+                    "vacation",
+                    "vacation.request.delete",
+                    "vacation_request",
+                    publicId,
+                    context.TraceIdentifier,
+                    [
+                        new("reason", null, reason),
+                        new("employee_public_id", null, facts.EmployeePublicId.ToString()),
+                        new("leave_type_public_id", null, facts.LeaveTypePublicId.ToString()),
+                        new("leave_type_code", null, facts.LeaveTypeCode),
+                        new("date_from", null, facts.DateFrom.ToString("yyyy-MM-dd")),
+                        new("date_to", null, facts.DateTo.ToString("yyyy-MM-dd")),
+                        new("working_days", null, facts.WorkingDays.ToString()),
+                        new("previous_status", null, facts.PreviousStatus),
+                        new("source", null, facts.Source),
+                        new("ledger_net_effect", null,
+                            facts.LedgerNetEffect.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                        new("deleted_history_rows", null, facts.DeletedHistoryRows.ToString())
+                    ]),
+                cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return new(LeaveRequestDeleteStatus.Success);
+        }
+        catch (PostgresException exception) when (
+            exception.SqlState == PostgresErrorCodes.RaiseException &&
+            (exception.MessageText == "leave_request_delete_conflict" ||
+             exception.MessageText.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal)))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(MapDeleteConflictStatus(exception.MessageText));
+        }
+    }
+
     public bool TryCreateAdminQuery(
         Guid? employeeId, Guid? departmentId, Guid? leaveTypeId, string? status, string? source,
         DateOnly? dateFrom, DateOnly? dateTo, string? search, int? page, int? pageSize,
@@ -414,4 +498,24 @@ internal sealed class LeaveRequestService(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // Only tokens emitted by the owner-controlled database function cross this boundary.
+    private static LeaveRequestDeleteStatus MapDeleteConflictStatus(string message)
+    {
+        if (!message.StartsWith(DeleteConflictPrefix, StringComparison.Ordinal))
+            return LeaveRequestDeleteStatus.DeleteConflict;
+
+        var tokens = message[DeleteConflictPrefix.Length..]
+            .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (tokens.Length == 0 ||
+            !tokens.All(token => ControlledDeleteConflictTokens.Contains(token)))
+            return LeaveRequestDeleteStatus.DeleteConflict;
+
+        return tokens[0] switch
+        {
+            "non_terminal_status" => LeaveRequestDeleteStatus.NotTerminal,
+            "ledger_effect_not_zero" => LeaveRequestDeleteStatus.LedgerEffectNotZero,
+            _ => LeaveRequestDeleteStatus.DeleteConflict
+        };
+    }
 }

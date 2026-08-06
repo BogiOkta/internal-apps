@@ -26,7 +26,10 @@ The current implemented capabilities are:
   cancellation, and personal calendar.
 - permanent request identities, ledger evidentiary references to those
   identities, absent-operational-request posting rejection, permanent Leave
-  Type dependency markers, and protection of five canonical system Leave Types.
+  Type dependency markers, and protection of five canonical system Leave Types;
+- controlled administrative deletion of terminal, ledger-neutral leave
+  requests through a dedicated permission, owner-controlled database function,
+  atomic central audit, and Portal confirmation UX.
 
 The approved target boundary for a future Leave Balance Ledger is documented
 in [`../domain/vacation.md`](../domain/vacation.md) and
@@ -121,9 +124,10 @@ required, and all smoke-created requests were left rejected or cancelled.
 
 ### Leave Type administration
 
-Migration 032 completes canonical Leave Type administration. It reuses the
-existing `vacation.leave-types.manage` permission and seeds no new permission.
-Physical deletion is restricted to permanently unreferenced records through the
+Migration 032 completes canonical Leave Type administration. Create, update,
+activate, and deactivate reuse `vacation.leave-types.manage`. Physical deletion
+requires the dedicated `vacation.leave-types.delete` permission and is
+restricted to permanently unreferenced records through the
 owner-owned `SECURITY DEFINER` function
 `vacation.delete_unreferenced_leave_type(uuid)`; the runtime role receives only
 its `EXECUTE` grant plus the previously missing `requires_balance` column
@@ -142,31 +146,8 @@ Migrations 038–039 add owner-maintained permanent dependency markers behind th
 controlled delete function and mark exactly the canonical seeded codes as system types. System
 types cannot be physically deleted but may still be deactivated; `isSystem` is
 read-only in the existing API/Portal model. Runtime grants cannot access marker
-rows or set `is_system`.
-
-### ADR-0007 database foundation and increment 2
-
-Migration 036 preserves every request ID and public UUID in an immutable
-permanent identity and makes request creation identity-first within the existing
-transaction. The ledger request foreign key now targets that identity with
-restrictive delete behavior. Migration 037 rejects new request-derived ledger
-posting when the operational request is absent, without changing accepted
-ledger data or cancellation behavior.
-
-Migration 040 adds `vacation.requests.delete` and
-`vacation.leave-types.delete`, both initially assigned only to Administrator.
-Existing Administrator tokens require refresh or re-login. Migration 041 adds
-the owner-controlled, runtime-executable
-`vacation.delete_neutralized_leave_request(uuid)` function. It accepts only
-terminal, request-scoped ledger-neutral requests, removes history before the
-operational request, returns the locked facts required for later API audit, and
-never mutates permanent identity, ledger, balances, policies, dependency
-markers, Organization, Identity, or central audit. The function has no internal
-commit, so a later atomic API audit failure can roll back deletion. No API
-service or route calls it and no Portal deletion control exists; no user can
-invoke request deletion through the application. Moving the existing Leave
-Type delete route to its dedicated permission, the request-delete API/audit
-service, and Portal UX remain pending increments.
+rows or set `is_system`. Physical Leave Type deletion now requires
+`vacation.leave-types.delete`; system types return `leave_type_system_protected`.
 
 The Portal route is migrated to the canonical administration foundation
 (`AdministrationPageHeader` via the workspace shell, `AdministrationPageBody`,
@@ -179,6 +160,30 @@ business rules prevent editing.
 
 See [`../domain/vacation.md`](../domain/vacation.md) for detailed ownership,
 domain rules, persistence, authorization, and current implementation behavior.
+
+### ADR-0007 controlled administrative deletion
+
+Migrations 036–041 establish permanent request identity, ledger evidentiary
+references, permanent Leave Type dependency markers, system Leave Types,
+dedicated delete permissions, and
+`vacation.delete_neutralized_leave_request(uuid)`.
+
+The completed application path is:
+
+- `POST /api/v1/vacation/requests/{requestId}/delete` requires
+  `vacation.requests.delete` and a reasoned body;
+- one API transaction calls the controlled function, writes
+  `vacation.request.delete` through `AuditWriter`, and commits;
+- audit failure rolls back deletion;
+- Leave Type physical delete uses `vacation.leave-types.delete`;
+- Portal request details show Delete only for terminal requests when the actor
+  has the delete permission, using shared `ConfirmDialog` and
+  `PortalNotification`.
+
+Ledger evidence, permanent identities, central audit history, and the
+compatibility mirror remain unchanged. Cancellation remains a separate
+command. A deleted operational request is recoverable only through PostgreSQL
+point-in-time recovery.
 
 ### Administrative absence recording
 

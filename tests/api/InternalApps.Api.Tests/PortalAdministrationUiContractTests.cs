@@ -856,8 +856,11 @@ public sealed class PortalAdministrationUiContractTests
 
         // Safe delete with the canonical localized conflict guidance.
         Assert.Contains("deleteLeaveType", page);
+        Assert.Contains("leaveTypesDeletePermission", page);
         Assert.Contains("leave_type_delete_conflict", page);
+        Assert.Contains("leave_type_system_protected", page);
         Assert.Contains("vacation.leaveTypes.deleteReferenced", page);
+        Assert.Contains("vacation.leaveTypes.deleteSystemProtected", page);
         Assert.Contains("vacation.leaveTypes.deleteConfirmation", page);
 
         // Lock hints for the fields the business rules freeze after first use.
@@ -1019,6 +1022,11 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("approveAdminVacationRequest", details);
         Assert.Contains("rejectAdminVacationRequest", details);
         Assert.Contains("cancelAdminVacationRequest", details);
+        Assert.Contains("deleteAdminVacationRequest", details);
+        Assert.Contains("vacationRequestsDeletePermission", details);
+        Assert.Contains("formDangerButtonClassName", details);
+        Assert.Contains("VACATION_REQUEST_DELETED_NOTICE_KEY", list);
+        Assert.Contains("vacation.admin.action.delete.success", list);
 
         Assert.Contains("\"vacation.admin.refresh\": \"Refresh\"", translations);
         Assert.Contains("\"vacation.admin.refresh\": \"Osveži\"", translations);

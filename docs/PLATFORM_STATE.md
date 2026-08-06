@@ -4,10 +4,12 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: shared Company workspace layout for Organization
-  and Business Calendar Non-working days. A pathless `(company)` route group owns
-  one persistent Organization shell across `/organization/*` and
-  `/business-calendar/admin/non-working-days` without changing public URLs.
+- Latest functional milestone: ADR-0007 controlled administrative Vacation
+  request deletion is complete. The API command, atomic audit orchestration, and
+  Portal delete UX use the existing permanent identities, dedicated delete
+  permissions, and owner-controlled database function. Ledger immutability,
+  permanent identities, central audit, and the compatibility mirror remain
+  unchanged.
 
 ## Platform foundation
 
@@ -98,14 +100,17 @@
 
 ## Vacation module
 
-- ADR-0007 increments 1–2: migrations 036–041 are applied. Permanent request
-  identity exists; the ledger evidentiary FK targets it; request-derived ledger
-  insertion rejects an absent operational request; Leave Type dependency
-  markers are permanent; and exactly five canonical system Leave Types are
-  protected. `isSystem` is read-only in the existing API/Portal model. The two
-  dedicated delete permissions and the owner-controlled, terminal-and-neutral
-  request delete function now exist, but no API or Portal path invokes request
-  deletion and the Leave Type endpoint has not yet moved to its new permission.
+- ADR-0007 controlled administrative deletion is available. Terminal
+  `REJECTED`/`CANCELLED` requests with a zero request-scoped ledger net effect
+  may be removed through `POST /api/v1/vacation/requests/{requestId}/delete`
+  under `vacation.requests.delete`. Deletion runs in one API transaction with
+  `vacation.delete_neutralized_leave_request(uuid)` and a required central
+  audit event; audit failure rolls back the delete. Ledger rows, permanent
+  request identities, and central audit history remain. Compatibility mirror
+  and cancellation behavior are unchanged. Leave Type physical delete now
+  requires `vacation.leave-types.delete`. Portal request details show Delete
+  only with the dedicated permission and a terminal status, using
+  `ConfirmDialog` with a required reason.
 - Database foundation: complete through increment 2; migrations through 041 are
   applied and validated.
 - Leave balance compatibility mirror: annual-entitlement, carry-over, and
@@ -151,6 +156,16 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- ADR-0007 feature completion (API, audit, Portal): API Debug build passed with
+  zero warnings/errors. Portal strict TypeScript and production build passed
+  and includes `/vacation/admin/requests/[requestId]`. Focused Vacation
+  ADR-0007, Leave Type administration, request-administration authorization,
+  Portal navigation, and Portal administration UI contract tests passed 49/49
+  with 0 skipped. The full API suite passed 127/130; the three failures are
+  documented pre-existing unrelated source-contract failures. Controlled
+  browser smoke could not run because the browser runtime failed to initialize
+  due to a missing `kernel-assets` path.
 
 - ADR-0007 increment 2: 41 migrations discovered; migrations 040–041 applied in
   order and the second pass found zero pending scripts. API Debug build passed
@@ -440,9 +455,8 @@ Detailed state: [Vacation module](modules/vacation.md) and
   so migration 032 requires no token refresh.
 - Migration 040 adds `vacation.requests.delete` and
   `vacation.leave-types.delete`; existing Administrator access tokens require
-  refresh or re-login to receive both claims. Neither permission is exposed by
-  request-delete API or Portal behavior yet, and the existing Leave Type delete
-  endpoint still uses `vacation.leave-types.manage` pending the API increment.
+  refresh or re-login to receive both claims. A deleted request is recoverable
+  only through PostgreSQL point-in-time recovery.
 - No frontend automated-test framework is currently present.
 - Employee pagination is client-side because the current API contract intentionally
   returns a bounded unpaged result. Larger datasets require documented API
@@ -451,15 +465,14 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-ADR-0007 increment 2 is implemented and validated: dedicated delete permissions
-and the owner-controlled request database function exist without any API route
-or Portal delete UX. Public routes remain unchanged.
+ADR-0007 controlled administrative deletion is implemented: API command, atomic
+audit orchestration, Leave Type delete permission narrowing, and Portal delete
+UX. No new migrations, permissions, or database functions were added.
 
 ## Next task
 
-ADR-0007 increment 3 remains pending: API service/transaction/audit behavior,
-the request-delete command route, and the Leave Type endpoint authorization
-narrowing. Portal deletion UX remains a later independent increment.
+No further ADR-0007 implementation is pending. Browser smoke should be retried
+only after the local browser runtime's missing `kernel-assets` path is restored.
 
 ## Session instruction
 

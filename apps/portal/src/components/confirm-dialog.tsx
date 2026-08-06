@@ -21,6 +21,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   pending = false,
+  confirmDisabled = false,
   destructive = false,
   onConfirm,
   onCancel,
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   confirmLabel: string;
   cancelLabel: string;
   pending?: boolean;
+  confirmDisabled?: boolean;
   destructive?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -70,7 +72,7 @@ export function ConfirmDialog({
       <div className="mt-3.5 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={pending}
+          disabled={pending || confirmDisabled}
           onClick={onConfirm}
           className={
             destructive

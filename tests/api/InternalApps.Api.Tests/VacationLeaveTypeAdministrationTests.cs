@@ -17,11 +17,14 @@ public sealed class VacationLeaveTypeAdministrationTests
         Assert.Contains("/leave-types/{publicId:guid}/activate", endpoints);
         Assert.Contains("/leave-types/{publicId:guid}/deactivate", endpoints);
         Assert.Contains("RequireAuthorization(VacationPermissions.ManageLeaveTypes)", endpoints);
+        Assert.Contains("RequireAuthorization(VacationPermissions.DeleteLeaveTypes)", endpoints);
         Assert.Contains("leave_type_delete_conflict", endpoints);
+        Assert.Contains("leave_type_system_protected", endpoints);
         Assert.Contains("Results.NoContent()", endpoints);
 
         var permissions = Read("apps", "api", "src", "Api", "Modules", "Vacation", "VacationPermissions.cs");
         Assert.Contains("\"vacation.leave-types.manage\"", permissions);
+        Assert.Contains("\"vacation.leave-types.delete\"", permissions);
     }
 
     [Fact]

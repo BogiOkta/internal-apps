@@ -44,7 +44,7 @@ import type {
   LeaveTypeDetails,
   UpdateLeaveTypeRequest,
 } from "@/types/vacation";
-import { leaveTypesManagePermission } from "@/types/vacation";
+import { leaveTypesDeletePermission, leaveTypesManagePermission } from "@/types/vacation";
 import {
   exportGridCsv,
   exportGridXlsx,
@@ -110,6 +110,7 @@ export default function LeaveTypesPage() {
   const [operationError, setOperationError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const canManage = user?.permissions.includes(leaveTypesManagePermission) ?? false;
+  const canDelete = user?.permissions.includes(leaveTypesDeletePermission) ?? false;
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -376,7 +377,7 @@ export default function LeaveTypesPage() {
   }
 
   async function remove() {
-    if (!accessToken || !selectedLeaveType || !canManage || isDeleting) {
+    if (!accessToken || !selectedLeaveType || !canDelete || isDeleting) {
       return;
     }
 
@@ -396,6 +397,8 @@ export default function LeaveTypesPage() {
       setOperationError(
         problemCode === "leave_type_delete_conflict"
           ? t("vacation.leaveTypes.deleteReferenced")
+          : problemCode === "leave_type_system_protected"
+            ? t("vacation.leaveTypes.deleteSystemProtected")
           : error instanceof ApiError && error.status === 403
             ? t("vacation.leaveTypes.forbidden")
             : t("vacation.leaveTypes.deleteFailed"),
@@ -819,9 +822,11 @@ export default function LeaveTypesPage() {
                     />
                   </dl>
 
-                  {canManage && (
+                  {(canManage || canDelete) && (
                     <div className="space-y-3 border-t border-slate-200 pt-3">
                       <div className="flex flex-wrap gap-2">
+                        {canManage && (
+                          <>
                         <button
                           type="button"
                           disabled={isPanelLoading || isStateChanging || isDeleting}
@@ -845,6 +850,9 @@ export default function LeaveTypesPage() {
                             ? t("vacation.leaveTypes.deactivate")
                             : t("vacation.leaveTypes.activate")}
                         </button>
+                          </>
+                        )}
+                        {canDelete && (
                         <button
                           type="button"
                           disabled={isStateChanging || isDeleting}
@@ -856,9 +864,10 @@ export default function LeaveTypesPage() {
                         >
                           {t("vacation.leaveTypes.delete")}
                         </button>
+                        )}
                       </div>
 
-                      {pendingActiveState !== null && (
+                      {canManage && pendingActiveState !== null && (
                         <ConfirmDialog
                           message={
                             pendingActiveState
@@ -879,7 +888,7 @@ export default function LeaveTypesPage() {
                         />
                       )}
 
-                      {isConfirmingDelete && (
+                      {canDelete && isConfirmingDelete && (
                         <ConfirmDialog
                           destructive
                           message={t("vacation.leaveTypes.deleteConfirmation")}

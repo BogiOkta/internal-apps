@@ -26,6 +26,9 @@ internal static class LeaveRequestEndpoints
         admin.MapPost("/requests/{requestId:guid}/approve", ApproveAsync);
         admin.MapPost("/requests/{requestId:guid}/reject", RejectAsync);
         admin.MapPost("/requests/{requestId:guid}/cancel", CancelAdminAsync);
+
+        group.MapPost("/requests/{requestId:guid}/delete", DeleteAsync)
+            .RequireAuthorization(VacationPermissions.DeleteRequests);
         return endpoints;
     }
 
@@ -166,6 +169,52 @@ internal static class LeaveRequestEndpoints
         TransitionResultAsync(context, service.CancelAdminAsync(context, requestId,
             request ?? new(null), context.Request.Headers.AcceptLanguage,
             cancellationToken));
+
+    private static async Task<IResult> DeleteAsync(
+        Guid requestId,
+        DeleteLeaveRequestRequest? request,
+        HttpContext context,
+        LeaveRequestService service,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.DeleteAsync(
+            context,
+            requestId,
+            request ?? new(null),
+            cancellationToken);
+        return result.Status switch
+        {
+            LeaveRequestDeleteStatus.Success => Results.NoContent(),
+            LeaveRequestDeleteStatus.ValidationFailed =>
+                Results.ValidationProblem(
+                    result.Errors!,
+                    instance: context.Request.Path,
+                    extensions: Extensions(context, "validation_failed")),
+            LeaveRequestDeleteStatus.NotFound =>
+                Problem(context, LeaveRequestOperationStatus.RequestNotFound),
+            LeaveRequestDeleteStatus.Forbidden =>
+                Problem(context, LeaveRequestOperationStatus.Forbidden),
+            LeaveRequestDeleteStatus.NotTerminal => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Leave request is not terminal",
+                detail: "Cancel the request before deleting it. Only rejected or cancelled requests can be deleted.",
+                instance: context.Request.Path,
+                extensions: Extensions(context, "vacation_request_not_terminal")),
+            LeaveRequestDeleteStatus.LedgerEffectNotZero => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Leave request still affects the ledger",
+                detail: "The request still has a non-zero request-scoped ledger effect and cannot be deleted.",
+                instance: context.Request.Path,
+                extensions: Extensions(context, "vacation_request_ledger_effect_not_zero")),
+            LeaveRequestDeleteStatus.DeleteConflict => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Leave request cannot be deleted",
+                detail: "The leave request could not be deleted because of a protected dependency.",
+                instance: context.Request.Path,
+                extensions: Extensions(context, "vacation_request_delete_conflict")),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
 
     private static async Task<IResult> TransitionResultAsync(
         HttpContext context, Task<LeaveRequestOperationResult> operation) =>

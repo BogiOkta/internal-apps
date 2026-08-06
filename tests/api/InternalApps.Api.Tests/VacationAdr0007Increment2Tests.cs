@@ -7,7 +7,7 @@ namespace InternalApps.Api.Tests;
 public sealed class VacationAdr0007Increment2Tests
 {
     [Fact]
-    public void PermissionDefinitions_AreRegisteredWithoutChangingEndpointAuthorization()
+    public void PermissionDefinitions_AreRegisteredForDeleteCommands()
     {
         var permissions = Read("apps", "api", "src", "Api", "Modules", "Vacation",
             "VacationPermissions.cs");
@@ -21,10 +21,11 @@ public sealed class VacationAdr0007Increment2Tests
         Assert.Contains("vacation.leave-types.delete", permissions);
         Assert.Contains("VacationPermissions.DeleteRequests", program);
         Assert.Contains("VacationPermissions.DeleteLeaveTypes", program);
-        Assert.DoesNotContain("VacationPermissions.DeleteRequests", requestEndpoints);
-        Assert.DoesNotContain("VacationPermissions.DeleteLeaveTypes", vacationEndpoints);
-        Assert.DoesNotContain("/delete", requestEndpoints);
+        Assert.Contains("VacationPermissions.DeleteRequests", requestEndpoints);
+        Assert.Contains("VacationPermissions.DeleteLeaveTypes", vacationEndpoints);
+        Assert.Contains("/delete", requestEndpoints);
         Assert.Contains("RequireAuthorization(VacationPermissions.ManageLeaveTypes)", vacationEndpoints);
+        Assert.Contains("RequireAuthorization(VacationPermissions.DeleteLeaveTypes)", vacationEndpoints);
     }
 
     [Fact]

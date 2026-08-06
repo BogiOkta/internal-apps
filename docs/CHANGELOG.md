@@ -1,5 +1,26 @@
 # Internal Apps Platform change history
 
+## 2026-08-06 — ADR-0007 controlled administrative request deletion completed
+
+- Added `POST /api/v1/vacation/requests/{requestId}/delete` under
+  `vacation.requests.delete`. The command validates a required 1–500 character
+  reason, calls the existing `vacation.delete_neutralized_leave_request(uuid)`
+  function, writes the central `vacation.request.delete` audit event, and
+  commits atomically; audit failure rolls back deletion.
+- Moved Leave Type physical delete authorization to
+  `vacation.leave-types.delete` and mapped system-type protection to
+  `leave_type_system_protected`.
+- Portal request details show Delete only with the dedicated permission for
+  `REJECTED`/`CANCELLED` requests, using shared `ConfirmDialog` and
+  `PortalNotification`. Ledger, permanent identities, audit history, and the
+  compatibility mirror remain unchanged.
+- Validation: API Debug build passed (0 warnings/errors); Portal strict
+  TypeScript and production build passed; focused Vacation ADR-0007 / Leave
+  Type / authorization / Portal navigation and UI contract tests passed 49/49.
+  The full API suite passed 127/130; the three failures are documented
+  pre-existing unrelated source-contract failures. Controlled browser smoke
+  could not run because the in-app browser runtime failed to initialize.
+
 ## 2026-08-06 — ADR-0007 increment 2 permissions and controlled database function
 
 - Added idempotent migrations 040–041: dedicated

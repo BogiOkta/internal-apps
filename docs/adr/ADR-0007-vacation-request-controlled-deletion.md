@@ -2,13 +2,13 @@
 
 ## Status
 
-Approved architecture — pending bounded implementation.
+Approved architecture — implemented.
 
-No part of this decision is implemented. No migration, API endpoint, permission,
-database function, or Portal control described here exists in the repository at
-the time of writing. Implementation proceeds only through the bounded increments
-in section 14, and the documentation updates in section 15 are applied with the
-increment that makes each statement true.
+The bounded implementation is complete through the controlled database
+function, API command, atomic audit orchestration, dedicated permissions, and
+Portal confirmation UX. The capability remains limited to the behavior
+described in this ADR: controlled administrative hard deletion of the
+operational Vacation request document only.
 
 ## Date
 

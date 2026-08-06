@@ -28,7 +28,7 @@ internal static class VacationEndpoints
             .RequireAuthorization(VacationPermissions.ManageLeaveTypes);
         vacation
             .MapDelete("/leave-types/{publicId:guid}", DeleteLeaveTypeAsync)
-            .RequireAuthorization(VacationPermissions.ManageLeaveTypes);
+            .RequireAuthorization(VacationPermissions.DeleteLeaveTypes);
 
         return endpoints;
     }
@@ -216,6 +216,17 @@ internal static class VacationEndpoints
         {
             LeaveTypeWriteStatus.Success => Results.NoContent(),
             LeaveTypeWriteStatus.NotFound => NotFoundProblem(context),
+            LeaveTypeWriteStatus.HasDependencies when
+                IsSystemLeaveTypeProtection(result.Dependencies) => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "System leave type is protected",
+                detail: "System leave types cannot be deleted.",
+                instance: context.Request.Path,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "leave_type_system_protected",
+                    ["traceId"] = context.TraceIdentifier
+                }),
             LeaveTypeWriteStatus.HasDependencies => Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Leave type is referenced",
@@ -230,6 +241,9 @@ internal static class VacationEndpoints
             _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError)
         };
     }
+
+    private static bool IsSystemLeaveTypeProtection(string[]? dependencies) =>
+        dependencies is ["System leave type"];
 
     private static IResult WriteResult(
         HttpContext context,

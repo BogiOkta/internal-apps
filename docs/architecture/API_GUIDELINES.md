@@ -53,6 +53,8 @@ Rules:
 - Do not expose schema, table, or repository names.
 - Nested routes represent meaningful containment, not arbitrary joins.
 - Keep route depth small; prefer resource identifiers and filters over deep nesting.
+- A destructive command that requires a request body uses an explicit `POST`
+  command route rather than a body-bearing `DELETE`.
 
 ## 3. Endpoint Organization
 
@@ -365,6 +367,7 @@ Current Vacation Leave Type endpoints:
 | `PUT /api/v1/vacation/leave-types/{publicId}` | `vacation.leave-types.manage` | Updates mutable bilingual labels, descriptions, behavior, color, and display order. It cannot change `code` or active state. |
 | `POST /api/v1/vacation/leave-types/{publicId}/activate` | `vacation.leave-types.manage` | Idempotently makes the type active and returns the resulting resource. |
 | `POST /api/v1/vacation/leave-types/{publicId}/deactivate` | `vacation.leave-types.manage` | Idempotently makes the type inactive without deleting it. |
+| `DELETE /api/v1/vacation/leave-types/{publicId}` | `vacation.leave-types.delete` | Physically deletes only a non-system, permanently unreferenced type; protected system types return `409` `leave_type_system_protected` and referenced types return `409` `leave_type_delete_conflict`. |
 
 For the item route, a malformed UUID does not match the `{publicId:guid}` route
 constraint and receives the framework route-level `404` response. A
@@ -372,8 +375,9 @@ syntactically valid but unknown UUID reaches the endpoint and returns the
 defined `404` Problem Details response. These cases do not promise the same
 response body.
 
-All routes require authentication; every write additionally requires
-`vacation.leave-types.manage`. `Accept-Language` selects Serbian (`sr`
+All routes require authentication. Create, update, activate, and deactivate
+require `vacation.leave-types.manage`; physical deletion requires only
+`vacation.leave-types.delete`. `Accept-Language` selects Serbian (`sr`
 variants) or English (`en` variants), with Serbian as the fallback, for reads
 and write responses. The list defaults to all statuses, display-order sorting,
 and ascending direction. Supported sort fields are `displayOrder`, `code`,
@@ -385,7 +389,7 @@ blank optional descriptions and color become `null`; code must use the
 documented uppercase underscore format; calendar color, when supplied, is
 `#RRGGBB`; display order is nonnegative. Case-insensitive duplicate code
 returns `409` with code `leave_type_code_conflict`. A valid unknown public UUID
-returns the defined `404` Problem Details response. No `DELETE` route exists.
+returns the defined `404` Problem Details response.
 
 Current Vacation Leave Request endpoints:
 
@@ -405,6 +409,14 @@ Current Vacation Leave Request endpoints:
 | `POST /api/v1/vacation/requests/{requestId}/approve` | `vacation.requests.manage` | Approves a submitted request and consumes required balance. |
 | `POST /api/v1/vacation/requests/{requestId}/reject` | `vacation.requests.manage` | Rejects a submitted request without changing balance. |
 | `POST /api/v1/vacation/requests/{requestId}/cancel` | `vacation.requests.manage` | Cancels a submitted or approved request and restores approved balance use. |
+| `POST /api/v1/vacation/requests/{requestId}/delete` | `vacation.requests.delete` | Physically removes operational request/history only when status is `REJECTED` or `CANCELLED` and the request-scoped ledger net effect is zero. Requires a trimmed 1–500 character reason and atomically retains it with bounded deletion facts in central audit. |
+
+Request deletion returns stable Problem Details codes:
+`validation_failed` (`400`), `request_not_found` (`404`),
+`vacation_request_not_terminal` (`409`),
+`vacation_request_ledger_effect_not_zero` (`409`), and
+`vacation_request_delete_conflict` (`409`); ordinary authorization middleware
+provides the established unauthenticated/forbidden contracts.
 
 The administrative list supports employee, department, Leave Type, status,
 inclusive date-intersection, and search filters plus `page` and `pageSize`

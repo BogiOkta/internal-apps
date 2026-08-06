@@ -69,8 +69,8 @@ public sealed class VacationRequestAdministrationAuthorizationTests
     [Fact]
     public void Portal_RequestAdministrationNavigationAndRoutesUseTheDedicatedPermission()
     {
-        var workspace = ReadRepositoryFile("apps", "portal", "src", "features",
-            "vacation", "components", "vacation-workspace.tsx");
+        var navigation = ReadRepositoryFile("apps", "portal", "src", "navigation",
+            "vacation.ts");
         var list = ReadRepositoryFile("apps", "portal", "src", "features", "vacation",
             "components", "admin-vacation-request-list.tsx");
         var details = ReadRepositoryFile("apps", "portal", "src", "features", "vacation",
@@ -78,9 +78,11 @@ public sealed class VacationRequestAdministrationAuthorizationTests
         var types = ReadRepositoryFile("apps", "portal", "src", "types", "vacation.ts");
 
         Assert.Contains("vacation.requests.manage", types);
-        Assert.Contains("permissions.includes(vacationRequestsManagePermission)", workspace);
+        Assert.Contains("vacation.requests.delete", types);
+        Assert.Contains("requiredPermission: vacationRequestsManagePermission", navigation);
         Assert.Contains("permissions.includes(vacationRequestsManagePermission)", list);
         Assert.Contains("permissions.includes(vacationRequestsManagePermission)", details);
+        Assert.Contains("permissions.includes(vacationRequestsDeletePermission)", details);
     }
 
     private static string ReadRepositoryFile(params string[] parts)
