@@ -178,6 +178,7 @@ public sealed class PortalAdministrationUiContractTests
             "export function HrDateInput",
             "export function WmsDateInput",
             "export function ConfirmDialog",
+            "export function DependencyInspector",
             "export function StatusBadge",
             "export function PortalDateInput",
             "export function DateRangePicker",
@@ -196,6 +197,7 @@ public sealed class PortalAdministrationUiContractTests
         var canonicalOwners = new HashSet<string>(StringComparer.Ordinal)
         {
             "components/confirm-dialog.tsx",
+            "components/dependency-inspector.tsx",
             "components/status-badge.tsx",
             "components/portal-date-input.tsx",
             "components/date-range/date-range-picker.tsx",
@@ -216,6 +218,7 @@ public sealed class PortalAdministrationUiContractTests
         {
             "date-input",
             "confirm-dialog",
+            "dependency-inspector",
             "portal-date",
             "date-range-picker",
             "status-badge",
@@ -319,6 +322,40 @@ public sealed class PortalAdministrationUiContractTests
             Assert.Contains("ConfirmDialog", source);
             Assert.DoesNotContain("window.confirm", source, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void DependencyInspector_IsCanonicalSharedDependencyDialog()
+    {
+        var dialog = Read("apps", "portal", "src", "components", "dependency-inspector.tsx");
+        Assert.Contains("export function DependencyInspector", dialog);
+        Assert.Contains("formPrimaryButtonClassName", dialog);
+        Assert.Contains("formSecondaryButtonClassName", dialog);
+        Assert.Contains("role=\"alertdialog\"", dialog);
+        Assert.DoesNotContain("Delete anyway", dialog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("setTimeout", dialog);
+
+        var leaveTypes = Read("apps", "portal", "src", "app", "vacation", "leave-types", "page.tsx");
+        Assert.Contains("DependencyInspector", leaveTypes);
+        Assert.Contains("getLeaveTypeDependencies", leaveTypes);
+        Assert.Contains("@/components/dependency-inspector", leaveTypes);
+
+        var helper = Read("apps", "portal", "src", "features", "vacation",
+            "leave-type-dependency-mapping.ts");
+        Assert.Contains("toLeaveTypeDependencyGroups", helper);
+        Assert.Contains("leaveTypeDependencyNavigationActions", helper);
+        Assert.Contains("buildLeaveTypeDependencyHref", helper);
+        Assert.Contains("historical_ledger_records", helper);
+
+        var requestList = Read("apps", "portal", "src", "features", "vacation",
+            "components", "admin-vacation-request-list.tsx");
+        Assert.Contains("leaveTypeIdParam", requestList);
+        Assert.Contains("window.location.search", requestList);
+
+        var balances = Read("apps", "portal", "src", "app", "vacation", "admin",
+            "leave-balances", "page.tsx");
+        Assert.Contains("leaveTypeIdParam", balances);
+        Assert.Contains("window.location.search", balances);
     }
 
     [Fact]
@@ -593,7 +630,7 @@ public sealed class PortalAdministrationUiContractTests
         Assert.DoesNotContain("PORTAL_NOTIFICATION_DEFAULT_DURATION_MS", confirm);
         Assert.Contains("formDangerSolidButtonClassName", confirm);
 
-        var vacationHostPages = new[]
+        var migratedHostPages = new[]
         {
             "apps/portal/src/app/vacation/leave-types/page.tsx",
             "apps/portal/src/app/vacation/admin/policies/page.tsx",
@@ -605,9 +642,10 @@ public sealed class PortalAdministrationUiContractTests
             "apps/portal/src/app/(company)/organization/employees/page.tsx",
             "apps/portal/src/app/(company)/organization/user-employee-links/page.tsx",
             "apps/portal/src/app/(company)/business-calendar/admin/non-working-days/page.tsx",
+            "apps/portal/src/app/identity/users/page.tsx",
         };
 
-        foreach (var relative in vacationHostPages)
+        foreach (var relative in migratedHostPages)
         {
             var source = Read(relative.Split('/'));
             Assert.Contains("PortalNotification", source);
@@ -630,31 +668,6 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("setTimeout(() => setOperationError(null)", source);
             Assert.DoesNotContain("setTimeout(() => setSuccess(null)", source);
             Assert.DoesNotContain("setTimeout(() => setError(null)", source);
-            Assert.DoesNotContain("setTimeout(() => setExportError(false)", source);
-            Assert.DoesNotContain("setTimeout(() => setExportError(null)", source);
-        }
-
-        // Transitional right-rail hosts remain for unmigrated Identity.
-        var transitionalPages = new[]
-        {
-            "apps/portal/src/app/identity/users/page.tsx",
-        };
-
-        foreach (var relative in transitionalPages)
-        {
-            var source = Read(relative.Split('/'));
-            Assert.Contains("PortalNotification", source);
-            Assert.Contains("detailsNotification", source);
-            Assert.DoesNotContain("PortalNotificationHost", source);
-
-            var beforeShell = source.Split("AdministrativeGridShell", 2)[0];
-            Assert.DoesNotContain("border-emerald-200 bg-emerald-50 px-4 py-3", beforeShell);
-            Assert.DoesNotContain("border-red-200 bg-red-50 px-4 py-3", beforeShell);
-
-            Assert.DoesNotContain("setTimeout(() => setFeedback(null)", source);
-            Assert.DoesNotContain("setTimeout(() => setSuccessMessage(null)", source);
-            Assert.DoesNotContain("setTimeout(() => setOperationError(null)", source);
-            Assert.DoesNotContain("setTimeout(() => setWriteError(null)", source);
             Assert.DoesNotContain("setTimeout(() => setExportError(false)", source);
             Assert.DoesNotContain("setTimeout(() => setExportError(null)", source);
         }
@@ -726,9 +739,7 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("GridFooter", page);
         }
 
-        // Organization workspace pages and tabbed Leave Types use page-header
-        // sectionActions; Identity Users remains on CompanyAdministrationWorkspace
-        // headerActions until migrated.
+        // Organization and Identity workspace pages use page-header sectionActions.
         foreach (var page in new[] { employees, departments, links })
         {
             Assert.Contains("sectionActions", page);
@@ -736,8 +747,12 @@ public sealed class PortalAdministrationUiContractTests
             Assert.DoesNotContain("headerActions", page);
         }
 
-        Assert.Contains("headerActions", users);
-        Assert.Contains("CompanyAdministrationWorkspace", users);
+        Assert.Contains("sectionActions", users);
+        Assert.Contains("IdentityWorkspace", users);
+        Assert.Contains("PortalNotificationHost", users);
+        Assert.DoesNotContain("headerActions", users);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", users);
+        Assert.DoesNotContain("detailsNotification", users);
 
         Assert.Contains("sectionActions", leaveTypes);
         Assert.DoesNotContain("headerActions", leaveTypes);
@@ -747,6 +762,8 @@ public sealed class PortalAdministrationUiContractTests
     public void IdentityAdministration_PreservesShellGeometryStates()
     {
         var users = Read("apps", "portal", "src", "app", "identity", "users", "page.tsx");
+        Assert.Contains("IdentityWorkspace", users);
+        Assert.Contains("PortalNotificationHost", users);
         Assert.Contains("AdministrationPageBody", users);
         Assert.Contains("fillViewport", users);
         Assert.Contains("GridStateRows", users);
@@ -760,6 +777,8 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("formSecondaryButtonClassName", users);
         Assert.Contains("formControlClassName", users);
         Assert.DoesNotContain("GridFooter", users);
+        Assert.DoesNotContain("detailsNotification", users);
+        Assert.DoesNotContain("CompanyAdministrationWorkspace", users);
     }
 
     [Fact]
@@ -854,14 +873,18 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("panelMode === \"edit\"", page);
         Assert.DoesNotContain("type=\"date\"", page, StringComparison.Ordinal);
 
-        // Safe delete with the canonical localized conflict guidance.
+        // Safe delete opens the shared Dependency Inspector instead of a toast-only conflict.
         Assert.Contains("deleteLeaveType", page);
+        Assert.Contains("getLeaveTypeDependencies", page);
         Assert.Contains("leaveTypesDeletePermission", page);
         Assert.Contains("leave_type_delete_conflict", page);
         Assert.Contains("leave_type_system_protected", page);
-        Assert.Contains("vacation.leaveTypes.deleteReferenced", page);
-        Assert.Contains("vacation.leaveTypes.deleteSystemProtected", page);
         Assert.Contains("vacation.leaveTypes.deleteConfirmation", page);
+        Assert.Contains("DependencyInspector", page);
+        Assert.Contains("toLeaveTypeDependencyGroups", page);
+        Assert.Contains("leaveTypeDependencyNavigationActions", page);
+        Assert.DoesNotContain("Delete anyway", page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("unprotected delete bypass", page, StringComparison.OrdinalIgnoreCase);
 
         // Lock hints for the fields the business rules freeze after first use.
         Assert.Contains("formControlClassName", form);
@@ -896,6 +919,11 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("\"vacation.leaveTypes.deleteReferenced\":", translations);
         Assert.Contains("Deactivate it instead", translations);
         Assert.Contains("Deaktivirajte je", translations);
+        Assert.Contains("\"vacation.leaveTypes.dependencyInspector.title\":", translations);
+        Assert.Contains("This Leave Type cannot be deleted.", translations);
+        Assert.Contains("Ova vrsta odsustva ne može se obrisati.", translations);
+        Assert.Contains("\"vacation.leaveTypes.dependencyInspector.historicalLedger\":", translations);
+        Assert.Contains("Historical ledger records exist.", translations);
         Assert.Contains("\"vacation.leaveTypes.form.balanceLocked\":", translations);
         Assert.Contains("\"vacation.leaveTypes.validation.balanceLocked\":", translations);
     }

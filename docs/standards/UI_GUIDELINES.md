@@ -167,7 +167,8 @@ unless a row says otherwise.
 | Icon-only button | Compact icon commands | Semantic `<button>` + accessible name; `PortalActionIcon` | Shared/calendar toolbars | Visible focus; `aria-label` | Icon buttons without accessible names | `calendar-toolbar` keeps local sizing for calendar chrome | None |
 | Field wrapper | Label, required, hint, error | `FormField`, `fieldDescriptionIds` | `@/components/form-field` | Stable IDs; hint/error wiring | Divergent hand-rolled label/error blocks for ordinary fields | Dense grid filter cells may use `sr-only` labels | None beyond consumer contracts |
 | Confirmation dialog | Destructive/consequential confirm | `ConfirmDialog` | `@/components/confirm-dialog` | Message; optional title/children; confirm/cancel; destructive tone; no browser `confirm` | `window.confirm` / `confirm()`; duplicated amber/red panels | None | Yes — rejects `window.confirm` / `window.alert` |
-| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` inside `PortalNotificationHost` (Vacation and Company living-pilot surfaces migrated); right-rail `detailsNotification` remains for unmigrated modules | `@/components/portal-notification`, `@/components/portal-notification-host` | Variants; X-only dismiss; canonical auto-dismiss durations; pause on hover/focus; aria-live; top-center overlay host that does not shift the primary grid; optional progress indicator owned by the shared component | Full-width operation banners above administration grids; parallel toast stacks; feature-local toast timers; text “Close” / “Zatvori” dismiss buttons; right-rail hosts on migrated living-pilot surfaces | Field/form validation stays beside the field (§1.6); `ConfirmDialog` is not a notification | Yes — migrated admin pages |
+| Dependency inspector | Informational blocked-delete dependency listing | `DependencyInspector` | `@/components/dependency-inspector` | Localized title/groups/actions from API dependency contract; navigation and deactivate helpers; Close; no auto-dismiss; no “Delete anyway” | Toast-only conflict copy; feature-local dependency panels; bypass/delete-anyway actions | First consumer: Vacation Leave Types | Yes — shared ownership + Leave Types consumer |
+| Operation notification | Transient success/warning/error/info feedback for page operations | `PortalNotification` inside `PortalNotificationHost` (Vacation, Company, and Identity workspace surfaces) | `@/components/portal-notification`, `@/components/portal-notification-host` | Variants; X-only dismiss; canonical auto-dismiss durations; pause on hover/focus; aria-live; top-center overlay host that does not shift the primary grid; optional progress indicator owned by the shared component | Full-width operation banners above administration grids; parallel toast stacks; feature-local toast timers; text “Close” / “Zatvori” dismiss buttons; right-rail `detailsNotification` hosts on migrated workspace surfaces | Field/form validation stays beside the field (§1.6); `ConfirmDialog` is not a notification | Yes — migrated admin pages |
 | Modal/dialog | Overlay dialogs beyond inline confirm | Not yet a shared overlay primitive | — | Prefer `ConfirmDialog` for confirmations | Ad-hoc full-screen modal frameworks | Calendar popovers owned by date controls | None |
 | Status badge | Compact status labels | `StatusBadge` for active/inactive/yes-no; `VacationStatusBadge` for leave-request statuses | `@/components/status-badge`; `@/features/vacation/components/vacation-status-badge` | Non-color indicators remain with text labels | Parallel active/inactive chip chrome | Domain request statuses stay in `VacationStatusBadge` | Partial |
 | Loading state | In-progress data | `GridStateRows` inside admin grids; localized page pulse/message elsewhere | `@/components/admin-data-grid` | Stable shell geometry | Full-page spinners that collapse admin chrome | Self-service pages keep localized loading blocks | Admin pages via existing contracts |
@@ -218,12 +219,11 @@ Two distinct message categories:
    - **Canonical (migrated):** `PortalNotificationHost` — a fixed overlay near
      the top center of the authenticated work area (beside the desktop
      sidebar), below the persistent workspace header, max-width ≈560px, no
-     layout shift. Vacation and Company living-pilot surfaces use this host.
-   - **Transitional (unmigrated modules):** administration pages with a right
-     rail may still use `AdministrativeGridShell` `detailsNotification`
-     (below details, actions, and `ConfirmDialog`); equivalent custom
-     right-rail layouts keep the same aside placement until migrated. Identity
-     is the remaining current administration consumer of this transitional host.
+     layout shift. Vacation, Company, and Identity workspace surfaces use this
+     host.
+   - **Shell compatibility:** `AdministrativeGridShell` may still accept
+     `detailsNotification` for right-rail placement, but migrated
+     administration pages MUST NOT use it.
    - Do not invent a second toast stack, bottom/corner placement, or
      page-local banners that push content.
 
@@ -337,10 +337,10 @@ Before merging a new Portal screen or form:
       export, and delete command icons; do not hand-write those SVGs in
       feature pages.
 - [ ] Use `PortalNotification` for operation feedback in the shared
-      top-center `PortalNotificationHost` on migrated workspace surfaces (or
-      transitional right-rail `detailsNotification` until that module is
-      migrated). Do not place operation success/error banners above the
-      primary grid.
+      top-center `PortalNotificationHost` on workspace administration
+      surfaces. Do not place operation success/error banners above the
+      primary grid, and do not use right-rail `detailsNotification` on
+      migrated pages.
 - [ ] Rely on canonical `PortalNotification` transient behavior (variant
       default durations, X-only dismiss, pause on hover/focus). Do not add
       feature-local `setTimeout` dismissals or text Close/Zatvori buttons.
@@ -895,7 +895,7 @@ Canonical placement:
 | Page header | Title and description on the left; primary New, then Refresh, on the far right |
 | Grid toolbar | Search, then filter controls, then export |
 | Grid footer | One localized visible-range summary, page-size selector, and pagination only |
-| Side panel | Details, create, or edit content sharing the shell border, radius, and padding; transitional right-rail operation notifications via `detailsNotification` below details/confirmation (Vacation and Company living-pilot surfaces use top-center `PortalNotificationHost` instead) |
+| Side panel | Details, create, or edit content sharing the shell border, radius, and padding; operation notifications use top-center `PortalNotificationHost` on Vacation, Company, and Identity workspace surfaces |
 
 The header keeps the title and description on the left and places the primary
 New action, then Refresh, on the right; actions wrap below the description on
@@ -941,11 +941,12 @@ it:
 Identity user administration, User–Employee links, Vacation Leave Types, Leave
 Policies, Leave Balances, and Vacation request administration now reuse the
 same Organization administration contract as Employees and Departments:
-`AdministrationPageHeader` (via the shell / active section header on tabbed
-Vacation screens), `AdministrationPageBody`, `AdministrativeGridToolbar`,
+page-header actions via `PortalSectionHeader` / workspace page chrome,
+`AdministrationPageBody`, `AdministrativeGridToolbar`,
 `AdministrativeGridShell` with `fillViewport`, `GridPagination`, shared form
-controls and button helpers, and the shared side panel. Client-side pagination
-applies where those list APIs remain bounded and unpaged. Vacation request
+controls and button helpers, the shared side panel, and top-center
+`PortalNotificationHost` operation feedback. Client-side pagination applies
+where those list APIs remain bounded and unpaged. Vacation request
 administration keeps server-backed filtering and paging through
 `GridPagination` (20/50/100) and retains approve/reject/cancel on the details
 route. Leave Balances keeps its explicit employee/Leave Type/year load scope

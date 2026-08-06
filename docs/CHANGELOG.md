@@ -1,5 +1,25 @@
 # Internal Apps Platform change history
 
+## 2026-08-06 — Dependency Inspector v1 for Vacation Leave Types
+
+- Introduced a reusable platform Dependency Inspection API contract under
+  `InternalApps.Api.Core.Dependencies` and the first consumer endpoint
+  `GET /api/v1/vacation/leave-types/{publicId}/dependencies` (permission
+  `vacation.leave-types.manage`). The response reports live leave-request
+  counts by status, distinct leave-balance employees, ledger entry counts,
+  system and permanent-protection flags, and navigation hints. Deletion rules,
+  ADR-0007 behavior, and permanent markers are unchanged.
+- Added shared Portal `DependencyInspector` and Leave Type wiring: a blocked
+  delete opens the inspector instead of a toast-only conflict notice, with
+  Open Leave Requests / Open Leave Balances navigation (`leaveTypeId` query),
+  Deactivate Leave Type, and Close. Ledger groups show an informational note
+  without a navigation button. No delete-anyway path exists.
+- Validation: API Debug build passed (0 warnings/errors); Portal production
+  build passed (`/vacation/leave-types` included); focused
+  `VacationLeaveTypeAdministrationTests` and
+  `PortalAdministrationUiContractTests` passed 37/37; `git diff --check`
+  clean.
+
 ## 2026-08-06 — Identity Portal v2 workspace and notification host migration
 
 - Migrated Identity Users to the Portal v2 workspace model: registry-driven
@@ -14,9 +34,9 @@
 - Updated focused Portal navigation and administration UI contract tests, plus
   Design System / platform-state wording so Identity is no longer a
   transitional right-rail notification consumer.
-- Validation: Portal strict TypeScript and production build passed
-  (`/identity`, `/identity/users`); focused `PortalNavigationContractTests`
-  and `PortalAdministrationUiContractTests` passed 32/32; `git diff --check`
+- Validation: Portal production build passed (`/identity`, `/identity/users`);
+  focused `PortalNavigationContractTests` and
+  `PortalAdministrationUiContractTests` passed 31/31; `git diff --check`
   clean.
 
 ## 2026-08-06 — ADR-0007 controlled administrative request deletion completed

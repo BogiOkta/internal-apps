@@ -4,12 +4,11 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: ADR-0007 controlled administrative Vacation
-  request deletion is complete. The API command, atomic audit orchestration, and
-  Portal delete UX use the existing permanent identities, dedicated delete
-  permissions, and owner-controlled database function. Ledger immutability,
-  permanent identities, central audit, and the compatibility mirror remain
-  unchanged.
+- Latest functional milestone: Identity Portal v2 workspace migration is
+  complete. Identity Users use the registry-driven persistent Identity shell,
+  breadcrumb + page-header hierarchy, and top-center `PortalNotificationHost`.
+  Prior ADR-0007 controlled administrative Vacation request deletion remains
+  complete and unchanged.
 
 ## Platform foundation
 
@@ -39,20 +38,20 @@
   `WorkspaceNavigation`, `PortalActionIcon` / `portalActionContent`,
   `PortalNotification` (canonical transient operation feedback with
   `PORTAL_NOTIFICATION_DEFAULT_DURATION_MS` and top-center
-  `PortalNotificationHost` on Vacation and Organization workspace surfaces;
-  transitional right-rail `detailsNotification` remains on Identity), `FormField` /
-  `formControlClassName` / primary·secondary·danger·danger-solid button
-  helpers, `SearchableCombobox`, `AppCalendar`, `AdministrationPageBody`,
-  `AdministrativeGridShell` (with optional `detailsNotification`),
+  `PortalNotificationHost` on Vacation, Organization/Company, and Identity
+  workspace surfaces), `DependencyInspector` (shared blocked-delete
+  dependency listing; first consumer Vacation Leave Types),
+  `FormField` / `formControlClassName` /
+  primary·secondary·danger·danger-solid button helpers, `SearchableCombobox`,
+  `AppCalendar`, `AdministrationPageBody`, `AdministrativeGridShell` (optional
+  `detailsNotification` retained for shell compatibility only),
   `AdministrativeGridToolbar`, and `GridPagination`. Locale and appearance
   are owned by `LocaleProvider` and `AppearanceProvider` (`/settings`).
   Organization Employees and Departments, Identity Users, User–Employee
   links, Vacation Leave Types, Leave Policies, Leave Balances, Vacation
   Request Administration, and Business Calendar non-working days share
-  canonical `PortalNotification` feedback. Vacation and Organization use the
-  top-center `PortalNotificationHost`; Identity retains a transitional
-  right-rail host until migrated. Portal-wide
-  regression tests reject
+  canonical `PortalNotification` feedback through the top-center
+  `PortalNotificationHost`. Portal-wide regression tests reject
   native `type="date"`, `window.confirm` / `window.alert`, forbidden local
   input/button class constants, feature-local date display formatters, known
   module-prefixed copies of canonical controls, feature-local tab separator
@@ -68,18 +67,18 @@
   patterns.
 - Operation feedback (platform rule, §1.6): field validation stays beside
   fields; operation success/error/warning uses transient
-  `PortalNotification`. Migrated Vacation and Company living-pilot surfaces
-  render feedback through the shared top-center `PortalNotificationHost`
-  overlay (no layout shift). Identity may still use right-rail
-  `detailsNotification` until migrated.
+  `PortalNotification`. Migrated Vacation, Company, and Identity workspace
+  surfaces render feedback through the shared top-center
+  `PortalNotificationHost` overlay (no layout shift).
   `ConfirmDialog` remains a separate non-transient confirmation control.
 - Portal Information Architecture (**Draft v1, living pilot, not canonical**):
   [`docs/architecture/PORTAL_INFORMATION_ARCHITECTURE.md`](architecture/PORTAL_INFORMATION_ARCHITECTURE.md)
-  records the implemented Vacation and bounded Company living pilot. Portal v2
-  is the default direction for new workspace work, but is not yet a universal
-  platform rule; legacy modules may retain the established shell/navigation
-  pattern. `ARCHITECTURE.md` and `PLATFORM_ARCHITECTURE.md` do not claim a
-  complete rollout. No backend navigation contract was introduced.
+  records the implemented Vacation, bounded Company, and Identity living
+  pilot. Portal v2 is the default direction for new workspace work, but is
+  not yet a universal platform rule; remaining non-admin surfaces may retain
+  established patterns. `ARCHITECTURE.md` and `PLATFORM_ARCHITECTURE.md` do
+  not claim a complete rollout. No backend navigation contract was
+  introduced.
   Resolved decisions: one Vacation workspace (`Odmori i odsustva`) with
   `Pregled`, `Moji zahtevi`, and an expandable non-routed `Administracija`
   group containing `Zahtevi`, `Vrste odsustava`, `Godišnja prava`, and
@@ -132,7 +131,10 @@
   `vacation.delete_unreferenced_leave_type(uuid)` function; there is no runtime
   `DELETE` grant and no direct SQL delete path, and Vacation dependencies never
   cascade. Code is immutable after creation, and Requires Balance and Counts
-  Against Balance lock after first use.
+  Against Balance lock after first use. Blocked deletes open the shared
+  Dependency Inspector via
+  `GET /api/v1/vacation/leave-types/{publicId}/dependencies` instead of a
+  toast-only conflict notice.
 - Backend API: complete and runtime validated.
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
@@ -156,6 +158,19 @@ Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- Dependency Inspector v1 (Leave Types): API Debug build passed with zero
+  warnings/errors. Portal production build passed (`/vacation/leave-types`
+  included). Focused `VacationLeaveTypeAdministrationTests` and
+  `PortalAdministrationUiContractTests` passed 37/37 with 0 skipped.
+  `git diff --check` clean. Controlled browser smoke was not run in this
+  session. ADR-0007 deletion rules and permanent markers were not changed.
+
+- Identity Portal v2 migration: Portal production build passed (includes
+  `/identity` and `/identity/users`). Focused `PortalNavigationContractTests`
+  and `PortalAdministrationUiContractTests` passed 31/31 with 0 skipped.
+  `git diff --check` clean. No API or permission changes. Controlled browser
+  smoke was not run in this session.
 
 - ADR-0007 feature completion (API, audit, Portal): API Debug build passed with
   zero warnings/errors. Portal strict TypeScript and production build passed
@@ -465,14 +480,16 @@ Detailed state: [Vacation module](modules/vacation.md) and
 
 ## Current task
 
-ADR-0007 controlled administrative deletion is implemented: API command, atomic
-audit orchestration, Leave Type delete permission narrowing, and Portal delete
-UX. No new migrations, permissions, or database functions were added.
+Platform-wide Dependency Inspector v1 for Vacation Leave Types: reusable API
+dependency inspection contract, shared Portal `DependencyInspector`, and Leave
+Type blocked-delete UX with navigation to Request Administration and Leave
+Balances.
 
 ## Next task
 
-No further ADR-0007 implementation is pending. Browser smoke should be retried
-only after the local browser runtime's missing `kernel-assets` path is restored.
+Controlled browser smoke of Leave Type Dependency Inspector after local
+browser runtime `kernel-assets` is restored. Future entity consumers
+(Employees, Partners, Items) remain deferred.
 
 ## Session instruction
 
