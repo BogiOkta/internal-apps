@@ -258,23 +258,22 @@ internal sealed class LeaveTypesRepository(NpgsqlDataSource dataSource)
     }
 
     /// <summary>
-    /// Live dependency snapshot for the Dependency Inspector. Permanent markers
-    /// still govern deletion; this query only describes current operational and
-    /// ledger references so administrators can navigate and resolve them.
+    /// Live dependency snapshot for the Dependency Inspector. Permanent
+    /// protection still governs deletion inside the owner-controlled delete
+    /// function, but this query only reads live operational and ledger
+    /// references the app role can SELECT.
+    /// Live references imply markers exist (owner triggers write them); the
+    /// marker-only case after live rows are gone remains enforced at delete time.
     /// </summary>
     public async Task<LeaveTypeDependencySnapshot?> GetDependencySnapshotAsync(
         Guid publicId,
         CancellationToken cancellationToken)
     {
-        const string headerSql = """
+        const string headerSql = $"""
             SELECT
                 leave_types.public_id AS PublicId,
                 leave_types.is_system AS IsSystem,
-                EXISTS (
-                    SELECT 1
-                    FROM vacation.leave_type_protected_dependencies AS markers
-                    WHERE markers.leave_type_id = leave_types.id
-                ) AS HasPermanentProtection,
+                {UsageProjection} AS HasPermanentProtection,
                 (
                     SELECT count(*)::int
                     FROM vacation.leave_requests AS used_requests

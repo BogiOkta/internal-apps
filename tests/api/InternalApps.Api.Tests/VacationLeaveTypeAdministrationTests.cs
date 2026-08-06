@@ -51,7 +51,9 @@ public sealed class VacationLeaveTypeAdministrationTests
         Assert.Contains("GetDependencySnapshotAsync", repository);
         Assert.Contains("count(DISTINCT used_balances.employee_id)", repository);
         Assert.Contains("used_requests.status", repository);
-        Assert.Contains("leave_type_protected_dependencies", repository);
+        // Runtime role has no privilege on the permanent marker table; the live
+        // snapshot must not query it (delete still consults markers via SECURITY DEFINER).
+        Assert.DoesNotContain("leave_type_protected_dependencies", repository);
         Assert.DoesNotContain("DELETE FROM vacation.leave_types", repository);
 
         var service = Read("apps", "api", "src", "Api", "Modules", "Vacation",
