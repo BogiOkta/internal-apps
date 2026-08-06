@@ -364,7 +364,7 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("leaveTypeIdParam", balances);
         Assert.Contains("employeeIdParam", balances);
         Assert.Contains("yearParam", balances);
-        Assert.Contains("pendingUrlScopeLoad", balances);
+        Assert.Contains("pendingDeepLink", balances);
         Assert.Contains("window.location.search", balances);
     }
 
@@ -466,7 +466,8 @@ public sealed class PortalAdministrationUiContractTests
         var leaveBalances = Read("apps", "portal", "src", "app", "vacation",
             "admin", "leave-balances", "page.tsx");
         Assert.Contains("sectionActions", leaveBalances);
-        Assert.Contains("leaveBalance.load", leaveBalances);
+        Assert.Contains("leaveBalance.openScope", leaveBalances);
+        Assert.Contains("leaveBalance.backToOverview", leaveBalances);
         Assert.Contains("sectionSecondaryActions", leaveBalances);
         Assert.Contains("leaveBalance.refresh", leaveBalances);
 
@@ -1010,8 +1011,11 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("includes(leaveBalanceManagePermission)", page);
         Assert.Contains("form.quantityDays * 2", page);
         Assert.Contains("form.effectiveDate.slice(0, 4)", page);
-        Assert.Contains("changeScope({ ...scope", page);
-        Assert.Contains("setLoaded(false)", page);
+        Assert.Contains("listLeaveBalanceScopes", page);
+        Assert.Contains("selectScope(", page);
+        Assert.Contains("clearSelection()", page);
+        Assert.Contains("changeFilters({ ...filters", page);
+        Assert.DoesNotContain("t(\"leaveBalance.load\")", page);
         Assert.DoesNotContain("chart", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".csv", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("projection", page, StringComparison.OrdinalIgnoreCase);
@@ -1019,7 +1023,11 @@ public sealed class PortalAdministrationUiContractTests
         Assert.Contains("\"leaveBalance.refresh\": \"Refresh\"", translations);
         Assert.Contains("\"leaveBalance.refresh\": \"Osveži\"", translations);
         Assert.Contains("\"leaveBalance.tableLabel\":", translations);
+        Assert.Contains("\"leaveBalance.overviewTableLabel\":", translations);
         Assert.Contains("\"leaveBalance.selectScope\":", translations);
+        Assert.Contains("\"leaveBalance.openScope\":", translations);
+        Assert.Contains("\"leaveBalance.backToOverview\":", translations);
+        Assert.DoesNotContain("\"leaveBalance.load\":", translations);
     }
 
     [Fact]

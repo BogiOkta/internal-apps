@@ -32,14 +32,20 @@ public sealed class LeaveBalanceLedgerServiceTests
     }
 
     [Fact]
-    public void Api_ExposesOnlyTheApprovedLv2PostingAndScopedReadEndpoints()
+    public void Api_ExposesApprovedLv2PostingScopedReadAndScopeOverviewEndpoints()
     {
         var source = ReadRepositoryFile("apps", "api", "src", "Api", "Modules", "Vacation",
             "LeaveBalanceLedgerEndpoints.cs");
         Assert.Contains("/api/v1/vacation/leave-balances", source);
+        Assert.Contains("MapGet(\"/scopes\"", source);
         Assert.Contains("MapPost(\"/entitlements\"", source);
         Assert.Contains("MapPost(\"/carry-overs\"", source);
         Assert.Contains("MapPost(\"/manual-adjustments\"", source);
+
+        var repository = ReadRepositoryFile("apps", "api", "src", "Api", "Modules", "Vacation",
+            "LeaveBalanceLedgerRepository.cs");
+        Assert.Contains("LIMIT @Limit", repository);
+        Assert.Contains("Limit = ScopeOverviewLimit", repository);
         Assert.Contains("MapGet(\"/history\"", source);
         Assert.Contains("RequireAuthorization(VacationPermissions.ManageLeaveBalances)", source);
         Assert.DoesNotContain("IdentityPermissions.ManageUsers", source);

@@ -56,12 +56,13 @@ five approved entry kinds in the employee + Leave Type + calendar-year scope,
 with non-negative balance enforcement and exact request-cancellation reversal
 integrity. The administrator-only API posts annual entitlement, carry-over,
 and reasoned manual-adjustment entries and reads the derived current balance
-or ordered history for one employee, Leave Type, and leave year. It uses the
+or ordered history for one employee, Leave Type, and leave year, and lists
+existing balance scopes for administration overview. It uses the
 the Vacation-owned `vacation.leave-balances.manage` authorization policy, requires
 an idempotent source reference, and atomically appends the required platform
 audit event. The administrator Portal route `/vacation/admin/leave-balances`
-selects one employee, balance-consuming Leave Type, and year; it displays the
-derived current balance and acceptance-ordered history, and appends annual
+lists existing scopes on load, opens one employee, balance-consuming Leave Type,
+and year for derived current balance and acceptance-ordered history, and appends annual
 entitlement, carry-over, or reasoned manual-adjustment entries. It reuses the
 same `vacation.leave-balances.manage` permission and mirrors only input-shape
 validation; API authorization and ledger invariants remain authoritative.
@@ -140,7 +141,8 @@ toast-only conflict notice. The inspector explains that the leave type is
 still used, lists remaining dependency rows with counts (leave requests,
 leave balances, ledger entries), and makes a single leave-balance scope
 clickable so an administrator opens Leave Balances with `leaveTypeId`,
-`employeeId`, and `year` preloaded and loaded. Multiple leave-balance scopes
+`employeeId`, and `year` preloaded and that exact scope opened from the
+overview. Multiple leave-balance scopes
 and ledger rows remain informational when no single Portal destination can
 show the records. Optional deactivation remains available when permitted.
 There is no delete-anyway, cascade, or automatic cleanup path. Dependent

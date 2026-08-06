@@ -9,12 +9,24 @@ internal static class LeaveBalanceLedgerEndpoints
         var group = endpoints.MapGroup("/api/v1/vacation/leave-balances")
             .RequireAuthorization(VacationPermissions.ManageLeaveBalances)
             .WithTags("Vacation Leave Balance Ledger");
+        group.MapGet("/scopes", ListScopesAsync);
         group.MapGet("", GetBalanceAsync);
         group.MapGet("/history", ListHistoryAsync);
         group.MapPost("/entitlements", PostEntitlementAsync);
         group.MapPost("/carry-overs", PostCarryOverAsync);
         group.MapPost("/manual-adjustments", PostManualAdjustmentAsync);
         return endpoints;
+    }
+
+    private static async Task<IResult> ListScopesAsync(
+        Guid? employeeId, Guid? leaveTypeId, int? year, string? search,
+        HttpContext context, LeaveBalanceLedgerService service, CancellationToken token)
+    {
+        if (year is < 1900 or > 9999)
+            return Validation(context, new() { ["year"] = ["Year must be between 1900 and 9999."] });
+        var acceptLanguage = context.Request.Headers.AcceptLanguage.ToString();
+        return Results.Ok(await service.ListScopesAsync(
+            employeeId, leaveTypeId, year, search, acceptLanguage, token));
     }
 
     private static async Task<IResult> GetBalanceAsync(Guid? employeeId, Guid? leaveTypeId, int? year,

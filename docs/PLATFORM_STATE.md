@@ -4,12 +4,14 @@
 
 - Path: `C:\Projects\internal-apps`
 - Branch: `main`
-- Latest functional milestone: Leave Type Dependency Inspector leave-balance
-  navigation now resolves a single compatibility-mirror scope with
-  `leaveTypeId`, `employeeId`, and `year` (auto-load on Leave Balances).
-  Multiple scopes stay informational. Prior Identity Portal v2 workspace
-  migration and ADR-0007 controlled administrative Vacation request deletion
-  remain complete and unchanged.
+- Latest functional milestone: Leave Balances administration opens with an
+  overview of existing leave-balance scopes (employee + Leave Type + year).
+  Optional filters refresh the overview; selecting a row opens the existing
+  ledger history and append form. Dependency Inspector deep links with
+  `leaveTypeId`, `employeeId`, and `year` still filter, select, and open that
+  exact scope. Prior Identity Portal v2 workspace migration and ADR-0007
+  controlled administrative Vacation request deletion remain complete and
+  unchanged.
 
 ## Platform foundation
 
@@ -138,8 +140,8 @@
   shows still-used guidance, clickable dependency rows with counts, and
   navigates to Request Administration with Leave Type filter preload. A single
   leave-balance scope navigates to Leave Balances with `leaveTypeId`,
-  `employeeId`, and `year` and auto-loads; multiple leave-balance scopes and
-  ledger rows stay informational.
+  `employeeId`, and `year` and opens that scope from the overview; multiple
+  leave-balance scopes and ledger rows stay informational.
 - Backend API: complete and runtime validated.
 - Employee Portal: implemented, validated, and committed. It includes
   the dashboard, balances, own request list and creation, calendar, details and
@@ -154,15 +156,26 @@
   adjustment, and a non-persisted derived total. It uses `PortalDateInput` and
   preserves the existing API, persistence, permissions, and calculations.
 - Leave Balance administration: migrated to the canonical administration
-  shell. Scope selectors remain in the grid filter strip with explicit Load;
-  history uses client-side search and `GridPagination`; append posting stays
-  in the side panel; operation feedback uses the top-center
-  `PortalNotificationHost`.
+  shell. Initial load shows existing leave-balance scopes in the grid;
+  optional employee search, Leave Type, and year filters refresh the overview.
+  Selecting a row opens ledger history with append posting in the side panel.
+  Operation feedback uses the top-center `PortalNotificationHost`. A read-only
+  `GET /api/v1/vacation/leave-balances/scopes` endpoint supports the overview.
 
 Detailed state: [Vacation module](modules/vacation.md) and
 [Vacation domain](domain/vacation.md).
 
 ## Current validation
+
+- Leave Balances overview redesign: API Debug build passed with 0
+  warnings/errors (validated via alternate output path when the local API
+  process holds a lock on `bin/Debug`). Portal strict TypeScript and
+  production build passed (`/vacation/admin/leave-balances` included). Focused
+  Leave Balance ledger/portal/authorization contract tests and
+  `PortalAdministrationUiContractTests` passed 43/43 with 0 skipped.
+  `git diff --check` clean. Ledger posting, compatibility mirror, permissions,
+  deletion rules, and ADR-0007 remain unchanged. Controlled browser smoke was
+  not run in this session.
 
 - Leave Type leave-balance dependency navigation fix: API Debug build passed
   with 0 warnings/errors (validated via alternate output path because the
@@ -499,19 +512,23 @@ Detailed state: [Vacation module](modules/vacation.md) and
 - Employee pagination is client-side because the current API contract intentionally
   returns a bounded unpaged result. Larger datasets require documented API
   pagination before this remains appropriate.
+- Leave Balance scope overview and ledger history pagination are client-side
+  because their current read endpoints return bounded unpaged results (the
+  overview is capped at 1,000 scopes). Add documented server-side pagination
+  before the collection can grow unbounded.
 - Some controlled smoke scenarios require safe configured fixtures.
 
 ## Current task
 
-Leave Type Dependency Inspector leave-balance navigation fix completed in this
-session: single compatibility-mirror scopes deep-link with full key and
-auto-load; multiple scopes remain informational.
+Leave Balances administration overview redesign completed in this session:
+existing scopes list on load; optional filters; row selection opens ledger and
+append form; Dependency Inspector deep links still open the exact scope.
 
 ## Next task
 
-Controlled browser smoke of Leave Type Dependency Inspector after local
-browser runtime `kernel-assets` is restored. Future entity consumers
-(Employees, Partners, Items) remain deferred.
+Controlled browser smoke of Leave Balances overview and Leave Type Dependency
+Inspector deep-link open after local browser runtime `kernel-assets` is
+restored. Future entity consumers (Employees, Partners, Items) remain deferred.
 
 ## Session instruction
 

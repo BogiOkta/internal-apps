@@ -16,6 +16,16 @@ internal sealed class LeaveBalanceLedgerService(NpgsqlDataSource dataSource,
     public async Task<LeaveBalanceLedgerResponse?> GetBalanceAsync(Guid employeeId, Guid leaveTypeId, int year, CancellationToken token) => await repository.GetBalanceAsync(employeeId, leaveTypeId, year, token);
     public async Task<IReadOnlyList<LeaveBalanceEntryResponse>> ListHistoryAsync(Guid employeeId, Guid leaveTypeId, int year, CancellationToken token) => (await repository.ListHistoryAsync(employeeId, leaveTypeId, year, token)).Select(ToResponse).ToArray();
 
+    public async Task<IReadOnlyList<LeaveBalanceScopeResponse>> ListScopesAsync(
+        Guid? employeeId, Guid? leaveTypeId, int? year, string? search,
+        string? acceptLanguage, CancellationToken token)
+    {
+        var englishNames = ResolveEnglishNames(acceptLanguage);
+        var records = await repository.ListScopesAsync(
+            employeeId, leaveTypeId, year, search, englishNames, token);
+        return records.Select(ToScopeResponse).ToArray();
+    }
+
     internal static bool TryNormalize(PostLeaveBalanceEntryRequest request, bool mustBePositive, out PostLeaveBalanceEntryCommand command, out Dictionary<string, string[]> errors)
     {
         errors = [];
@@ -49,4 +59,21 @@ internal sealed class LeaveBalanceLedgerService(NpgsqlDataSource dataSource,
     }
 
     private static LeaveBalanceEntryResponse ToResponse(LeaveBalanceEntryRecord entry) => new(entry.PublicId, entry.EmployeeId, entry.LeaveTypeId, entry.LeaveYear, entry.EntryKind, entry.QuantityDays, entry.EffectiveDate, new DateTimeOffset(entry.AcceptedAt), entry.Reason, entry.Explanation, entry.SourceReference);
+
+    private static LeaveBalanceScopeResponse ToScopeResponse(LeaveBalanceScopeRecord scope) => new(
+        scope.EmployeeId, scope.EmployeeName, scope.EmployeeNumber, scope.LeaveTypeId,
+        scope.LeaveTypeName, scope.LeaveYear, scope.BalanceDays, scope.EntryCount,
+        new DateTimeOffset(scope.LastActivityAt));
+
+    private static bool ResolveEnglishNames(string? acceptLanguage)
+    {
+        if (string.IsNullOrWhiteSpace(acceptLanguage)) return false;
+        foreach (var segment in acceptLanguage.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var tag = segment.Split(';', 2)[0].Trim();
+            if (tag.StartsWith("en", StringComparison.OrdinalIgnoreCase)) return true;
+            if (tag.StartsWith("sr", StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        return false;
+    }
 }

@@ -20,20 +20,28 @@ import { VacationWorkspace } from "@/features/vacation/components/vacation-works
 import { useTranslations } from "@/i18n/use-translations";
 import { formatPortalDate, formatPortalDateTime } from "@/utils/portal-date-format";
 import { ApiError } from "@/services/auth";
-import { getLeaveBalance, listLeaveBalanceHistory, postLeaveBalanceEntry } from "@/services/leave-balances";
+import {
+  getLeaveBalance,
+  listLeaveBalanceHistory,
+  listLeaveBalanceScopes,
+  postLeaveBalanceEntry,
+} from "@/services/leave-balances";
 import { getEmployees } from "@/services/organization";
 import { listLeaveTypes } from "@/services/vacation";
 import {
   leaveBalanceManagePermission,
   type LeaveBalance,
   type LeaveBalanceEntry,
+  type LeaveBalanceScope,
   type PostLeaveBalanceEntryRequest,
 } from "@/types/leave-balance";
 import type { Employee } from "@/types/organization";
 import type { LeaveType } from "@/types/vacation";
 
 const currentYear = new Date().getFullYear();
-const columnCount = 6;
+const overviewColumnCount = 7;
+const historyColumnCount = 6;
+
 type EntryForm = PostLeaveBalanceEntryRequest & {
   kind: "annual_entitlement" | "carry_over" | "manual_adjustment";
 };
@@ -46,20 +54,42 @@ type FeedbackKey =
   | "leaveBalance.insufficient"
   | "leaveBalance.saveError";
 
+type ScopeFilters = {
+  employeeId: string;
+  leaveTypeId: string;
+  year: string;
+};
+
+function scopeKey(scope: {
+  employeeId: string;
+  leaveTypeId: string;
+  leaveYear: number;
+}) {
+  return `${scope.employeeId}:${scope.leaveTypeId}:${scope.leaveYear}`;
+}
+
 export default function LeaveBalancesPage() {
   const { accessToken, user } = useAuth();
   const { browserLocale, t } = useTranslations();
   const allowed = user?.permissions.includes(leaveBalanceManagePermission) ?? false;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-  const [scope, setScope] = useState({ employeeId: "", leaveTypeId: "", year: currentYear });
+  const [filters, setFilters] = useState<ScopeFilters>({
+    employeeId: "",
+    leaveTypeId: "",
+    year: "",
+  });
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [debouncedEmployeeSearch, setDebouncedEmployeeSearch] = useState("");
+  const [scopes, setScopes] = useState<LeaveBalanceScope[]>([]);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [balance, setBalance] = useState<LeaveBalance | null>(null);
   const [history, setHistory] = useState<LeaveBalanceEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingScopes, setLoadingScopes] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; key: FeedbackKey } | null>(null);
-  const [search, setSearch] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [form, setForm] = useState<EntryForm>({
@@ -73,10 +103,29 @@ export default function LeaveBalancesPage() {
     explanation: null,
     sourceReference: "",
   });
-  const pendingUrlScopeLoad = useRef(false);
+  const pendingDeepLink = useRef<{
+    employeeId: string;
+    leaveTypeId: string;
+    year: number;
+  } | null>(null);
+  const deepLinkHandled = useRef(false);
+
+  const selectedScope = useMemo(
+    () => scopes.find((scope) => scopeKey(scope) === selectedKey) ?? null,
+    [scopes, selectedKey],
+  );
+  const detailOpen = selectedKey !== null;
+  const scopedYear = filters.year ? Number(filters.year) : null;
+  const hasExactScopeFilters =
+    Boolean(filters.employeeId && filters.leaveTypeId) &&
+    scopedYear !== null &&
+    Number.isInteger(scopedYear) &&
+    scopedYear >= 1900 &&
+    scopedYear <= 9999;
+  const canOpenNewScope = hasExactScopeFilters && !loadingScopes && scopes.length === 0;
 
   const filteredHistory = useMemo(() => {
-    const needle = search.trim().toLocaleLowerCase();
+    const needle = historySearch.trim().toLocaleLowerCase();
     if (!needle) return history;
     return history.filter((entry) => {
       const kindLabel = t(`leaveBalance.kind.${entry.entryKind}`).toLocaleLowerCase();
@@ -93,14 +142,24 @@ export default function LeaveBalancesPage() {
         .toLocaleLowerCase();
       return haystack.includes(needle);
     });
-  }, [history, search, t]);
+  }, [history, historySearch, t]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / pageSize));
-  const visibleHistory = filteredHistory.slice((page - 1) * pageSize, page * pageSize);
+  const visibleRows = detailOpen ? filteredHistory : scopes;
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+  const pageSlice = visibleRows.slice((page - 1) * pageSize, page * pageSize);
   const activeFilterCount =
-    (scope.employeeId ? 1 : 0) +
-    (scope.leaveTypeId ? 1 : 0) +
-    (scope.year !== currentYear ? 1 : 0);
+    (filters.employeeId ? 1 : 0) +
+    (filters.leaveTypeId ? 1 : 0) +
+    (filters.year ? 1 : 0) +
+    (debouncedEmployeeSearch.trim() ? 1 : 0);
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedEmployeeSearch(employeeSearch),
+      300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [employeeSearch]);
 
   useEffect(() => {
     if (!accessToken || !allowed) return;
@@ -114,55 +173,65 @@ export default function LeaveBalancesPage() {
         ? parsedYear
         : null;
 
-    // Dependency Inspector deep-links carry the full balance key. Auto-load
-    // once so the grid shows the resolved scope instead of an empty 0 of 0.
+    // Dependency Inspector deep-links carry the full balance key. Auto-select
+    // that exact scope once filters and the overview have loaded.
     if (leaveTypeIdParam && employeeIdParam && yearFromQuery !== null) {
-      pendingUrlScopeLoad.current = true;
-    }
-
-    setScope((current) => {
-      const next = {
+      pendingDeepLink.current = {
+        employeeId: employeeIdParam,
+        leaveTypeId: leaveTypeIdParam,
+        year: yearFromQuery,
+      };
+      setFilters({
+        employeeId: employeeIdParam,
+        leaveTypeId: leaveTypeIdParam,
+        year: String(yearFromQuery),
+      });
+    } else {
+      setFilters((current) => ({
         ...current,
         leaveTypeId: leaveTypeIdParam ?? current.leaveTypeId,
         employeeId: employeeIdParam ?? current.employeeId,
-        year: yearFromQuery ?? current.year,
-      };
-
-      if (
-        next.leaveTypeId === current.leaveTypeId &&
-        next.employeeId === current.employeeId &&
-        next.year === current.year
-      ) {
-        return current;
-      }
-
-      return next;
-    });
+        year: yearFromQuery !== null ? String(yearFromQuery) : current.year,
+      }));
+    }
   }, [accessToken, allowed]);
 
-  useEffect(() => setPage(1), [search, pageSize, history]);
+  useEffect(() => setPage(1), [
+    employeeSearch,
+    historySearch,
+    pageSize,
+    filters.employeeId,
+    filters.leaveTypeId,
+    filters.year,
+    selectedKey,
+    scopes,
+    history,
+  ]);
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const loadOptions = useCallback(async (signal?: AbortSignal) => {
-    if (!accessToken || !allowed) return;
-    try {
-      const [employeeRows, typeRows] = await Promise.all([
-        getEmployees(accessToken, { sort: "name" }, signal),
-        listLeaveTypes(
-          accessToken,
-          browserLocale,
-          { status: "all", sortBy: "displayOrder", sortDirection: "asc" },
-          signal,
-        ),
-      ]);
-      setEmployees(employeeRows);
-      setLeaveTypes(typeRows.filter((type) => type.requiresBalance));
-    } catch {
-      if (!signal?.aborted) setFeedback({ error: true, key: "leaveBalance.loadError" });
-    }
-  }, [accessToken, allowed, browserLocale]);
+  const loadOptions = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!accessToken || !allowed) return;
+      try {
+        const [employeeRows, typeRows] = await Promise.all([
+          getEmployees(accessToken, { sort: "name" }, signal),
+          listLeaveTypes(
+            accessToken,
+            browserLocale,
+            { status: "all", sortBy: "displayOrder", sortDirection: "asc" },
+            signal,
+          ),
+        ]);
+        setEmployees(employeeRows);
+        setLeaveTypes(typeRows.filter((type) => type.requiresBalance));
+      } catch {
+        if (!signal?.aborted) setFeedback({ error: true, key: "leaveBalance.loadError" });
+      }
+    },
+    [accessToken, allowed, browserLocale],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -170,63 +239,204 @@ export default function LeaveBalancesPage() {
     return () => controller.abort();
   }, [loadOptions]);
 
-  function changeScope(next: typeof scope) {
-    setScope(next);
+  const loadScopes = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!accessToken || !allowed) return;
+      setLoadingScopes(true);
+      setFeedback(null);
+      try {
+        const yearValue = filters.year ? Number(filters.year) : undefined;
+        const validYear =
+          yearValue !== undefined &&
+          Number.isInteger(yearValue) &&
+          yearValue >= 1900 &&
+          yearValue <= 9999
+            ? yearValue
+            : undefined;
+        if (
+          filters.year &&
+          validYear === undefined
+        ) {
+          setScopes([]);
+          setFeedback({ error: true, key: "leaveBalance.scopeValidation" });
+          return;
+        }
+        const rows = await listLeaveBalanceScopes(
+          accessToken,
+          browserLocale,
+          {
+            employeeId: filters.employeeId || undefined,
+            leaveTypeId: filters.leaveTypeId || undefined,
+            year: validYear,
+            search: debouncedEmployeeSearch || undefined,
+          },
+          signal,
+        );
+        if (signal?.aborted) return;
+        setScopes(rows);
+      } catch {
+        if (!signal?.aborted) setFeedback({ error: true, key: "leaveBalance.loadError" });
+      } finally {
+        if (!signal?.aborted) setLoadingScopes(false);
+      }
+    },
+    [
+      accessToken,
+      allowed,
+      browserLocale,
+      debouncedEmployeeSearch,
+      filters.employeeId,
+      filters.leaveTypeId,
+      filters.year,
+    ],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadScopes(controller.signal);
+    return () => controller.abort();
+  }, [loadScopes]);
+
+  const loadDetail = useCallback(
+    async (
+      scope: { employeeId: string; leaveTypeId: string; leaveYear: number },
+      signal?: AbortSignal,
+    ) => {
+      if (!accessToken) return;
+      setLoadingDetail(true);
+      setFeedback(null);
+      try {
+        const entries = await listLeaveBalanceHistory(
+          accessToken,
+          scope.employeeId,
+          scope.leaveTypeId,
+          scope.leaveYear,
+          signal,
+        );
+        if (signal?.aborted) return;
+        setHistory(entries);
+        try {
+          setBalance(
+            await getLeaveBalance(
+              accessToken,
+              scope.employeeId,
+              scope.leaveTypeId,
+              scope.leaveYear,
+              signal,
+            ),
+          );
+        } catch (error) {
+          if (signal?.aborted) return;
+          if (error instanceof ApiError && error.status === 404) setBalance(null);
+          else throw error;
+        }
+        setForm((value) => ({
+          ...value,
+          employeeId: scope.employeeId,
+          leaveTypeId: scope.leaveTypeId,
+          leaveYear: scope.leaveYear,
+          effectiveDate: `${scope.leaveYear}-01-01`,
+        }));
+      } catch {
+        if (!signal?.aborted) setFeedback({ error: true, key: "leaveBalance.loadError" });
+      } finally {
+        if (!signal?.aborted) setLoadingDetail(false);
+      }
+    },
+    [accessToken],
+  );
+
+  function clearSelection() {
+    setSelectedKey(null);
     setBalance(null);
     setHistory([]);
-    setLoaded(false);
+    setHistorySearch("");
     setFeedback(null);
+  }
+
+  function changeFilters(next: ScopeFilters) {
+    setFilters(next);
+    clearSelection();
   }
 
   function clearScopeFilters() {
-    changeScope({ employeeId: "", leaveTypeId: "", year: currentYear });
-    setSearch("");
+    changeFilters({ employeeId: "", leaveTypeId: "", year: "" });
+    setEmployeeSearch("");
+    setDebouncedEmployeeSearch("");
   }
 
-  const load = useCallback(async () => {
-    if (!accessToken || !scope.employeeId || !scope.leaveTypeId) {
+  function selectScope(scope: {
+    employeeId: string;
+    leaveTypeId: string;
+    leaveYear: number;
+  }) {
+    const key = scopeKey(scope);
+    setSelectedKey(key);
+    setHistorySearch("");
+    void loadDetail(scope);
+  }
+
+  useEffect(() => {
+    const pending = pendingDeepLink.current;
+    if (!pending || deepLinkHandled.current || loadingScopes) return;
+    if (
+      filters.employeeId !== pending.employeeId ||
+      filters.leaveTypeId !== pending.leaveTypeId ||
+      filters.year !== String(pending.year)
+    ) {
+      return;
+    }
+    deepLinkHandled.current = true;
+    pendingDeepLink.current = null;
+    const key = scopeKey({
+      employeeId: pending.employeeId,
+      leaveTypeId: pending.leaveTypeId,
+      leaveYear: pending.year,
+    });
+    setSelectedKey(key);
+    setHistorySearch("");
+    void loadDetail({
+      employeeId: pending.employeeId,
+      leaveTypeId: pending.leaveTypeId,
+      leaveYear: pending.year,
+    });
+  }, [
+    filters.employeeId,
+    filters.leaveTypeId,
+    filters.year,
+    loadDetail,
+    loadingScopes,
+    scopes,
+  ]);
+
+  function openFilteredScope() {
+    if (!filters.employeeId || !filters.leaveTypeId || !filters.year) {
       setFeedback({ error: true, key: "leaveBalance.scopeValidation" });
       return;
     }
-    setLoading(true);
-    setFeedback(null);
-    try {
-      const entries = await listLeaveBalanceHistory(
-        accessToken,
-        scope.employeeId,
-        scope.leaveTypeId,
-        scope.year,
-      );
-      setHistory(entries);
-      try {
-        setBalance(
-          await getLeaveBalance(accessToken, scope.employeeId, scope.leaveTypeId, scope.year),
-        );
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 404) setBalance(null);
-        else throw error;
-      }
-      setLoaded(true);
-      setForm((value) => ({
-        ...value,
-        employeeId: scope.employeeId,
-        leaveTypeId: scope.leaveTypeId,
-        leaveYear: scope.year,
-        effectiveDate: `${scope.year}-01-01`,
-      }));
-    } catch {
-      setFeedback({ error: true, key: "leaveBalance.loadError" });
-    } finally {
-      setLoading(false);
+    const year = Number(filters.year);
+    if (!Number.isInteger(year) || year < 1900 || year > 9999) {
+      setFeedback({ error: true, key: "leaveBalance.scopeValidation" });
+      return;
     }
-  }, [accessToken, scope.employeeId, scope.leaveTypeId, scope.year]);
+    selectScope({
+      employeeId: filters.employeeId,
+      leaveTypeId: filters.leaveTypeId,
+      leaveYear: year,
+    });
+  }
 
-  useEffect(() => {
-    if (!pendingUrlScopeLoad.current) return;
-    if (!accessToken || !scope.employeeId || !scope.leaveTypeId) return;
-    pendingUrlScopeLoad.current = false;
-    void load();
-  }, [accessToken, load, scope.employeeId, scope.leaveTypeId, scope.year]);
+  async function refresh() {
+    await loadScopes();
+    if (selectedKey) {
+      const [employeeId, leaveTypeId, leaveYear] = selectedKey.split(":");
+      await loadDetail({
+        employeeId,
+        leaveTypeId,
+        leaveYear: Number(leaveYear),
+      });
+    }
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -262,7 +472,12 @@ export default function LeaveBalancesPage() {
         explanation: null,
         sourceReference: "",
       }));
-      await load();
+      await loadDetail({
+        employeeId: form.employeeId,
+        leaveTypeId: form.leaveTypeId,
+        leaveYear: form.leaveYear,
+      });
+      await loadScopes();
       setFeedback({ error: false, key: "leaveBalance.created" });
     } catch (error) {
       const code = error instanceof ApiError ? error.problem?.code : undefined;
@@ -290,26 +505,39 @@ export default function LeaveBalancesPage() {
     );
   }
 
+  const loading = detailOpen ? loadingDetail : loadingScopes;
+
   return (
     <VacationWorkspace
       title={t("leaveBalance.title")}
       description={t("leaveBalance.description")}
       contentFillsViewport
       sectionActions={
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void load()}
-          className={formPrimaryButtonClassName()}
-        >
-          {loading ? t("common.loading") : t("leaveBalance.load")}
-        </button>
+        detailOpen ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={clearSelection}
+            className={formPrimaryButtonClassName()}
+          >
+            {t("leaveBalance.backToOverview")}
+          </button>
+        ) : canOpenNewScope ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={openFilteredScope}
+            className={formPrimaryButtonClassName()}
+          >
+            {t("leaveBalance.openScope")}
+          </button>
+        ) : null
       }
       sectionSecondaryActions={
         <button
           type="button"
           disabled={loading}
-          onClick={() => void load()}
+          onClick={() => void refresh()}
           className={formSecondaryButtonClassName()}
         >
           {portalActionContent(
@@ -331,14 +559,24 @@ export default function LeaveBalancesPage() {
       </PortalNotificationHost>
       <AdministrationPageBody>
         <AdministrativeGridShell
-          ariaLabel={t("leaveBalance.tableLabel")}
+          ariaLabel={
+            detailOpen ? t("leaveBalance.tableLabel") : t("leaveBalance.overviewTableLabel")
+          }
           fillViewport
           toolbar={
             <AdministrativeGridToolbar
-              search={search}
-              searchLabel={t("leaveBalance.searchLabel")}
-              searchPlaceholder={t("leaveBalance.searchPlaceholder")}
-              onSearchChange={setSearch}
+              search={detailOpen ? historySearch : employeeSearch}
+              searchLabel={
+                detailOpen
+                  ? t("leaveBalance.searchLabel")
+                  : t("leaveBalance.employeeSearchLabel")
+              }
+              searchPlaceholder={
+                detailOpen
+                  ? t("leaveBalance.searchPlaceholder")
+                  : t("leaveBalance.employeeSearchPlaceholder")
+              }
+              onSearchChange={detailOpen ? setHistorySearch : setEmployeeSearch}
               activeFilterCount={activeFilterCount}
               areFiltersVisible
               exportDisabled
@@ -361,9 +599,10 @@ export default function LeaveBalancesPage() {
                 <SelectField
                   id="balance-employee"
                   label={t("leaveBalance.employee")}
-                  value={scope.employeeId}
-                  onChange={(employeeId) => changeScope({ ...scope, employeeId })}
-                  empty={t("leaveBalance.selectEmployee")}
+                  value={filters.employeeId}
+                  onChange={(employeeId) => changeFilters({ ...filters, employeeId })}
+                  empty={t("leaveBalance.allEmployees")}
+                  required={false}
                   options={employees.map((employee) => ({
                     value: employee.publicId,
                     label: `${employee.lastName}, ${employee.firstName} (${employee.employeeNumber})`,
@@ -372,9 +611,10 @@ export default function LeaveBalancesPage() {
                 <SelectField
                   id="balance-leave-type"
                   label={t("leaveBalance.leaveType")}
-                  value={scope.leaveTypeId}
-                  onChange={(leaveTypeId) => changeScope({ ...scope, leaveTypeId })}
-                  empty={t("leaveBalance.selectLeaveType")}
+                  value={filters.leaveTypeId}
+                  onChange={(leaveTypeId) => changeFilters({ ...filters, leaveTypeId })}
+                  empty={t("leaveBalance.allLeaveTypes")}
+                  required={false}
                   options={leaveTypes.map((type) => ({
                     value: type.publicId,
                     label: type.name,
@@ -386,84 +626,155 @@ export default function LeaveBalancesPage() {
                     type="number"
                     min={1900}
                     max={9999}
-                    value={scope.year}
+                    placeholder={t("leaveBalance.allYears")}
+                    value={filters.year}
                     onChange={(event) =>
-                      changeScope({ ...scope, year: Number(event.target.value) })
+                      changeFilters({ ...filters, year: event.target.value })
                     }
                     className={formControlClassName()}
                   />
                 </FormField>
               </div>
-              {loaded ? (
-                <div className="border-b border-slate-200 bg-white px-4 py-3">
-                  <p className="text-sm text-slate-600">{t("leaveBalance.current")}</p>
-                  <p className="text-2xl font-semibold text-slate-950">
-                    {balance ? balance.balanceDays : "—"}
-                  </p>
-                </div>
-              ) : null}
-              <table className="w-full min-w-[800px] text-left text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-100 text-xs font-semibold text-slate-600">
-                  <tr>
-                    {(
-                      [
-                        "leaveBalance.accepted",
-                        "leaveBalance.effective",
-                        "leaveBalance.entryKind",
-                        "leaveBalance.quantity",
-                        "leaveBalance.reason",
-                        "leaveBalance.source",
-                      ] as const
-                    ).map((key) => (
-                      <th key={key} className="px-3 py-3">
-                        {t(key)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {!loaded || loading || filteredHistory.length === 0 ? (
-                    <GridStateRows
-                      columnCount={columnCount}
-                      isLoading={loading}
-                      hasError={Boolean(feedback?.error)}
-                      isEmpty={!loaded || filteredHistory.length === 0}
-                      loadingLabel={t("common.loading")}
-                      emptyTitle={
-                        loaded ? t("leaveBalance.empty") : t("leaveBalance.emptyScope")
-                      }
-                      emptyDescription={
-                        loaded
-                          ? t("leaveBalance.emptyDescription")
-                          : t("leaveBalance.emptyScopeDescription")
-                      }
-                    />
-                  ) : (
-                    visibleHistory.map((entry) => (
-                      <tr key={entry.publicId}>
-                        <td className="px-3 py-3">{formatPortalDateTime(entry.acceptedAt)}</td>
-                        <td className="px-3 py-3">{formatPortalDate(entry.effectiveDate)}</td>
-                        <td className="px-3 py-3">
-                          {t(`leaveBalance.kind.${entry.entryKind}`)}
-                        </td>
-                        <td className="px-3 py-3">{entry.quantityDays}</td>
-                        <td className="px-3 py-3">
-                          {entry.reason}
-                          {entry.explanation ? ` — ${entry.explanation}` : ""}
-                        </td>
-                        <td className="px-3 py-3">{entry.sourceReference}</td>
+              {detailOpen ? (
+                <>
+                  <div className="border-b border-slate-200 bg-white px-4 py-3">
+                    <p className="text-sm text-slate-600">{t("leaveBalance.current")}</p>
+                    <p className="text-2xl font-semibold text-slate-950">
+                      {balance ? balance.balanceDays : "—"}
+                    </p>
+                    {selectedScope ? (
+                      <p className="mt-1 text-sm text-slate-600">
+                        {selectedScope.employeeName} ({selectedScope.employeeNumber}) ·{" "}
+                        {selectedScope.leaveTypeName} · {selectedScope.leaveYear}
+                      </p>
+                    ) : null}
+                  </div>
+                  <table className="w-full min-w-[800px] text-left text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-100 text-xs font-semibold text-slate-600">
+                      <tr>
+                        {(
+                          [
+                            "leaveBalance.accepted",
+                            "leaveBalance.effective",
+                            "leaveBalance.entryKind",
+                            "leaveBalance.quantity",
+                            "leaveBalance.reason",
+                            "leaveBalance.source",
+                          ] as const
+                        ).map((key) => (
+                          <th key={key} className="px-3 py-3">
+                            {t(key)}
+                          </th>
+                        ))}
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {loadingDetail || filteredHistory.length === 0 ? (
+                        <GridStateRows
+                          columnCount={historyColumnCount}
+                          isLoading={loadingDetail}
+                          hasError={Boolean(feedback?.error)}
+                          isEmpty={filteredHistory.length === 0}
+                          loadingLabel={t("common.loading")}
+                          emptyTitle={t("leaveBalance.empty")}
+                          emptyDescription={t("leaveBalance.emptyDescription")}
+                        />
+                      ) : (
+                        (pageSlice as LeaveBalanceEntry[]).map((entry) => (
+                          <tr key={entry.publicId}>
+                            <td className="px-3 py-3">
+                              {formatPortalDateTime(entry.acceptedAt)}
+                            </td>
+                            <td className="px-3 py-3">
+                              {formatPortalDate(entry.effectiveDate)}
+                            </td>
+                            <td className="px-3 py-3">
+                              {t(`leaveBalance.kind.${entry.entryKind}`)}
+                            </td>
+                            <td className="px-3 py-3">{entry.quantityDays}</td>
+                            <td className="px-3 py-3">
+                              {entry.reason}
+                              {entry.explanation ? ` — ${entry.explanation}` : ""}
+                            </td>
+                            <td className="px-3 py-3">{entry.sourceReference}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <table className="w-full min-w-[960px] text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-slate-100 text-xs font-semibold text-slate-600">
+                    <tr>
+                      {(
+                        [
+                          "leaveBalance.employee",
+                          "leaveBalance.leaveType",
+                          "leaveBalance.year",
+                          "leaveBalance.current",
+                          "leaveBalance.entryCount",
+                          "leaveBalance.lastActivity",
+                          "leaveBalance.actions",
+                        ] as const
+                      ).map((key) => (
+                        <th key={key} className="px-3 py-3">
+                          {t(key)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {loadingScopes || scopes.length === 0 ? (
+                      <GridStateRows
+                        columnCount={overviewColumnCount}
+                        isLoading={loadingScopes}
+                        hasError={Boolean(feedback?.error)}
+                        isEmpty={scopes.length === 0}
+                        loadingLabel={t("common.loading")}
+                        emptyTitle={t("leaveBalance.emptyOverview")}
+                        emptyDescription={t("leaveBalance.emptyOverviewDescription")}
+                      />
+                    ) : (
+                      (pageSlice as LeaveBalanceScope[]).map((scope) => (
+                        <tr
+                          key={scopeKey(scope)}
+                          className={
+                            selectedKey === scopeKey(scope) ? "bg-slate-50" : undefined
+                          }
+                        >
+                          <td className="px-3 py-3 font-medium">
+                            {scope.employeeName} ({scope.employeeNumber})
+                          </td>
+                          <td className="px-3 py-3">{scope.leaveTypeName}</td>
+                          <td className="px-3 py-3">{scope.leaveYear}</td>
+                          <td className="px-3 py-3">{scope.balanceDays}</td>
+                          <td className="px-3 py-3">{scope.entryCount}</td>
+                          <td className="px-3 py-3">
+                            {formatPortalDateTime(scope.lastActivityAt)}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <button
+                              type="button"
+                              className="text-blue-700 underline"
+                              onClick={() => selectScope(scope)}
+                            >
+                              {t("leaveBalance.details")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
             </>
           }
           pagination={
             <GridPagination
               page={page}
               pageSize={pageSize}
-              totalCount={loaded ? filteredHistory.length : 0}
+              totalCount={visibleRows.length}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
               labels={{
@@ -477,7 +788,7 @@ export default function LeaveBalancesPage() {
             />
           }
           detailsPanel={
-            loaded ? (
+            detailOpen ? (
               <form onSubmit={submit} className="space-y-4">
                 <h2 className="text-lg font-semibold">{t("leaveBalance.createTitle")}</h2>
                 <SelectField
@@ -592,6 +903,7 @@ function SelectField({
   onChange,
   options,
   empty,
+  required = true,
 }: {
   id: string;
   label: string;
@@ -599,12 +911,13 @@ function SelectField({
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
   empty?: string;
+  required?: boolean;
 }) {
   return (
-    <FormField id={id} label={label} required>
+    <FormField id={id} label={label} required={required}>
       <select
         id={id}
-        required
+        required={required}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={formControlClassName()}

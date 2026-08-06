@@ -9,6 +9,7 @@ public sealed class LeaveBalancePortalContractTests
     {
         var service = ReadRepositoryFile("apps", "portal", "src", "services", "leave-balances.ts");
         Assert.Contains("/api/v1/vacation/leave-balances", service);
+        Assert.Contains("/scopes", service);
         Assert.Contains("/history?", service);
         Assert.Contains("entitlements", service);
         Assert.Contains("carry-overs", service);
@@ -26,11 +27,16 @@ public sealed class LeaveBalancePortalContractTests
         Assert.Contains("form.effectiveDate.slice(0, 4)", page);
         Assert.Contains("form.reason.trim()", page);
         Assert.Contains("form.sourceReference.trim()", page);
-        Assert.Contains("setLoaded(false)", page);
-        Assert.Contains("changeScope({ ...scope", page);
+        Assert.Contains("listLeaveBalanceScopes", page);
+        Assert.Contains("selectScope(", page);
+        Assert.Contains("clearSelection()", page);
+        Assert.Contains("changeFilters({ ...filters", page);
+        Assert.Contains("canOpenNewScope", page);
+        Assert.Contains("scopes.length === 0", page);
         Assert.Contains("PortalDateInput", page);
         Assert.DoesNotContain("type=\"date\"", page, StringComparison.Ordinal);
         Assert.DoesNotContain("type='date'", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("t(\"leaveBalance.load\")", page);
     }
 
     [Fact]

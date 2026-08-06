@@ -39,18 +39,23 @@ public sealed class VacationLeaveBalanceAuthorizationTests
     [Fact]
     public void Portal_UsesTheVacationOwnedPermissionForBothTabsAndRoutes()
     {
-        var workspace = Read("apps", "portal", "src", "features", "vacation",
-            "components", "vacation-workspace.tsx");
+        var balancePage = Read("apps", "portal", "src", "app", "vacation",
+            "admin", "leave-balances", "page.tsx");
+        var policyPage = Read("apps", "portal", "src", "app", "vacation",
+            "admin", "policies", "page.tsx");
+        var navigation = Read("apps", "portal", "src", "navigation", "vacation.ts");
         var balanceType = Read("apps", "portal", "src", "types", "leave-balance.ts");
         var policyType = Read("apps", "portal", "src", "types", "leave-policy.ts");
 
         Assert.Contains("vacation.leave-balances.manage", balanceType);
         Assert.Contains("vacation.leave-balances.manage", policyType);
-        Assert.Contains("permissions.includes(leaveBalanceManagePermission)", workspace);
-        Assert.DoesNotContain("usersManagePermission", workspace);
-        Assert.DoesNotContain("identity.users.manage", workspace);
+        Assert.Contains("includes(leaveBalanceManagePermission)", balancePage);
+        Assert.Contains("includes(leavePolicyManagePermission)", policyPage);
+        Assert.Contains("leaveBalanceManagePermission", navigation);
         Assert.DoesNotContain("identity.users.manage", balanceType);
         Assert.DoesNotContain("identity.users.manage", policyType);
+        Assert.DoesNotContain("identity.users.manage", balancePage);
+        Assert.DoesNotContain("identity.users.manage", policyPage);
     }
 
     [Fact]
@@ -58,11 +63,13 @@ public sealed class VacationLeaveBalanceAuthorizationTests
     {
         var endpoints = Read("apps", "api", "src", "Api", "Modules", "Vacation",
             "LeaveRequestEndpoints.cs");
-        var workspace = Read("apps", "portal", "src", "features", "vacation",
-            "components", "vacation-workspace.tsx");
+        var requestList = Read("apps", "portal", "src", "features", "vacation",
+            "components", "admin-vacation-request-list.tsx");
+        var navigation = Read("apps", "portal", "src", "navigation", "vacation.ts");
 
         Assert.Contains("RequireAuthorization(VacationPermissions.ManageRequests)", endpoints);
-        Assert.Contains("permissions.includes(vacationRequestsManagePermission)", workspace);
+        Assert.Contains("vacationRequestsManagePermission", requestList);
+        Assert.Contains("vacationRequestsManagePermission", navigation);
     }
 
     [Fact]

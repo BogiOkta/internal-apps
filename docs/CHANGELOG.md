@@ -1,5 +1,20 @@
 # Internal Apps Platform change history
 
+## 2026-08-07 — Leave Balances administration overview redesign
+
+- Redesigned Leave Balances administration so the page loads an overview of
+  existing leave-balance scopes (employee + Leave Type + year) with current
+  balance, ledger entry count, and last activity. Optional employee search,
+  Leave Type, and year filters refresh the overview. Selecting a row opens the
+  existing ledger history and append form; Dependency Inspector deep links with
+  `leaveTypeId`, `employeeId`, and `year` still filter, select, and open that
+  exact scope. Added read-only `GET /api/v1/vacation/leave-balances/scopes`.
+  Ledger posting, permissions, deletion rules, ADR-0007, and compatibility
+  mirror semantics are unchanged.
+- Validation: API Debug build; Portal strict TypeScript and production build;
+  focused Leave Balance and Portal administration UI contract tests;
+  `git diff --check`.
+
 ## 2026-08-07 — Leave Type leave-balance dependency navigation fix
 
 - Corrected Leave Type Dependency Inspector leave-balance semantics: the count

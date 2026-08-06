@@ -23,6 +23,16 @@ internal sealed record LeaveBalanceEntryResponse(
 internal sealed record LeaveBalanceLedgerResponse(
     Guid EmployeeId, Guid LeaveTypeId, int LeaveYear, decimal BalanceDays);
 
+internal sealed record LeaveBalanceScopeRecord(
+    Guid EmployeeId, string EmployeeName, string EmployeeNumber,
+    Guid LeaveTypeId, string LeaveTypeName, string LeaveTypeCode,
+    int LeaveYear, decimal BalanceDays, int EntryCount, DateTime LastActivityAt);
+
+internal sealed record LeaveBalanceScopeResponse(
+    Guid EmployeeId, string EmployeeName, string EmployeeNumber,
+    Guid LeaveTypeId, string LeaveTypeName, int LeaveYear,
+    decimal BalanceDays, int EntryCount, DateTimeOffset LastActivityAt);
+
 internal enum LeaveBalanceLedgerWriteStatus
 {
     Success, ValidationFailed, EmployeeNotFound, LeaveTypeNotFound, LeaveTypeDoesNotRequireBalance,

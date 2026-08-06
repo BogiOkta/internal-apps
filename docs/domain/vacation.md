@@ -223,16 +223,19 @@ reversal.
 The LV.2 API exposes administrator-only posting commands for annual
 entitlement, carry-over, and reasoned manual adjustment, plus derived balance
 and chronological history reads for one employee, Leave Type, and calendar
-year. Posting requires a source reference for retry idempotency and is atomic
+year, and a read-only overview of existing leave-balance scopes. Posting requires a source reference for retry idempotency and is atomic
 with its Vacation audit event. Leave Request itself posts consumption and
 cancellation reversals internally; no public posting endpoint exists for either
 request-derived entry kind.
 
 The administrator Portal route `/vacation/admin/leave-balances` uses those
-commands without deriving balances itself. An authorized administrator selects
-an employee, balance-consuming Leave Type, and calendar year, loads the
-derived balance and acceptance-ordered history, and can append entitlement,
-carry-over, or reasoned manual-adjustment entries. It mirrors required IDs,
+commands without deriving balances itself. An authorized administrator sees
+existing leave-balance scopes on load, may optionally filter by employee,
+Leave Type, and year, opens one scope to review the derived balance and
+acceptance-ordered history, and can append entitlement, carry-over, or
+reasoned manual-adjustment entries. A secondary Open scope action still allows
+opening an empty employee + Leave Type + year key before the first entry
+exists. It mirrors required IDs,
 non-zero half-day quantity, positive credit quantities, effective-year, reason,
 and source-reference checks only for prompt feedback; server validation,
 authorization, idempotency, and non-negative balance enforcement remain

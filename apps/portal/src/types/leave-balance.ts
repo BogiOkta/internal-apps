@@ -7,6 +7,18 @@ export type LeaveBalance = {
   balanceDays: number;
 };
 
+export type LeaveBalanceScope = {
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  leaveYear: number;
+  balanceDays: number;
+  entryCount: number;
+  lastActivityAt: string;
+};
+
 export type LeaveBalanceEntryKind =
   | "annual_entitlement"
   | "carry_over"

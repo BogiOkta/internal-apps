@@ -5,6 +5,8 @@ namespace InternalApps.Api.Modules.Vacation;
 
 internal sealed class LeaveBalanceLedgerRepository(NpgsqlDataSource dataSource)
 {
+    private const int ScopeOverviewLimit = 1000;
+
     private const string Projection = """
         entries.public_id AS PublicId, employees.public_id AS EmployeeId,
         leave_types.public_id AS LeaveTypeId, entries.leave_year AS LeaveYear,
@@ -163,6 +165,57 @@ internal sealed class LeaveBalanceLedgerRepository(NpgsqlDataSource dataSource)
         await using var connection = await dataSource.OpenConnectionAsync(token);
         return await connection.QuerySingleOrDefaultAsync<LeaveBalanceLedgerResponse>(new CommandDefinition(sql,
             new { EmployeeId = employeeId, LeaveTypeId = leaveTypeId, LeaveYear = leaveYear }, cancellationToken: token));
+    }
+
+    public async Task<IReadOnlyList<LeaveBalanceScopeRecord>> ListScopesAsync(
+        Guid? employeeId, Guid? leaveTypeId, int? leaveYear, string? search,
+        bool englishNames, CancellationToken token)
+    {
+        var searchPattern = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%";
+        const string sql = """
+            SELECT employees.public_id AS EmployeeId,
+                   concat_ws(', ', employees.last_name, employees.first_name) AS EmployeeName,
+                   employees.employee_number AS EmployeeNumber,
+                   leave_types.public_id AS LeaveTypeId,
+                   CASE WHEN @EnglishNames THEN leave_types.name_en ELSE leave_types.name_sr END AS LeaveTypeName,
+                   leave_types.code AS LeaveTypeCode,
+                   entries.leave_year AS LeaveYear,
+                   sum(entries.quantity_days) AS BalanceDays,
+                   count(*)::int AS EntryCount,
+                   max(entries.accepted_at) AS LastActivityAt
+            FROM vacation.leave_balance_entries AS entries
+            INNER JOIN organization.employees AS employees ON employees.id = entries.employee_id
+            INNER JOIN vacation.leave_types AS leave_types ON leave_types.id = entries.leave_type_id
+            WHERE (@EmployeeId IS NULL OR employees.public_id = @EmployeeId)
+              AND (@LeaveTypeId IS NULL OR leave_types.public_id = @LeaveTypeId)
+              AND (@LeaveYear IS NULL OR entries.leave_year = @LeaveYear)
+              AND (
+                    @SearchPattern IS NULL
+                    OR employees.first_name ILIKE @SearchPattern
+                    OR employees.last_name ILIKE @SearchPattern
+                    OR employees.employee_number ILIKE @SearchPattern
+                    OR concat_ws(' ', employees.first_name, employees.last_name) ILIKE @SearchPattern
+                    OR concat_ws(', ', employees.last_name, employees.first_name) ILIKE @SearchPattern
+                  )
+            GROUP BY employees.public_id, employees.last_name, employees.first_name,
+                     employees.employee_number, leave_types.public_id, leave_types.name_en,
+                     leave_types.name_sr, leave_types.code, entries.leave_year
+            ORDER BY employees.last_name, employees.first_name, employees.employee_number,
+                     leave_types.code, entries.leave_year DESC
+            LIMIT @Limit
+            """;
+        await using var connection = await dataSource.OpenConnectionAsync(token);
+        var rows = await connection.QueryAsync<LeaveBalanceScopeRecord>(new CommandDefinition(sql,
+            new
+            {
+                EmployeeId = employeeId,
+                LeaveTypeId = leaveTypeId,
+                LeaveYear = leaveYear,
+                SearchPattern = searchPattern,
+                EnglishNames = englishNames,
+                Limit = ScopeOverviewLimit
+            }, cancellationToken: token));
+        return rows.AsList();
     }
 
     public async Task<IReadOnlyList<LeaveBalanceEntryRecord>> ListHistoryAsync(Guid employeeId, Guid leaveTypeId, int leaveYear, CancellationToken token)
